@@ -16,7 +16,6 @@
     "back": "Back",
     "next": "Next",
     "finish": "Finish",
-    "search": "Search",
     "loading": "Loading...",
     "startingUp": "Starting up...",
     "error": "Error",
@@ -32,6 +31,11 @@
     "suffix.billion": "B",
     "suffix.million": "M",
     "suffix.thousand": "K"
+  },
+  "search": {
+    "placeholder": "Search...",
+    "previousResult": "Previous result (SHIFT + F3)",
+    "nextResult": "Next result (F3)"
   },
   "onboarding": {
     "title": "Welcome to Aider Desk",

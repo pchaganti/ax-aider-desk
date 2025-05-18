@@ -47,6 +47,7 @@ import { PromptField, PromptFieldRef } from '@/components/PromptField';
 import { CostInfo } from '@/components/CostInfo';
 import { Button } from '@/components/common/Button';
 import 'react-resizable/css/styles.css';
+import { useSearchText } from '@/hooks/useSearchText';
 
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -92,6 +93,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
       return aiderModelsData?.info?.max_input_tokens ?? 0;
     }
   }, [mode, settings, aiderModelsData]);
+  const { renderSearchInput } = useSearchText(messagesRef.current?.container || null, 'absolute top-1 left-1');
 
   useEffect(() => {
     const loadProjectSettings = async () => {
@@ -620,7 +622,8 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
             runCommand={runCommand}
           />
         </div>
-        <div className="flex-grow overflow-y-auto">
+        <div className="flex-grow overflow-y-auto relative">
+          {renderSearchInput()}
           <Messages
             ref={messagesRef}
             baseDir={project.baseDir}

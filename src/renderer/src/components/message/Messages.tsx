@@ -1,13 +1,14 @@
-import { useEffect, useRef, useState, WheelEvent, useImperativeHandle, forwardRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, WheelEvent } from 'react';
 import { toPng } from 'html-to-image';
 
 import { MessageBlock } from './MessageBlock';
 
-import { Message, isUserMessage } from '@/types/message';
+import { isUserMessage, Message } from '@/types/message';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 
 export type MessagesRef = {
   exportToImage: () => void;
+  container: HTMLDivElement | null;
 };
 
 type Props = {
@@ -63,6 +64,7 @@ export const Messages = forwardRef<MessagesRef, Props>(
 
     useImperativeHandle(ref, () => ({
       exportToImage,
+      container: messagesContainerRef.current,
     }));
 
     return (

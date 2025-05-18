@@ -15,6 +15,7 @@
 - enhanced write and edit tool messages syntax highlighted code and diff viewer
 - improved overall performance of the diff viewer
 - loading environment variables for Agent providers from .env files in home and project directories
+- find in chat functionality
 
 ## [0.13.0]
 

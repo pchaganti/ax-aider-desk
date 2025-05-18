@@ -34,7 +34,9 @@ export const createPowerToolset = (project: Project): ToolSet => {
       'Atomically finds and replaces a specific string or pattern within a specified file. This tool is useful for making targeted changes to file content.',
     parameters: z.object({
       filePath: z.string().describe('The path to the file to be edited (relative to the project root).'),
-      searchTerm: z.string().describe('The string or regular expression to find in the file.'),
+      searchTerm: z
+        .string()
+        .describe('The string or regular expression to find in the file. When editing a code, make sure you use multiple lines in the search if possible.'),
       replacementText: z.string().describe('The string to replace the searchTerm with.'),
       isRegex: z.boolean().optional().default(false).describe('Whether the searchTerm should be treated as a regular expression. Default: false.'),
       replaceAll: z.boolean().optional().default(false).describe('Whether to replace all occurrences or just the first one. Default: false.'),

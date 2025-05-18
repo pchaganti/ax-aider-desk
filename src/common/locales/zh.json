@@ -12,7 +12,6 @@
     "back": "返回",
     "next": "下一步",
     "finish": "完成",
-    "search": "搜索",
     "loading": "加载中...",
     "startingUp": "正在启动...",
     "error": "错误",
@@ -28,6 +27,11 @@
     "suffix.billion": "十亿",
     "suffix.million": "百万",
     "suffix.thousand": "千"
+  },
+  "search" : {
+    "placeholder": "查找...",
+    "previousResult": "上一个结果 (SHIFT + F3)",
+    "nextResult": "下一个结果 (F3)"
   },
   "onboarding": {
     "title": "欢迎使用 Aider Desk",

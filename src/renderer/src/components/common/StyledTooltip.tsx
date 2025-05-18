@@ -9,7 +9,7 @@ type Props = {
 export const StyledTooltip = ({ id, content }: Props) => (
   <Tooltip
     id={id}
-    className="!bg-neutral-900 !text-neutral-200 !text-xxs !py-1 !px-2 !opacity-100 !rounded-md !max-w-[300px] z-50 whitespace-pre-wrap"
+    className="!bg-neutral-900 !text-neutral-200 !text-xxs !py-1 !px-2 !opacity-100 !rounded-md !max-w-[300px] z-50 whitespace-pre-wrap select-none"
     border="1px solid #495057"
     delayShow={200}
   >

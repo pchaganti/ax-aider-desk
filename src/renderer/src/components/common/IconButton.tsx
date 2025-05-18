@@ -1,5 +1,6 @@
 import { MouseEvent, ReactNode, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import clsx from 'clsx';
 
 import { StyledTooltip } from './StyledTooltip';
 
@@ -9,13 +10,19 @@ type Props = {
   tooltip?: ReactNode;
   className?: string;
   tooltipId?: string;
+  disabled?: boolean;
 };
 
-export const IconButton = ({ icon, onClick, tooltip, className, tooltipId }: Props) => {
+export const IconButton = ({ icon, onClick, tooltip, className, tooltipId, disabled }: Props) => {
   const tooltipIdRef = useRef<string>(tooltipId || `icon-button-tooltip-${uuidv4()}`);
 
-  const baseClasses = 'text-neutral-500 cursor-pointer hover:text-neutral-300 transition-opacity focus:outline-none';
-  const combinedClassName = `${baseClasses} ${className || ''}`;
+  const combinedClassName = clsx(
+    'text-neutral-500',
+    'transition-opacity',
+    'focus:outline-none',
+    disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:text-neutral-300',
+    className,
+  );
 
   const handleClick = (e: MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -24,7 +31,7 @@ export const IconButton = ({ icon, onClick, tooltip, className, tooltipId }: Pro
 
   const renderButton = () => (
     <div
-      onClick={handleClick}
+      onClick={disabled ? undefined : handleClick}
       data-tooltip-id={tooltip ? tooltipIdRef.current : undefined}
       data-tooltip-content={typeof tooltip === 'string' && tooltipId ? tooltip : undefined}
       className={combinedClassName}
