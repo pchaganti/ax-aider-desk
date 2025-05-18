@@ -374,10 +374,11 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       if (suggestionsVisible) {
         switch (e.key) {
           case 'Enter':
-            e.preventDefault();
             if (highlightedSuggestionIndex !== -1) {
+              e.preventDefault();
               acceptSuggestion(filteredSuggestions[highlightedSuggestionIndex]);
             } else if ((!processing || question) && !e.shiftKey) {
+              e.preventDefault();
               handleSubmit();
             }
             break;
