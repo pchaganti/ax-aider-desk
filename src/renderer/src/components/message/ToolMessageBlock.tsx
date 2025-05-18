@@ -104,7 +104,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
   };
 
   const renderToolSpecificContent = () => {
-    if (message.serverName === 'aider' && message.toolName === 'run_prompt') {
+    if (message.serverName === AIDER_TOOL_GROUP_NAME && message.toolName === AIDER_TOOL_RUN_PROMPT) {
       const promptText = message.args.prompt as string;
 
       return (

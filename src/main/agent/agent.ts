@@ -1,6 +1,8 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { homedir } from 'os';
 
+import dotenv from 'dotenv';
 import { ContextFile, ContextMessage, McpTool, QuestionData, SettingsData, ToolApprovalState, UsageReportData } from '@common/types';
 import {
   APICallError,
@@ -431,10 +433,7 @@ export class Agent {
     });
 
     try {
-      const model = createLlm(activeProvider, {
-        ...process.env,
-        ...this.getAiderEnv(),
-      });
+      const model = createLlm(activeProvider, await this.getLlmEnv(project));
       const systemPrompt = await getSystemPrompt(
         project.baseDir,
         agentConfig.useAiderTools,
@@ -629,6 +628,35 @@ export class Agent {
     }
 
     return agentMessages;
+  }
+
+  private async getLlmEnv(project: Project) {
+    const env = {
+      ...process.env,
+    };
+
+    const homeEnvPath = path.join(homedir(), '.env');
+    const projectEnvPath = path.join(project.baseDir, '.env');
+
+    try {
+      await fs.access(homeEnvPath);
+      const homeEnvContent = await fs.readFile(homeEnvPath, 'utf8');
+      Object.assign(env, dotenv.parse(homeEnvContent));
+    } catch {
+      // File does not exist or other read error, ignore
+    }
+
+    try {
+      await fs.access(projectEnvPath);
+      const projectEnvContent = await fs.readFile(projectEnvPath, 'utf8');
+      Object.assign(env, dotenv.parse(projectEnvContent));
+    } catch {
+      // File does not exist or other read error, ignore
+    }
+
+    Object.assign(env, this.getAiderEnv());
+
+    return env;
   }
 
   private getAiderEnv(): Record<string, string> {
