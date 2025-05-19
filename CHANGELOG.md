@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - explicitly sending project base directory to Aider process
+- disabled spell check for input fields as it does not serve any purpose
 
 ## [0.14.1]
 
