@@ -14,3 +14,4 @@ dev-app-update.yml
 # release scripts
 release-win.sh
 release-linux.sh
+start-docker.sh

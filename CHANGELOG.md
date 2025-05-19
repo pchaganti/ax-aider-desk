@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.14.0]
 
 - correctly showing release notes HTML
 - implemented confirmations for Power tools and added new answer "Always for this run"
