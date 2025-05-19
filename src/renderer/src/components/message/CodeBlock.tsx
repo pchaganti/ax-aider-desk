@@ -11,14 +11,6 @@ import { CopyMessageButton } from './CopyMessageButton';
 
 import { DiffViewer } from '@/components/common/DiffViewer';
 
-import 'prismjs/themes/prism-tomorrow.css';
-import 'prismjs/components/prism-typescript';
-import 'prismjs/components/prism-python';
-import 'prismjs/components/prism-bash';
-import 'prismjs/components/prism-json';
-import 'prismjs/components/prism-css';
-import 'prismjs/components/prism-go';
-
 const SEARCH_MARKER = /^<{5,9} SEARCH[^\n]*$/m;
 const DIVIDER_MARKER = /^={5,9}\s*$/m;
 const REPLACE_MARKER = /^>{5,9} REPLACE\s*$/m;
@@ -100,10 +92,11 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
     if (displayAsDiff) {
       return <DiffViewer oldValue={diffOldValue} newValue={diffNewValue} language={language} />;
     } else if (codeForSyntaxHighlight) {
-      const highlightedCode = Prism.highlight(codeForSyntaxHighlight, Prism.languages[language] || Prism.languages.typescript, language || 'typescript');
+      const grammar = Prism.languages[language];
+      const html = grammar ? Prism.highlight(codeForSyntaxHighlight, grammar, language) : codeForSyntaxHighlight;
       return (
         <pre>
-          <code className={`language-${language}`} dangerouslySetInnerHTML={{ __html: highlightedCode }} />
+          <code className={`language-${language}`} dangerouslySetInnerHTML={{ __html: html }} />
         </pre>
       );
     }

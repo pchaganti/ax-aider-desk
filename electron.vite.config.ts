@@ -1,6 +1,7 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import prism from 'vite-plugin-prismjs';
 
 const ReactCompilerConfig = {
   target: '18',
@@ -15,6 +16,11 @@ export default defineConfig({
   },
   renderer: {
     plugins: [
+      prism({
+        languages: 'all',
+        theme: 'tomorrow',
+        css: true,
+      }),
       react({
         babel: {
           plugins: [['babel-plugin-react-compiler', ReactCompilerConfig]],

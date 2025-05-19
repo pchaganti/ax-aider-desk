@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.14.1]
+
+- fixed issue with black screen on code block render
+
 ## [0.14.0]
 
 - correctly showing release notes HTML
