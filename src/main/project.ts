@@ -284,6 +284,7 @@ export class Project {
       ...process.env,
       ...environmentVariables,
       PYTHONPATH: AIDER_DESK_CONNECTOR_DIR,
+      BASE_DIR: this.baseDir,
       CONNECTOR_SERVER_URL: `http://localhost:${SERVER_PORT}`,
     };
 

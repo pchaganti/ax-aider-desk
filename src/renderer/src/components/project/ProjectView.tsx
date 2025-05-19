@@ -114,12 +114,6 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
   }, [project.baseDir]);
 
   useEffect(() => {
-    if (aiderModelsData) {
-      setLoading(false);
-    }
-  }, [messages, aiderModelsData]);
-
-  useEffect(() => {
     if (!processing && frozenTimeoutRef.current) {
       clearTimeout(frozenTimeoutRef.current);
       frozenTimeoutRef.current = null;
@@ -317,6 +311,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
 
     const handleUpdateAiderModels = (_: IpcRendererEvent, data: ModelsData) => {
       setAiderModelsData(data);
+      setLoading(false);
 
       if (data.error) {
         const errorMessage: LogMessage = {

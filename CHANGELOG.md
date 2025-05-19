@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- explicitly sending project base directory to Aider process
+
 ## [0.14.1]
 
 - fixed issue with black screen on code block render

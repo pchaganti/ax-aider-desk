@@ -984,7 +984,7 @@ def main(argv=None):
   args, _ = parser.parse_known_args(argv) # Use parse_known_args to ignore unknown args
 
   server_url = os.getenv("CONNECTOR_SERVER_URL", "http://localhost:24337")
-  base_dir = os.getcwd()
+  base_dir = os.getenv("BASE_DIR", os.getcwd())
   connector = Connector(
     base_dir,
     watch_files=args.watch_files,
