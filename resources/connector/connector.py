@@ -14,6 +14,7 @@ from aider.main import main as cli_main
 from aider.utils import is_image_file
 from concurrent.futures import ThreadPoolExecutor
 import nest_asyncio
+import types
 nest_asyncio.apply()
 
 confirmation_result = None
@@ -48,6 +49,7 @@ async def run_editor_coder_stream(architect_coder, connector):
   editor_coder = Coder.create(**new_kwargs)
   editor_coder.cur_messages = []
   editor_coder.done_messages = []
+  connector.monkey_patch_coder_functions(editor_coder)
 
   global whole_content
   if not whole_content:
@@ -254,6 +256,7 @@ class Connector:
     self.coder.yield_stream = True
     self.coder.stream = True
     self.coder.pretty = False
+    self.monkey_patch_coder_functions(self.coder)
     self.running_coder = None
     self.interrupted = False
     self.current_tokenization_future = None
@@ -277,6 +280,38 @@ class Connector:
 
     self.sio = socketio.AsyncClient()
     self._register_events()
+
+  def monkey_patch_coder_functions(self, coder):
+    # self here is the Connector instance
+    # coder is the Coder instance
+
+    original_lint_edited = coder.lint_edited
+    def _patched_lint_edited(coder_instance, fnames):
+        # Add loading message before linting
+        wait_for_async(self, self.send_log_message("loading", "Linting..."))
+        # Call the original Coder.lint_edited logic
+        result = original_lint_edited(fnames)
+        # Finish the loading message after linting
+        wait_for_async(self, self.send_log_message("loading", "Linting...", True))
+        return result
+
+    # Replace the original lint_edited method with the patched version
+    coder.lint_edited = types.MethodType(_patched_lint_edited, coder)
+
+    original_cmd_test = coder.commands.cmd_test
+    def _patched_cmd_test(coder_commands_instance, args):
+        # self here is the Connector instance
+        # coder_commands_instance is the Commands instance (coder.commands)
+        self.coder.io.running_shell_command = True
+        self.coder.io.tool_output("Running " + args if args else "Running " + self.coder.test_cmd)
+        try:
+            result = original_cmd_test(args)
+        finally:
+            self.coder.io.running_shell_command = False
+        return result
+
+    # Replace the original run_test method with the patched version
+    coder.commands.cmd_test = types.MethodType(_patched_cmd_test, coder.commands)
 
   def get_tokenization_executor(self):
     if self.tokenization_executor is None:
@@ -467,6 +502,7 @@ class Connector:
           edit_format=edit_format,
           summarize_from_coder=False
         )
+        self.monkey_patch_coder_functions(self.coder)
         for line in self.coder.get_announcements():
           self.coder.io.tool_output(line)
         await self.send_current_models()
@@ -544,6 +580,7 @@ class Connector:
         main_model=running_model,
         summarize_from_coder=False,
       )
+      self.monkey_patch_coder_functions(self.running_coder)
 
       if clear_context:
         self.running_coder.cur_messages = []
@@ -624,6 +661,8 @@ class Connector:
         cur_messages=cur_messages,
         done_messages=done_messages,
       )
+      self.monkey_patch_coder_functions(self.coder)
+
     await self.send_update_context_files()
 
     # Check for reflections

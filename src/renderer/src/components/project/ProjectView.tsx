@@ -266,28 +266,33 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
 
     const handleLog = (_: IpcRendererEvent, { level, message, finished }: LogData) => {
       if (level === 'loading') {
-        const loadingMessage: LoadingMessage = {
-          id: uuidv4(),
-          type: 'loading',
-          content: message || t('messages.thinking'),
-        };
-        setMessages((prevMessages) => {
-          const existingLoadingIndex = prevMessages.findIndex(isLoadingMessage);
-          if (existingLoadingIndex !== -1) {
-            // Update existing loading message
-            const updatedMessages = [...prevMessages];
-            updatedMessages[existingLoadingIndex] = {
-              ...updatedMessages[existingLoadingIndex],
-              content: loadingMessage.content,
-            };
+        if (finished) {
+          setMessages((prevMessages) => prevMessages.filter((message) => !isLoadingMessage(message)));
+        } else {
+          const loadingMessage: LoadingMessage = {
+            id: uuidv4(),
+            type: 'loading',
+            content: message || t('messages.thinking'),
+          };
 
-            return updatedMessages;
-          } else {
-            // Add new loading message
-            return [...prevMessages, loadingMessage];
-          }
-        });
-        setProcessing(true);
+          setMessages((prevMessages) => {
+            const existingLoadingIndex = prevMessages.findIndex(isLoadingMessage);
+            if (existingLoadingIndex !== -1) {
+              // Update existing loading message
+              const updatedMessages = [...prevMessages];
+              updatedMessages[existingLoadingIndex] = {
+                ...updatedMessages[existingLoadingIndex],
+                content: loadingMessage.content,
+              };
+
+              return updatedMessages;
+            } else {
+              // Add new loading message
+              return [...prevMessages, loadingMessage];
+            }
+          });
+          setProcessing(true);
+        }
       } else {
         const logMessage: LogMessage = {
           id: uuidv4(),
