@@ -5,6 +5,8 @@
 - explicitly sending project base directory to Aider process
 - disabled spell check for input fields as it does not serve any purpose
 - added loading message when auto linting and showing output of auto test command
+- loading list of available models from Ollama server
+- popup menu for input history
 
 ## [0.14.1]
 
