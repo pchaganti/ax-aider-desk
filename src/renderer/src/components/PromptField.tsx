@@ -10,6 +10,7 @@ import getCaretCoordinates from 'textarea-caret';
 
 import { showErrorNotification } from '@/utils/notifications';
 import { ModeSelector } from '@/components/ModeSelector';
+import { InputHistoryMenu } from '@/components/InputHistoryMenu';
 
 const COMMANDS = ['/code', '/context', '/agent', '/ask', '/architect', '/add', '/model', '/read-only'];
 const CONFIRM_COMMANDS = [
@@ -34,6 +35,8 @@ const CONFIRM_COMMANDS = [
 const ANSWERS = ['y', 'n', 'a', 'd'];
 
 const MAX_SUGGESTIONS = 10;
+
+const HISTORY_MENU_CHUNK_SIZE = 20;
 
 export interface PromptFieldRef {
   focus: () => void;
@@ -98,9 +101,22 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     const [placeholderIndex] = useState(Math.floor(Math.random() * 16));
     const [cursorPosition, setCursorPosition] = useState({ top: 0, left: 0 });
     const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(-1);
-    const [historyIndex, setHistoryIndex] = useState<number>(-1);
+    const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
+    const [highlightedHistoryItemIndex, setHighlightedHistoryItemIndex] = useState(0);
+    const [historyLimit, setHistoryLimit] = useState(HISTORY_MENU_CHUNK_SIZE);
+    const [keepHistoryHighlightTop, setKeepHistoryHighlightTop] = useState(false);
     const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const historyItems = inputHistory.slice(0, historyLimit).reverse();
+
+    const loadMoreHistory = useCallback(() => {
+      if (historyLimit < inputHistory.length) {
+        const additional = Math.min(HISTORY_MENU_CHUNK_SIZE, inputHistory.length - historyLimit);
+        setHistoryLimit((prev) => prev + additional);
+        setHighlightedHistoryItemIndex((prev) => prev + additional);
+        setKeepHistoryHighlightTop(true);
+      }
+    }, [historyLimit, inputHistory.length]);
 
     useDebounce(
       () => {
@@ -221,6 +237,16 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       }
     }, [text, invokeCommand]);
 
+    useEffect(() => {
+      setHistoryLimit(Math.min(HISTORY_MENU_CHUNK_SIZE, inputHistory.length));
+    }, [inputHistory]);
+
+    useEffect(() => {
+      if (keepHistoryHighlightTop) {
+        setKeepHistoryHighlightTop(false);
+      }
+    }, [historyLimit, keepHistoryHighlightTop]);
+
     useLayoutEffect(() => {
       if (!suggestionsVisible) {
         return;
@@ -250,7 +276,6 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newText = e.target.value;
       setText(newText);
-      setHistoryIndex(-1);
 
       const word = getCurrentWord(newText, e.target.selectionStart);
       setHighlightedSuggestionIndex(-1);
@@ -314,7 +339,6 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       setCurrentWord('');
       setSuggestionsVisible(false);
       setHighlightedSuggestionIndex(-1);
-      setHistoryIndex(-1);
     };
 
     const handleSubmit = () => {
@@ -371,7 +395,36 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
         }
       }
 
-      if (suggestionsVisible) {
+      if (historyMenuVisible) {
+        switch (e.key) {
+          case 'ArrowUp':
+            e.preventDefault();
+            if (highlightedHistoryItemIndex === 0) {
+              loadMoreHistory();
+            } else {
+              setHighlightedHistoryItemIndex((prev) => Math.max(prev - 1, 0));
+            }
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            setHighlightedHistoryItemIndex((prev) => Math.min(prev + 1, historyItems.length - 1));
+            break;
+          case 'Enter':
+            e.preventDefault();
+            if (historyItems[highlightedHistoryItemIndex]) {
+              setText(historyItems[highlightedHistoryItemIndex]);
+            }
+            setHistoryMenuVisible(false);
+            break;
+          case 'Escape':
+            e.preventDefault();
+            setHistoryMenuVisible(false);
+            break;
+          default:
+            setHistoryMenuVisible(false);
+            break;
+        }
+      } else if (suggestionsVisible) {
         switch (e.key) {
           case 'Enter':
             if (highlightedSuggestionIndex !== -1) {
@@ -420,28 +473,11 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
             }
             break;
           case 'ArrowUp':
-            if (text === '' && inputHistory.length > 0) {
+            if (text === '' && historyItems.length > 0) {
               e.preventDefault();
-              const newIndex = historyIndex === -1 ? 0 : Math.min(historyIndex + 1, inputHistory.length - 1);
-              setHistoryIndex(newIndex);
-              setText(inputHistory[newIndex]);
-            } else if (historyIndex !== -1) {
-              e.preventDefault();
-              const newIndex = Math.min(historyIndex + 1, inputHistory.length - 1);
-              setHistoryIndex(newIndex);
-              setText(inputHistory[newIndex]);
-            }
-            break;
-          case 'ArrowDown':
-            if (historyIndex !== -1) {
-              e.preventDefault();
-              const newIndex = historyIndex - 1;
-              if (newIndex === -1) {
-                setText('');
-              } else {
-                setText(inputHistory[newIndex]);
-              }
-              setHistoryIndex(newIndex);
+              setHistoryLimit(HISTORY_MENU_CHUNK_SIZE);
+              setHistoryMenuVisible(true);
+              setHighlightedHistoryItemIndex(historyItems.length - 1);
             }
             break;
         }
@@ -576,6 +612,20 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
               </div>
             ))}
           </div>
+        )}
+        {historyMenuVisible && historyItems.length > 0 && (
+          <InputHistoryMenu
+            items={historyItems}
+            highlightedIndex={highlightedHistoryItemIndex}
+            setHighlightedIndex={setHighlightedHistoryItemIndex}
+            keepHighlightAtTop={keepHistoryHighlightTop}
+            onScrollTop={loadMoreHistory}
+            onSelect={(item) => {
+              setText(item);
+              setHistoryMenuVisible(false);
+            }}
+            onClose={() => setHistoryMenuVisible(false)}
+          />
         )}
       </div>
     );
