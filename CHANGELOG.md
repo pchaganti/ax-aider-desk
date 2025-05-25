@@ -13,6 +13,7 @@
 - correctly showing many recent project in open project dialog
 - using carousel to projects list when there are many opened projects
 - warning for already open projects in Open Project dialog
+- added missing usage tokens and cost on tool messages
 
 ## [0.14.1]
 

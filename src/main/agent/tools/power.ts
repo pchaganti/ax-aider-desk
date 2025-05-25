@@ -89,7 +89,7 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
   const fileReadTool = tool({
     description: POWER_TOOL_DESCRIPTIONS[TOOL_FILE_READ],
     parameters: z.object({
-      filePath: z.string().describe('The path to the file to be read (relative to the project root).'),
+      filePath: z.string().describe('The path to the file to be read (relative to the project root or absolute if outside of project directory).'),
     }),
     execute: async ({ filePath }, { toolCallId }) => {
       project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_READ, { filePath });

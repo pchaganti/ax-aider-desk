@@ -234,6 +234,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
           toolName,
           args: args || {},
           content: response || '',
+          usageReport,
         };
         return toolMessage;
       };
@@ -250,7 +251,8 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
             ...createNewToolMessage(),
             ...toolMessage,
             content: response || '',
-          };
+            usageReport,
+          } as ToolMessage;
           return updatedMessages;
         } else {
           return [...nonLoadingMessages, createNewToolMessage(), ...loadingMessages];
