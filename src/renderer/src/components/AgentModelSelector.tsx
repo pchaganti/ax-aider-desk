@@ -1,7 +1,8 @@
-import { forwardRef, useCallback, useEffect, useMemo, useRef, useState, KeyboardEvent } from 'react';
+import { forwardRef, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdEdit, MdKeyboardArrowUp } from 'react-icons/md';
-import { LlmProvider, PROVIDER_MODELS, getActiveProvider, isOllamaProvider } from '@common/llm-providers';
+import { AVAILABLE_PROVIDERS, isOllamaProvider, PROVIDER_MODELS } from '@common/agent';
+import { AgentProfile, SettingsData } from '@common/types';
 
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { IconButton } from '@/components/common/IconButton';
@@ -9,12 +10,14 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { useOllamaModels } from '@/hooks/useOllamaModels';
 import { useSettings } from '@/context/SettingsContext';
+import { useProjectSettings } from '@/context/ProjectSettingsContext';
 
 type Props = Record<string, never>;
 
 export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _ref) => {
   const { t } = useTranslation();
   const { settings, saveSettings } = useSettings();
+  const { projectSettings } = useProjectSettings();
   const [highlightedModelIndex, setHighlightedModelIndex] = useState(-1);
   const [visible, show, hide] = useBooleanState(false);
   const [settingsDialogVisible, showSettingsDialog, hideSettingsDialog] = useBooleanState(false);
@@ -29,37 +32,51 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
     }
   }, [visible]);
 
-  const activeProvider = useMemo(() => (settings?.agentConfig ? getActiveProvider(settings.agentConfig.providers) : null), [settings?.agentConfig]);
+  const activeAgentProfile = useMemo(() => {
+    return settings?.agentProfiles.find((profile) => profile.id === projectSettings?.agentProfileId);
+  }, [projectSettings?.agentProfileId, settings?.agentProfiles]);
 
   const ollamaBaseUrl = useMemo(() => {
-    const provider = settings?.agentConfig?.providers.find((p) => isOllamaProvider(p));
-    return provider && isOllamaProvider(provider) ? provider.baseUrl : '';
-  }, [settings?.agentConfig?.providers]);
+    const ollamaProvider = settings?.llmProviders['ollama'];
+    return ollamaProvider && isOllamaProvider(ollamaProvider) ? ollamaProvider.baseUrl : '';
+  }, [settings?.llmProviders]);
 
   const ollamaModels = useOllamaModels(ollamaBaseUrl);
 
   const agentModels = useMemo(() => {
-    if (!settings?.agentConfig?.providers) {
-      return [];
-    }
     const models: string[] = [];
-    settings.agentConfig.providers.forEach((provider) => {
-      const providerModels = isOllamaProvider(provider) ? ollamaModels : Object.keys(PROVIDER_MODELS[provider.name]?.models || {});
-      providerModels.forEach((modelName) => {
-        models.push(`${provider.name}/${modelName}`);
-      });
+    AVAILABLE_PROVIDERS.forEach((provider) => {
+      switch (provider) {
+        case 'ollama':
+          if (ollamaModels.length > 0) {
+            models.push(...ollamaModels.map((model) => `ollama/${model}`));
+          }
+          break;
+        case 'openrouter':
+        case 'openai-compatible': {
+          const providerModel = settings?.llmProviders[provider]?.model;
+          if (providerModel) {
+            models.push(`${provider}/${providerModel}`);
+          }
+          break;
+        }
+        default:
+          models.push(...Object.keys(PROVIDER_MODELS[provider]?.models || {}).map((model) => `${provider}/${model}`));
+          // For any other provider, we assume it has a known set of models
+          break;
+      }
     });
     // Add the currently selected model if it's not in the known list (custom model)
-    if (activeProvider && !models.some((m) => m === `${activeProvider.name}/${activeProvider.model}`)) {
-      const currentSelection = `${activeProvider.name}/${activeProvider.model}`;
+    if (activeAgentProfile && !models.some((model) => model === `${activeAgentProfile.provider}/${activeAgentProfile.model}`)) {
+      const currentSelection = `${activeAgentProfile.provider}/${activeAgentProfile.model}`;
       if (!models.includes(currentSelection)) {
         models.unshift(currentSelection); // Add to the beginning for visibility
       }
     }
-    return models.sort(); // Sort alphabetically for consistency
-  }, [settings?.agentConfig?.providers, activeProvider, ollamaModels]);
+    return models;
+  }, [activeAgentProfile, ollamaModels, settings?.llmProviders]);
 
-  const selectedModelDisplay = activeProvider ? `${activeProvider.name}/${activeProvider.model}` : t('common.notSet');
+  const selectedModelDisplay = activeAgentProfile ? `${activeAgentProfile.provider}/${activeAgentProfile.model}` : t('common.notSet');
 
   const toggleVisible = useCallback(() => {
     if (visible) {
@@ -71,7 +88,7 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
 
   const onModelSelected = useCallback(
     (selectedModelString: string) => {
-      if (!settings?.agentConfig) {
+      if (!settings) {
         return;
       }
 
@@ -82,34 +99,25 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
         return; // Invalid format
       }
 
-      let providerFound = false;
-      const updatedProviders = settings.agentConfig.providers.map((provider) => {
-        if (provider.name === providerName) {
-          providerFound = true;
-          return { ...provider, model: modelName, active: true };
+      const updatedProfiles = settings?.agentProfiles.map((profile) => {
+        if (profile.id === activeAgentProfile?.id) {
+          return {
+            ...profile,
+            model: modelName,
+            provider: providerName,
+          } as AgentProfile;
         }
-        return { ...provider, active: false };
+        return profile;
       });
 
-      // Handle case where the selected provider wasn't in the initial list (shouldn't happen with current logic, but good practice)
-      if (!providerFound) {
-        // eslint-disable-next-line no-console
-        console.error(`Provider ${providerName} not found in configured providers.`);
-        // Optionally, add the provider if desired, or just return
-        return;
-      }
-
-      const updatedSettings = {
+      const updatedSettings: SettingsData = {
         ...settings,
-        agentConfig: {
-          ...settings.agentConfig,
-          providers: updatedProviders as LlmProvider[], // Ensure correct type
-        },
+        agentProfiles: updatedProfiles || [],
       };
       void saveSettings(updatedSettings);
       hide();
     },
-    [settings, saveSettings, hide],
+    [settings, saveSettings, hide, activeAgentProfile?.id],
   );
 
   const onModelSelectorKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -118,7 +126,13 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
         e.preventDefault();
         setHighlightedModelIndex((prev) => {
           const newIndex = Math.min(prev + 1, agentModels.length - 1);
-          setTimeout(() => highlightedModelRef.current?.scrollIntoView({ block: 'nearest' }), 0);
+          setTimeout(
+            () =>
+              highlightedModelRef.current?.scrollIntoView({
+                block: 'nearest',
+              }),
+            0,
+          );
           return newIndex;
         });
         break;
@@ -126,7 +140,13 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
         e.preventDefault();
         setHighlightedModelIndex((prev) => {
           const newIndex = Math.max(prev - 1, 0);
-          setTimeout(() => highlightedModelRef.current?.scrollIntoView({ block: 'nearest' }), 0);
+          setTimeout(
+            () =>
+              highlightedModelRef.current?.scrollIntoView({
+                block: 'nearest',
+              }),
+            0,
+          );
           return newIndex;
         });
         break;
@@ -163,7 +183,7 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
     );
   };
 
-  if (!activeProvider) {
+  if (!activeAgentProfile) {
     return <div className="text-xs text-neutral-400">{t('modelSelector.noActiveAgentProvider')}</div>;
   }
 

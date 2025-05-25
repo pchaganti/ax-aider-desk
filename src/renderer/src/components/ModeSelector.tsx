@@ -8,8 +8,6 @@ import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md';
 import { Mode } from '@common/types';
 import { useTranslation } from 'react-i18next';
 
-import { AgentSelector } from './McpSelector';
-
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 type ModeConfig = {
@@ -79,8 +77,6 @@ export const ModeSelector = ({ mode, onModeChange }: Props) => {
         <span className="mb-[-2px] ml-1 text-xxs">{t(currentModeLabelKey)}</span>
         {modeSelectorVisible ? <MdKeyboardArrowUp className="w-4 h-4 ml-0.5" /> : <MdKeyboardArrowDown className="w-4 h-4 ml-0.5" />}
       </button>
-
-      {mode === 'agent' && <AgentSelector />}
 
       {modeSelectorVisible && (
         <div className="absolute bottom-full mb-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-10 min-w-[150px]">

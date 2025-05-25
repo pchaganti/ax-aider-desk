@@ -3,7 +3,7 @@ import path from 'path';
 import { homedir } from 'os';
 
 import dotenv from 'dotenv';
-import { ContextFile, ContextMessage, McpTool, QuestionData, SettingsData, ToolApprovalState, UsageReportData } from '@common/types';
+import { AgentProfile, ContextFile, ContextMessage, McpTool, QuestionData, SettingsData, ToolApprovalState, UsageReportData } from '@common/types';
 import {
   APICallError,
   type CoreMessage,
@@ -16,13 +16,14 @@ import {
   type ToolExecutionOptions,
   type ToolSet,
 } from 'ai';
-import { calculateCost, delay, extractServerNameToolName, TOOL_GROUP_NAME_SEPARATOR } from '@common/utils';
-import { getActiveProvider, LlmProvider } from '@common/llm-providers';
+import { calculateCost, delay, extractServerNameToolName, getActiveAgentProfile } from '@common/utils';
+import { getLlmProviderConfig, LlmProviderName } from '@common/agent';
 // @ts-expect-error gpt-tokenizer is not typed
 import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
 import { jsonSchemaToZod } from '@n8n/json-schema-to-zod';
 import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
 import { ZodSchema } from 'zod';
+import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import { parseAiderEnv } from '../utils';
 import logger from '../logger';
@@ -131,11 +132,10 @@ export class Agent {
       .join('\n\n'); // Join sections into a single string
   }
 
-  private async getContextFilesMessages(project: Project): Promise<CoreMessage[]> {
-    const { agentConfig } = this.store.getSettings();
+  private async getContextFilesMessages(project: Project, profile: AgentProfile): Promise<CoreMessage[]> {
     const messages: CoreMessage[] = [];
 
-    if (agentConfig.includeContextFiles) {
+    if (profile.includeContextFiles) {
       const contextFiles = project.getContextFiles();
       if (contextFiles.length > 0) {
         // Separate readonly and editable files
@@ -184,24 +184,13 @@ export class Agent {
     return messages;
   }
 
-  private async getAvailableTools(project: Project): Promise<ToolSet> {
-    const { agentConfig } = this.store.getSettings();
-    const activeProvider = getActiveProvider(agentConfig.providers);
-    if (!activeProvider) {
-      throw new Error('No active MCP provider found');
-    }
-
+  private async getAvailableTools(project: Project, profile: AgentProfile): Promise<ToolSet> {
     const mcpConnectors = await this.mcpManager.getConnectors();
 
     // Build the toolSet directly from enabled clients and tools
     const toolSet: ToolSet = mcpConnectors.reduce((acc, mcpConnector) => {
-      // Skip if serverName is not specified in agentConfig.mcpServers
-      if (!(mcpConnector.serverName in agentConfig.mcpServers)) {
-        return acc;
-      }
-
-      // Skip disabled servers
-      if (agentConfig.disabledServers.includes(mcpConnector.serverName)) {
+      // Skip if serverName is not in the profile's enabledServers
+      if (!profile.enabledServers.includes(mcpConnector.serverName)) {
         return acc;
       }
 
@@ -209,8 +198,8 @@ export class Agent {
       mcpConnector.tools.forEach((tool) => {
         const toolId = `${mcpConnector.serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`;
 
-        // Check approval state first
-        const approvalState = agentConfig.toolApprovals[toolId];
+        // Check approval state first from the profile
+        const approvalState = profile.toolApprovals[toolId];
 
         // Skip tools marked as 'Never' approved
         if (approvalState === ToolApprovalState.Never) {
@@ -218,19 +207,19 @@ export class Agent {
           return; // Do not add the tool if it's never approved
         }
 
-        acc[toolId] = this.convertMpcToolToAiSdkTool(activeProvider, mcpConnector.serverName, project, this.store, mcpConnector.client, tool);
+        acc[toolId] = this.convertMpcToolToAiSdkTool(profile.provider, mcpConnector.serverName, project, profile, mcpConnector.client, tool);
       });
 
       return acc;
     }, {} as ToolSet);
 
-    if (agentConfig.useAiderTools) {
-      const aiderTools = createAiderToolset(project);
+    if (profile.useAiderTools) {
+      const aiderTools = createAiderToolset(project, profile);
       Object.assign(toolSet, aiderTools);
     }
 
-    if (agentConfig.usePowerTools) {
-      const powerTools = createPowerToolset(project);
+    if (profile.usePowerTools) {
+      const powerTools = createPowerToolset(project, profile);
       Object.assign(toolSet, powerTools);
     }
 
@@ -242,17 +231,17 @@ export class Agent {
   }
 
   private convertMpcToolToAiSdkTool(
-    provider: LlmProvider,
+    providerName: LlmProviderName,
     serverName: string,
     project: Project,
-    store: Store,
+    profile: AgentProfile,
     mcpClient: McpSdkClient,
     toolDef: McpTool,
   ): Tool {
     const toolId = `${serverName}${TOOL_GROUP_NAME_SEPARATOR}${toolDef.name}`;
     let zodSchema: ZodSchema;
     try {
-      zodSchema = jsonSchemaToZod(this.fixInputSchema(provider, toolDef.inputSchema));
+      zodSchema = jsonSchemaToZod(this.fixInputSchema(providerName, toolDef.inputSchema));
     } catch (e) {
       logger.error(`Failed to convert JSON schema to Zod for tool ${toolDef.name}:`, e);
       // Fallback to a generic object schema if conversion fails
@@ -261,9 +250,7 @@ export class Agent {
 
     const execute = async (args: { [x: string]: unknown } | undefined, { toolCallId }: ToolExecutionOptions) => {
       // --- Tool Approval Logic ---
-      const currentSettings = store.getSettings();
-      const currentAgentConfig = currentSettings.agentConfig; // Use current config
-      const currentApprovalState = currentAgentConfig.toolApprovals[toolId] || ToolApprovalState.Always; // Default to Always
+      const currentApprovalState = profile.toolApprovals[toolId] || ToolApprovalState.Always; // Default to Always
 
       if (currentApprovalState === ToolApprovalState.Never) {
         logger.warn(`Tool execution denied (Never): ${toolId}`);
@@ -297,9 +284,9 @@ export class Agent {
       }
       // --- End Tool Approval Logic ---
 
-      // Enforce minimum time between tool calls (using potentially updated agentConfig)
+      // Enforce minimum time between tool calls
       const timeSinceLastCall = Date.now() - this.lastToolCallTime;
-      const currentMinTime = currentAgentConfig.minTimeBetweenToolCalls; // Use current value
+      const currentMinTime = profile.minTimeBetweenToolCalls;
       const remainingDelay = currentMinTime - timeSinceLastCall;
 
       if (remainingDelay > 0) {
@@ -345,8 +332,8 @@ export class Agent {
   /**
    * Fixes the input schema for various providers.
    */
-  private fixInputSchema(provider: LlmProvider, inputSchema: JsonSchema): JsonSchema {
-    if (provider.name === 'gemini') {
+  private fixInputSchema(provider: LlmProviderName, inputSchema: JsonSchema): JsonSchema {
+    if (provider === 'gemini') {
       // Deep clone to avoid modifying the original schema
       const fixedSchema = JSON.parse(JSON.stringify(inputSchema));
 
@@ -399,11 +386,11 @@ export class Agent {
   }
 
   async runAgent(project: Project, prompt: string): Promise<ContextMessage[]> {
-    const { agentConfig } = this.store.getSettings();
-    logger.debug('McpConfig:', agentConfig);
+    const settings = this.store.getSettings();
+    const profile = getActiveAgentProfile(settings, this.store.getProjectSettings(project.baseDir));
+    logger.debug('AgentProfile:', profile);
 
-    const activeProvider = getActiveProvider(agentConfig.providers);
-    if (!activeProvider) {
+    if (!profile) {
       throw new Error('No active MCP provider found');
     }
 
@@ -412,20 +399,20 @@ export class Agent {
 
     // Track new messages created during this run
     const agentMessages: CoreMessage[] = [{ role: 'user', content: prompt }];
-    const messages = await this.prepareMessages(project);
+    const messages = await this.prepareMessages(project, profile);
 
     // add user message
     messages.push(...agentMessages);
 
     try {
       // reinitialize MCP clients for the current project and wait for them to be ready
-      await this.mcpManager.initMcpConnectors(agentConfig.mcpServers, project.baseDir);
+      await this.mcpManager.initMcpConnectors(settings.mcpServers, project.baseDir);
     } catch (error) {
       logger.error('Error reinitializing MCP clients:', error);
       project.addLogMessage('error', `Error reinitializing MCP clients: ${error}`);
     }
 
-    const toolSet = await this.getAvailableTools(project);
+    const toolSet = await this.getAvailableTools(project, profile);
 
     logger.info(`Running prompt with ${Object.keys(toolSet).length} tools.`);
     logger.debug('Tools:', {
@@ -433,13 +420,14 @@ export class Agent {
     });
 
     try {
-      const model = createLlm(activeProvider, await this.getLlmEnv(project));
+      const llmProvider = getLlmProviderConfig(profile.provider, settings);
+      const model = createLlm(llmProvider, await this.getLlmEnv(project));
       const systemPrompt = await getSystemPrompt(
         project.baseDir,
-        agentConfig.useAiderTools,
-        agentConfig.usePowerTools,
-        agentConfig.includeContextFiles,
-        agentConfig.customInstructions,
+        profile.useAiderTools,
+        profile.usePowerTools,
+        profile.includeContextFiles,
+        profile.customInstructions,
       );
 
       // repairToolCall function that attempts to repair tool calls
@@ -549,8 +537,8 @@ export class Agent {
         messages,
         tools: toolSet,
         abortSignal: this.abortController.signal,
-        maxSteps: agentConfig.maxIterations,
-        maxTokens: agentConfig.maxTokens,
+        maxSteps: profile.maxIterations,
+        maxTokens: profile.maxTokens,
         temperature: 0, // Keep deterministic for agent behavior
         onError: ({ error }) => {
           logger.error('Error during prompt:', { error });
@@ -591,7 +579,7 @@ export class Agent {
             return;
           }
 
-          this.processStep<typeof toolSet>(currentResponseId, stepResult, project, activeProvider);
+          this.processStep<typeof toolSet>(currentResponseId, stepResult, project, profile);
 
           currentResponseId = null;
         },
@@ -611,7 +599,7 @@ export class Agent {
 
       logger.error('Error running prompt:', error);
       if (error instanceof Error && (error.message.includes('API key') || error.message.includes('credentials'))) {
-        project.addLogMessage('error', `Error running MCP servers. ${error.message}. Configure credentials in the Settings -> MCP Config tab.`);
+        project.addLogMessage('error', `Error running MCP servers. ${error.message}. Configure credentials in the Settings -> Agent -> Providers.`);
       } else {
         project.addLogMessage('error', `Error running MCP servers: ${error instanceof Error ? error.message : String(error)}`);
       }
@@ -667,12 +655,11 @@ export class Agent {
     return this.aiderEnv;
   }
 
-  private async prepareMessages(project: Project): Promise<CoreMessage[]> {
-    const { agentConfig } = this.store.getSettings();
+  private async prepareMessages(project: Project, profile: AgentProfile): Promise<CoreMessage[]> {
     const messages: CoreMessage[] = [];
 
     // Add repo map if enabled
-    if (agentConfig.includeRepoMap) {
+    if (profile.includeRepoMap) {
       const repoMap = project.getRepoMap();
       if (repoMap) {
         messages.push({
@@ -689,27 +676,26 @@ export class Agent {
     // Add message history
     messages.push(...project.getContextMessages());
 
-    if (agentConfig.includeContextFiles) {
+    if (profile.includeContextFiles) {
       // Get and store new context files messages
-      const contextFilesMessages = await this.getContextFilesMessages(project);
+      const contextFilesMessages = await this.getContextFilesMessages(project, profile);
       messages.push(...contextFilesMessages);
     }
 
     return messages;
   }
 
-  async estimateTokens(project: Project): Promise<number> {
+  async estimateTokens(project: Project, profile: AgentProfile): Promise<number> {
     try {
-      const { agentConfig } = this.store.getSettings();
-      const toolSet = await this.getAvailableTools(project);
+      const toolSet = await this.getAvailableTools(project, profile);
       const systemPrompt = await getSystemPrompt(
         project.baseDir,
-        agentConfig.useAiderTools,
-        agentConfig.usePowerTools,
-        agentConfig.includeContextFiles,
-        agentConfig.customInstructions,
+        profile.useAiderTools,
+        profile.usePowerTools,
+        profile.includeContextFiles,
+        profile.customInstructions,
       );
-      const messages = await this.prepareMessages(project);
+      const messages = await this.prepareMessages(project, profile);
 
       // Format tools for the prompt
       const toolDefinitions = Object.entries(toolSet).map(([name, tool]) => ({
@@ -744,7 +730,7 @@ export class Agent {
     currentResponseId: string | null,
     { reasoning, text, toolCalls, toolResults, finishReason, usage }: StepResult<TOOLS>,
     project: Project,
-    activeProvider: LlmProvider,
+    profile: AgentProfile,
   ): void {
     logger.info(`Step finished. Reason: ${finishReason}`, {
       reasoning: reasoning?.substring(0, 100), // Log truncated reasoning
@@ -754,7 +740,7 @@ export class Agent {
       usage,
     });
 
-    const messageCost = calculateCost(activeProvider, usage.promptTokens, usage.completionTokens);
+    const messageCost = calculateCost(profile, usage.promptTokens, usage.completionTokens);
     const usageReport: UsageReportData = {
       sentTokens: usage.promptTokens,
       receivedTokens: usage.completionTokens,

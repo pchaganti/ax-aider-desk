@@ -115,7 +115,7 @@ export const setupIpcHandlers = (
 
     store.setOpenProjects(updatedProjects);
 
-    void mcpManager.initMcpConnectors(store.getSettings().agentConfig.mcpServers, baseDir);
+    void mcpManager.initMcpConnectors(store.getSettings().mcpServers, baseDir);
 
     return updatedProjects;
   });

@@ -10,6 +10,7 @@ import getCaretCoordinates from 'textarea-caret';
 
 import { showErrorNotification } from '@/utils/notifications';
 import { ModeSelector } from '@/components/ModeSelector';
+import { AgentSelector } from '@/components/McpSelector';
 import { InputHistoryMenu } from '@/components/InputHistoryMenu';
 
 const COMMANDS = ['/code', '/context', '/agent', '/ask', '/architect', '/add', '/model', '/read-only'];
@@ -57,7 +58,7 @@ type Props = {
   clearMessages: () => void;
   scrapeWeb: (url: string) => void;
   question?: QuestionData | null;
-  answerQuestion: (answer: string) => void; // Changed to required as it's always passed
+  answerQuestion: (answer: string) => void;
   interruptResponse: () => void;
   runCommand: (command: string) => void;
   runTests: (testCmd?: string) => void;
@@ -278,7 +279,6 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       setText(newText);
 
       const word = getCurrentWord(newText, e.target.selectionStart);
-      setHighlightedSuggestionIndex(-1);
 
       if (question) {
         if (question?.answers) {
@@ -302,6 +302,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
         setSuggestionsVisible(matched.length > 0);
       } else if (word.length > 0) {
         setCurrentWord(word);
+        setHighlightedSuggestionIndex(-1);
 
         if (suggestionsVisible) {
           const matched = matchSorter(words, word);
@@ -582,8 +583,9 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
               </button>
             )}
           </div>
-          <div className="relative w-full h-7">
+          <div className="relative w-full flex items-center gap-1.5">
             <ModeSelector mode={mode} onModeChange={handleModeChange} />
+            {mode === 'agent' && <AgentSelector />}
           </div>
         </div>
         {suggestionsVisible && filteredSuggestions.length > 0 && (

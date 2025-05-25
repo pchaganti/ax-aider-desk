@@ -89,8 +89,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
                 key={opt.value}
                 onClick={() => handleOptionSelect(opt)}
                 className={`relative cursor-default py-2 pr-9 pl-3 text-neutral-100 select-none text-sm ${sizeClasses[size]}
-                ${selectedOption?.value === opt.value ? 'bg-neutral-700' : 'hover:bg-neutral-700'}
-              `}
+                ${selectedOption?.value === opt.value ? 'bg-neutral-700' : 'hover:bg-neutral-700'}`}
                 role="option"
               >
                 <div className="flex items-center">

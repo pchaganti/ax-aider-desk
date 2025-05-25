@@ -10,6 +10,7 @@ import { SettingsProvider, useSettings } from '@/context/SettingsContext';
 import 'react-toastify/dist/ReactToastify.css';
 import { ROUTES } from '@/utils/routes';
 import '@/i18n';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
 
 const AnimatedRoutes = () => {
   const { i18n } = useTranslation();
@@ -39,6 +40,9 @@ const AnimatedRoutes = () => {
               <Route path="/" element={settings.onboardingFinished ? <Navigate to={ROUTES.Home} replace /> : <Navigate to={ROUTES.Onboarding} replace />} />
             </Routes>
           )}
+          <StyledTooltip id="global-tooltip-sm" />
+          <StyledTooltip id="global-tooltip-md" maxWidth={600} />
+          <StyledTooltip id="global-tooltip-lg" maxWidth="90%" />
         </motion.div>
       </AnimatePresence>
     </div>

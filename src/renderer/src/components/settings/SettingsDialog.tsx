@@ -1,5 +1,5 @@
 import { SettingsData } from '@common/types';
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { isEqual } from 'lodash';
 import { useTranslation } from 'react-i18next';
 
@@ -30,17 +30,15 @@ export const SettingsDialog = ({ onClose, initialTab = 0 }: Props) => {
   }, [localSettings, originalSettings]);
 
   const handleCancel = () => {
-    // Revert language if changed
     if (originalSettings && localSettings?.language !== originalSettings.language) {
       void i18n.changeLanguage(originalSettings.language);
     }
-    // Revert zoom if changed
     if (originalSettings && localSettings?.zoomLevel !== originalSettings.zoomLevel) {
       void window.api.setZoomLevel(originalSettings.zoomLevel ?? 1);
     }
-    // Revert mcpServers if changed
-    if (originalSettings && localSettings && !isEqual(localSettings.agentConfig.mcpServers, originalSettings.agentConfig.mcpServers)) {
-      void window.api.reloadMcpServers(originalSettings.agentConfig.mcpServers);
+    // Updated to use settings.mcpServers directly
+    if (originalSettings && localSettings && !isEqual(localSettings.mcpServers, originalSettings.mcpServers)) {
+      void window.api.reloadMcpServers(originalSettings.mcpServers || {});
     }
     onClose();
   };
@@ -80,7 +78,6 @@ export const SettingsDialog = ({ onClose, initialTab = 0 }: Props) => {
         ...localSettings,
         language,
       });
-
       void i18n.changeLanguage(language);
     }
   };
@@ -117,7 +114,7 @@ export const SettingsDialog = ({ onClose, initialTab = 0 }: Props) => {
       onCancel={handleCancel}
       onConfirm={handleSave}
       confirmButtonText={t('common.save')}
-      width={800}
+      width={1000}
       closeOnEscape
       disabled={!hasChanges}
     >

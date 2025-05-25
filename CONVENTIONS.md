@@ -5,9 +5,8 @@
 - When you create a new component, first look at existing components to see how they're written; then consider framework choice, naming conventions, typing, and other conventions.
 - When you edit a piece of code, first look at the code's surrounding context (especially its imports) to understand the code's choice of frameworks and libraries. Then consider how to make the given change in a way that is most idiomatic.
 - when creating Props type for a component, always use `type Props`
-- do not use React.FC for components as type, if needed use `{}: Props` as argument. Example:
 - do not add `import React from 'react';`
-
+- do not use React.FC for components as type, if needed use `{}: Props` as argument. Example:
 ```tsx
 // bad
 const MyComponent: React.FC<Props> = () => {
@@ -78,3 +77,5 @@ enum Status {
 ```
 
 - when adding some strings to the UI component, always use i18n library and update the translation files: src/common/locales/en.json and src/common/locales/zh.json
+- only add comments that are beneficial and describe some functionality
+- use `clsx` library for conditional classes

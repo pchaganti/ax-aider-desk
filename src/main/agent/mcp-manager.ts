@@ -43,9 +43,13 @@ export class McpManager {
 
     let oldConnector: McpConnector | null = null;
     if (oldConnectorPromise) {
-      oldConnector = await oldConnectorPromise;
+      try {
+        oldConnector = await oldConnectorPromise;
+      } catch (error) {
+        logger.warn(`Error retrieving old MCP connector for server ${serverName}:`, error);
+      }
 
-      if (forceReload || !this.compareServerConfig(oldConnector.serverConfig, config)) {
+      if (oldConnector && (forceReload || !this.compareServerConfig(oldConnector.serverConfig, config))) {
         try {
           await oldConnector.client.close();
           logger.info(`Closed old MCP connector for server: ${serverName}`);
@@ -68,7 +72,7 @@ export class McpManager {
   }
 
   settingsChanged(_: SettingsData, newSettings: SettingsData) {
-    void this.initMcpConnectors(newSettings.agentConfig.mcpServers);
+    void this.initMcpConnectors(newSettings.mcpServers);
   }
 
   async close(): Promise<void> {

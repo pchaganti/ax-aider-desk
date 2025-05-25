@@ -71,7 +71,7 @@ const initWindow = async (store: Store) => {
   const mcpManager = new McpManager();
   const activeProject = store.getOpenProjects().find((project) => project.active);
 
-  void mcpManager.initMcpConnectors(store.getSettings().agentConfig.mcpServers, activeProject?.baseDir);
+  void mcpManager.initMcpConnectors(store.getSettings().mcpServers, activeProject?.baseDir);
 
   const agent = new Agent(store, mcpManager);
 

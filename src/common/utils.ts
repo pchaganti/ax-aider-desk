@@ -1,9 +1,9 @@
 import fs from 'fs/promises';
 
-import { LlmProvider, PROVIDER_MODELS } from './llm-providers';
-import { UsageReportData } from './types';
+import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
-export const TOOL_GROUP_NAME_SEPARATOR = '---';
+import { PROVIDER_MODELS } from './agent';
+import { AgentProfile, ProjectSettings, SettingsData, UsageReportData } from './types';
 
 type TextContent =
   | string
@@ -89,14 +89,14 @@ export const fileExists = async (fileName: string): Promise<boolean> => {
   return (await fs.stat(fileName).catch(() => null)) !== null;
 };
 
-export const calculateCost = (llmProvider: LlmProvider, sentTokens: number, receivedTokens: number) => {
-  const providerModels = PROVIDER_MODELS[llmProvider.name];
+export const calculateCost = (agentProfile: AgentProfile, sentTokens: number, receivedTokens: number) => {
+  const providerModels = PROVIDER_MODELS[agentProfile.provider];
   if (!providerModels) {
     return 0;
   }
 
   // Get the model name directly from the provider
-  const model = llmProvider.model;
+  const model = agentProfile.model;
   if (!model) {
     return 0;
   }
@@ -143,8 +143,7 @@ export const isMessageEmpty = (content: unknown): boolean => {
   return true;
 };
 
-export // Determine language for CodeBlock based on file extension
-const getLanguageFromPath = (path: string): string => {
+export const getLanguageFromPath = (path: string): string => {
   const extension = path.split('.').pop()?.toLowerCase();
   // Add more mappings as needed
   switch (extension) {
@@ -167,4 +166,13 @@ const getLanguageFromPath = (path: string): string => {
     default:
       return 'text'; // Default to plain text
   }
+};
+
+export const getActiveAgentProfile = (settings: SettingsData | null, projectSettings: ProjectSettings | null) => {
+  if (!settings || !projectSettings) {
+    return null;
+  }
+
+  const activeProfile = settings.agentProfiles.find((profile) => profile.id === projectSettings.agentProfileId);
+  return activeProfile || null;
 };

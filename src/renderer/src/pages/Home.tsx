@@ -11,6 +11,7 @@ import { ProjectView } from '@/components/project/ProjectView';
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { useVersions } from '@/hooks/useVersions';
 import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
+import { ProjectSettingsProvider } from '@/context/ProjectSettingsContext';
 
 export const Home = () => {
   const { t } = useTranslation();
@@ -115,15 +116,16 @@ export const Home = () => {
 
   const renderProjectPanels = () =>
     openProjects.map((project) => (
-      <div
-        key={project.baseDir}
-        className="absolute top-0 left-0 w-full h-full"
-        style={{
-          display: activeProject?.baseDir === project.baseDir ? 'block' : 'none',
-        }}
-      >
-        <ProjectView key={project.baseDir} project={project} isActive={activeProject?.baseDir === project.baseDir} />
-      </div>
+      <ProjectSettingsProvider key={project.baseDir} baseDir={project.baseDir}>
+        <div
+          className="absolute top-0 left-0 w-full h-full"
+          style={{
+            display: activeProject?.baseDir === project.baseDir ? 'block' : 'none',
+          }}
+        >
+          <ProjectView project={project} isActive={activeProject?.baseDir === project.baseDir} />
+        </div>
+      </ProjectSettingsProvider>
     ));
 
   const getUpdateTooltip = () => {

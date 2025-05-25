@@ -3,14 +3,16 @@ import path from 'path';
 
 import { tool } from 'ai';
 import { z } from 'zod';
-import { TOOL_GROUP_NAME_SEPARATOR } from '@common/utils';
 import {
+  TOOL_GROUP_NAME_SEPARATOR,
   AIDER_TOOL_GROUP_NAME as TOOL_GROUP_NAME,
   AIDER_TOOL_GET_CONTEXT_FILES as TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_ADD_CONTEXT_FILE as TOOL_ADD_CONTEXT_FILE,
   AIDER_TOOL_DROP_CONTEXT_FILE as TOOL_DROP_CONTEXT_FILE,
   AIDER_TOOL_RUN_PROMPT as TOOL_RUN_PROMPT,
+  AIDER_TOOL_DESCRIPTIONS,
 } from '@common/tools';
+import { AgentProfile, ToolApprovalState } from '@common/types';
 
 import { Project } from '../../project';
 
@@ -18,24 +20,35 @@ import { ApprovalManager } from './approval-manager';
 
 import type { ToolSet } from 'ai';
 
-export const createAiderToolset = (project: Project): ToolSet => {
-  const approvalManager = new ApprovalManager(project);
+export const createAiderToolset = (project: Project, profile: AgentProfile): ToolSet => {
+  const approvalManager = new ApprovalManager(project, profile);
 
   const getContextFilesTool = tool({
-    description: 'Get all files currently in the context for Aider to read or edit',
+    description: AIDER_TOOL_DESCRIPTIONS[TOOL_GET_CONTEXT_FILES],
     parameters: z.object({
       projectDir: z.string().describe("The project directory. Can be '.' for current project."),
     }),
-    execute: async () => {
+    execute: async ({ projectDir }, { toolCallId }) => {
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_GET_CONTEXT_FILES, {
+        projectDir,
+      });
+
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GET_CONTEXT_FILES}`;
+      const questionText = 'Approve getting context files?';
+
+      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+
+      if (!isApproved) {
+        return `Getting context files denied by user. Reason: ${userInput}`;
+      }
+
       const files = project.getContextFiles();
       return JSON.stringify(files);
     },
   });
 
   const addContextFileTool = tool({
-    description: `Adds a file to the Aider context for reading or editing.
-Prerequisite: Before using, check the current context with 'get_context_files'. Do NOT add files already present in the context.
-Use a relative path for files intended for editing within the project. Use an absolute path for read-only files (e.g., outside the project).`,
+    description: AIDER_TOOL_DESCRIPTIONS[TOOL_ADD_CONTEXT_FILE],
     parameters: z.object({
       path: z.string().describe('File path to add to context. Relative to project directory when not read-only. Absolute path should be used when read-only.'),
       readOnly: z.boolean().optional().describe('Whether the file is read-only'),
@@ -45,6 +58,15 @@ Use a relative path for files intended for editing within the project. Use an ab
         path: relativePath,
         readOnly,
       });
+
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_ADD_CONTEXT_FILE}`;
+      const questionText = `Approve adding file '${path}' to context?`;
+
+      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+
+      if (!isApproved) {
+        return `Adding file '${path}' to context denied by user. Reason: ${userInput}`;
+      }
 
       const absolutePath = path.resolve(project.baseDir, relativePath);
       let fileExists = false;
@@ -104,37 +126,29 @@ Use a relative path for files intended for editing within the project. Use an ab
   });
 
   const dropContextFileTool = tool({
-    description: `Removes a file from the Aider context.
-Note: Unless explicitly requested by the user to remove a specific file, this tool should primarily be used to remove files that were previously added using 'add_context_file' (e.g., after a related 'run_prompt' task is completed).`,
+    description: AIDER_TOOL_DESCRIPTIONS[TOOL_DROP_CONTEXT_FILE],
     parameters: z.object({
       path: z.string().describe('File path to remove from context.'),
     }),
-    execute: async ({ path }) => {
+    execute: async ({ path }, { toolCallId }) => {
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_DROP_CONTEXT_FILE, { path });
+
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_DROP_CONTEXT_FILE}`;
+      const questionText = `Approve dropping file '${path}' from context?`;
+
+      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+
+      if (!isApproved) {
+        return `Dropping file '${path}' from context denied by user. Reason: ${userInput}`;
+      }
+
       project.dropFile(path);
       return `Dropped file: ${path}`;
     },
   });
 
   const runPromptTool = tool({
-    description: `Delegates a natural language coding task to the Aider assistant for execution within the current project context.
-Use this tool for:
-- Writing new code.
-- Modifying or refactoring existing code.
-- Explaining code segments.
-- Debugging code.
-- Implementing new features.
-- This tools must be preferred (if not specified by user otherwise) over other tools creating or modifying files, as it is more efficient and effective.
-
-Prerequisites
-- All relevant existing project files for the task MUST be added to the Aider context using 'add_context_file' BEFORE calling this tool.
-
-Input:
-- A clear, complete, and standalone natural language prompt describing the coding task.
-
-Restrictions:
-- Prompts MUST be language-agnostic. Do NOT mention specific programming languages (e.g., Python, JavaScript), libraries, or syntax elements.
-- Treat Aider as a capable programmer; provide sufficient detail but avoid excessive handholding.
-`,
+    description: AIDER_TOOL_DESCRIPTIONS[TOOL_RUN_PROMPT],
     parameters: z.object({
       prompt: z.string().describe('The prompt to run in natural language.'),
     }),
@@ -172,10 +186,20 @@ Restrictions:
     },
   });
 
-  return {
+  const allTools = {
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GET_CONTEXT_FILES}`]: getContextFilesTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_ADD_CONTEXT_FILE}`]: addContextFileTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_DROP_CONTEXT_FILE}`]: dropContextFileTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_RUN_PROMPT}`]: runPromptTool,
   };
+
+  // Filter out tools that are set to Never in toolApprovals
+  const filteredTools: ToolSet = {};
+  for (const [toolId, tool] of Object.entries(allTools)) {
+    if (profile.toolApprovals[toolId] !== ToolApprovalState.Never) {
+      filteredTools[toolId] = tool;
+    }
+  }
+
+  return filteredTools;
 };

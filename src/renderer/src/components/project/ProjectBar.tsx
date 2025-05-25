@@ -1,6 +1,6 @@
-import { ModelsData, SessionData, RawModelInfo, Mode, EditFormat } from '@common/types';
+import { EditFormat, Mode, ModelsData, RawModelInfo, SessionData } from '@common/types';
 import React, { ReactNode, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { BsFilter, BsCodeSlash } from 'react-icons/bs';
+import { BsCodeSlash, BsFilter } from 'react-icons/bs';
 import { CgSpinner, CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
 import { IoMdClose } from 'react-icons/io';
@@ -8,7 +8,6 @@ import { MdHistory } from 'react-icons/md';
 import { IoLogoMarkdown } from 'react-icons/io5';
 import { RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
-import { getActiveProvider } from '@common/llm-providers';
 
 import { IconButton } from '@/components/common/IconButton';
 import { AgentModelSelector } from '@/components/AgentModelSelector';
@@ -233,25 +232,15 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         ) : (
           <div className="flex items-center h-full">
             <div className="flex-grow flex items-center space-x-3">
-              {mode === 'agent' && settings?.agentConfig ? (
-                getActiveProvider(settings.agentConfig.providers) ? (
-                  <>
-                    <div className="flex items-center space-x-1">
-                      <RiRobot2Line className="w-4 h-4 text-neutral-100 mr-1" data-tooltip-id="agent-tooltip" />
-                      <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
-                      <AgentModelSelector />
-                    </div>
-                    <div className="h-3 w-px bg-neutral-600/50"></div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center space-x-1 text-xs text-neutral-400">
-                      <RiRobot2Line className="w-4 h-4 text-neutral-100 mr-1" />
-                      <span>{t('modelSelector.noActiveAgentProvider')}</span>
-                    </div>
-                    <div className="h-3 w-px bg-neutral-600/50"></div>
-                  </>
-                )
+              {mode === 'agent' ? (
+                <>
+                  <div className="flex items-center space-x-1">
+                    <RiRobot2Line className="w-4 h-4 text-neutral-100 mr-1" data-tooltip-id="agent-tooltip" />
+                    <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
+                    <AgentModelSelector />
+                  </div>
+                  <div className="h-3 w-px bg-neutral-600/50"></div>
+                </>
               ) : (
                 <>
                   {mode === 'architect' && (

@@ -1,4 +1,4 @@
-import { LlmProvider } from '@common/llm-providers';
+import { LlmProvider, LlmProviderName } from '@common/agent';
 
 import type { CoreMessage } from 'ai';
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
@@ -116,6 +116,7 @@ export interface ProjectSettings {
   mainModel: string;
   weakModel?: string | null;
   architectModel?: string | null;
+  agentProfileId: string;
   editFormat?: EditFormat | null;
   reasoningEffort?: string;
   thinkingTokens?: string;
@@ -124,9 +125,9 @@ export interface ProjectSettings {
 }
 
 export interface ProjectData {
-  active?: boolean;
+  active: boolean;
   baseDir: string;
-  settings?: ProjectSettings;
+  settings: ProjectSettings;
 }
 
 export interface RawModelInfo {
@@ -162,6 +163,23 @@ export enum StartupMode {
   Last = 'last',
 }
 
+export interface AgentProfile {
+  id: string;
+  name: string;
+  provider: LlmProviderName;
+  model: string;
+  maxIterations: number;
+  maxTokens: number;
+  minTimeBetweenToolCalls: number; // in milliseconds
+  enabledServers: string[];
+  toolApprovals: Record<string, ToolApprovalState>;
+  includeContextFiles: boolean;
+  includeRepoMap: boolean;
+  usePowerTools: boolean;
+  useAiderTools: boolean;
+  customInstructions: string;
+}
+
 export interface SettingsData {
   onboardingFinished?: boolean;
   language: string;
@@ -176,22 +194,9 @@ export interface SettingsData {
   models: {
     preferred: string[];
   };
-  agentConfig: AgentConfig;
-}
-
-export interface AgentConfig {
-  providers: LlmProvider[];
-  maxIterations: number;
-  maxTokens: number;
-  minTimeBetweenToolCalls: number; // in milliseconds
+  agentProfiles: AgentProfile[];
   mcpServers: Record<string, McpServerConfig>;
-  disabledServers: string[];
-  toolApprovals: Record<string, ToolApprovalState>;
-  includeContextFiles: boolean;
-  includeRepoMap: boolean;
-  usePowerTools: boolean;
-  useAiderTools: boolean;
-  customInstructions: string;
+  llmProviders: Record<LlmProviderName, LlmProvider>;
 }
 
 export interface UsageReportData {
@@ -232,6 +237,12 @@ export interface FileEdit {
   path: string;
   original: string;
   updated: string;
+}
+
+export interface GenericTool {
+  groupName: string;
+  name: string;
+  description: string;
 }
 
 export interface McpTool {

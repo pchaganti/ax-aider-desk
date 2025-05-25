@@ -17,7 +17,7 @@ import {
   isOpenAiProvider,
   isOpenRouterProvider, // Added import
   LlmProvider,
-} from '@common/llm-providers';
+} from '@common/agent';
 
 import type { LanguageModel } from 'ai';
 

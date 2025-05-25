@@ -7,6 +7,9 @@
 - added loading message when auto linting and showing output of auto test command
 - loading list of available models from Ollama server
 - popup menu for input history
+- agent profiles
+- added gemini-2.5-flash-preview-05-20 to agent models
+- added claude-sonnet-4-20250514 to agent models
 
 ## [0.14.1]
 

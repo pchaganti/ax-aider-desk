@@ -2,7 +2,7 @@
 import { DEFAULT_SETTINGS } from '../store';
 
 export const migrateSettingsV2toV3 = (settings: any): any => {
-  const agentSettings = settings.mcpAgent || DEFAULT_SETTINGS.agentConfig;
+  const agentSettings = settings.mcpAgent || (DEFAULT_SETTINGS as unknown as any).agentConfig;
 
   return {
     ...settings,

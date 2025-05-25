@@ -1,16 +1,18 @@
 import { ProjectData, ProjectSettings, SettingsData, StartupMode, WindowState } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { PROVIDER_MODELS } from '@common/llm-providers';
+import { DEFAULT_AGENT_PROFILE, LlmProvider, LlmProviderName } from '@common/agent';
 import { parseAiderEnv } from 'src/main/utils';
+import { v4 as uuidv4 } from 'uuid';
 
 import logger from '../logger';
 
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
 import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
 import { migrateSettingsV2toV3 } from './migrations/v2-to-v3';
+import { migrateOpenProjectsV3toV4, migrateSettingsV3toV4 } from './migrations/v3-to-v4';
 
-const SONNET_MODEL = 'claude-3-7-sonnet-20250219';
-const GEMINI_MODEL = 'gemini/gemini-2.5-pro-preview-03-25';
+const SONNET_MODEL = 'claude-sonnet-4-20250514';
+const GEMINI_MODEL = 'gemini/gemini-2.5-pro-preview-05-06';
 const OPEN_AI_DEFAULT_MODEL = 'gpt-4.1';
 const DEEPSEEK_MODEL = 'deepseek/deepseek-chat';
 
@@ -29,27 +31,9 @@ export const DEFAULT_SETTINGS: SettingsData = {
   models: {
     preferred: [SONNET_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, DEEPSEEK_MODEL],
   },
-  agentConfig: {
-    providers: [
-      {
-        name: 'anthropic',
-        apiKey: '',
-        model: Object.keys(PROVIDER_MODELS.anthropic.models)[0],
-        active: true,
-      },
-    ],
-    maxIterations: 10,
-    maxTokens: 1000,
-    minTimeBetweenToolCalls: 0,
-    mcpServers: {},
-    disabledServers: [],
-    toolApprovals: {},
-    includeContextFiles: false,
-    includeRepoMap: false,
-    usePowerTools: false,
-    useAiderTools: true,
-    customInstructions: '',
-  },
+  agentProfiles: [DEFAULT_AGENT_PROFILE],
+  mcpServers: {},
+  llmProviders: {} as Record<LlmProviderName, LlmProvider>,
 };
 
 export const determineMainModel = (settings: SettingsData): string => {
@@ -81,7 +65,7 @@ export const determineMainModel = (settings: SettingsData): string => {
   } else if (env.DEEPSEEK_API_KEY) {
     return DEEPSEEK_MODEL;
   } else if (env.OPENROUTER_API_KEY) {
-    return 'openrouter/google/gemini-2.5-pro-preview-03-25';
+    return 'openrouter/google/gemini-2.5-pro-preview-05-06';
   }
 
   // Default model if no other condition is met
@@ -93,6 +77,7 @@ export const getDefaultProjectSettings = (store: Store): ProjectSettings => {
     mainModel: determineMainModel(store.getSettings()),
     currentMode: 'code',
     renderMarkdown: true,
+    agentProfileId: DEFAULT_AGENT_PROFILE.id,
   };
 };
 
@@ -109,7 +94,7 @@ interface StoreSchema {
   releaseNotes?: string | null;
 }
 
-const CURRENT_SETTINGS_VERSION = 3;
+const CURRENT_SETTINGS_VERSION = 4;
 
 interface CustomStore<T> {
   get<K extends keyof T>(key: K): T[K] | undefined;
@@ -123,19 +108,24 @@ export class Store {
   async init(): Promise<void> {
     const ElectronStore = (await import('electron-store')).default;
     this.store = new ElectronStore<StoreSchema>() as unknown as CustomStore<StoreSchema>;
+
+    const settings = this.store.get('settings');
+    const openProjects = this.store.get('openProjects');
+    if (settings) {
+      this.migrateSettings(settings, openProjects);
+    }
   }
 
   getSettings(): SettingsData {
-    let settings = this.store.get('settings');
-
-    if (settings) {
-      settings = this.migrate(settings);
-    }
+    const settings = this.store.get('settings');
 
     if (!settings) {
-      return DEFAULT_SETTINGS;
+      return {
+        ...DEFAULT_SETTINGS,
+      };
     }
 
+    // Ensure proper merging for nested objects
     return {
       ...DEFAULT_SETTINGS,
       ...settings,
@@ -147,14 +137,19 @@ export class Store {
         ...DEFAULT_SETTINGS.models,
         ...settings?.models,
       },
-      agentConfig: {
-        ...DEFAULT_SETTINGS.agentConfig,
-        ...settings?.agentConfig,
-      },
+      agentProfiles:
+        settings.agentProfiles && settings.agentProfiles.length > 0
+          ? settings.agentProfiles
+          : DEFAULT_SETTINGS.agentProfiles.map((profile) => ({
+              ...profile,
+              id: uuidv4(),
+            })),
+      mcpServers: settings.mcpServers || DEFAULT_SETTINGS.mcpServers,
     };
   }
 
-  private migrate(settings: SettingsData): SettingsData {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private migrateSettings(settings: any, openProjects: any): SettingsData {
     let settingsVersion = this.store.get('settingsVersion') ?? CURRENT_SETTINGS_VERSION;
 
     if (settingsVersion < CURRENT_SETTINGS_VERSION) {
@@ -175,13 +170,17 @@ export class Store {
         settingsVersion = 3;
       }
 
-      // Add more migration steps as needed
+      if (settingsVersion === 3) {
+        settings = migrateSettingsV3toV4(settings);
+        openProjects = migrateOpenProjectsV3toV4(openProjects);
+        settingsVersion = 4;
+      }
 
-      this.store.set('settings', settings);
+      this.store.set('settings', settings as SettingsData);
+      this.store.set('openProjects', openProjects || []);
       this.store.set('settingsVersion', CURRENT_SETTINGS_VERSION);
     }
-
-    return settings;
+    return settings as SettingsData;
   }
 
   saveSettings(settings: SettingsData): void {

@@ -127,7 +127,7 @@ export const McpServerForm = ({ onSave, onCancel, servers }: Props) => {
           {servers && servers.length === 1
             ? t('mcpServer.editServer', { name: servers[0].name })
             : servers && servers.length > 1
-              ? t('settings.agent.editConfig')
+              ? t('settings.agent.editMcpServersConfig')
               : t('mcpServer.addServer')}
         </div>
         {!servers && (

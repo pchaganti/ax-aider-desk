@@ -19,8 +19,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { ResizableBox } from 'react-resizable';
 import { v4 as uuidv4 } from 'uuid';
-import { PROVIDER_MODELS, getActiveProvider } from '@common/llm-providers';
+import { PROVIDER_MODELS } from '@common/agent';
 import clsx from 'clsx';
+import { getActiveAgentProfile } from '@common/utils';
 
 import {
   CommandOutputMessage,
@@ -41,6 +42,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { ContextFiles } from '@/components/ContextFiles';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { useSettings } from '@/context/SettingsContext';
+import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { AddFileDialog } from '@/components/project/AddFileDialog';
 import { ProjectBar, ProjectTopBarRef } from '@/components/project/ProjectBar';
 import { PromptField, PromptFieldRef } from '@/components/PromptField';
@@ -61,6 +63,8 @@ type Props = {
 export const ProjectView = ({ project, isActive = false }: Props) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const { projectSettings, saveProjectSettings } = useProjectSettings();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [processing, setProcessing] = useState(false);
   const [addFileDialogOptions, setAddFileDialogOptions] = useState<AddFileDialogOptions | null>(null);
@@ -73,37 +77,31 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
   const [aiderTotalCost, setAiderTotalCost] = useState(0);
   const [tokensInfo, setTokensInfo] = useState<TokensInfoData | null>(null);
   const [question, setQuestion] = useState<QuestionData | null>(null);
-  const [mode, setMode] = useState<Mode>('code');
-  const [renderMarkdown, setRenderMarkdown] = useState(project.settings?.renderMarkdown ?? false);
   const [showFrozenDialog, setShowFrozenDialog] = useState(false);
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
+
   const processingMessageRef = useRef<ResponseMessage | null>(null);
   const promptFieldRef = useRef<PromptFieldRef>(null);
   const projectTopBarRef = useRef<ProjectTopBarRef>(null);
   const messagesRef = useRef<MessagesRef>(null);
   const frozenTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { renderSearchInput } = useSearchText(messagesRef.current?.container || null, 'absolute top-1 left-1');
+
   const maxInputTokens = useMemo(() => {
-    if (mode === 'agent') {
-      const activeProvider = getActiveProvider(settings?.agentConfig?.providers || []);
-      if (activeProvider) {
-        return PROVIDER_MODELS[activeProvider.name]?.models[activeProvider.model]?.maxInputTokens ?? 0;
+    if (!projectSettings) {
+      return 0;
+    }
+    if (projectSettings.currentMode === 'agent') {
+      const activeAgentProfile = getActiveAgentProfile(settings, projectSettings);
+      if (activeAgentProfile) {
+        return PROVIDER_MODELS[activeAgentProfile.provider]?.models[activeAgentProfile.model]?.maxInputTokens ?? 0;
       }
       return 0;
     } else {
       return aiderModelsData?.info?.max_input_tokens ?? 0;
     }
-  }, [mode, settings, aiderModelsData]);
-  const { renderSearchInput } = useSearchText(messagesRef.current?.container || null, 'absolute top-1 left-1');
-
-  useEffect(() => {
-    const loadProjectSettings = async () => {
-      const settings = await window.api.getProjectSettings(project.baseDir);
-      setMode(settings.currentMode);
-      setRenderMarkdown(settings.renderMarkdown ?? false);
-    };
-
-    void loadProjectSettings();
-  }, [project.baseDir]);
+  }, [projectSettings, settings, aiderModelsData?.info?.max_input_tokens]);
 
   useEffect(() => {
     window.api.startProject(project.baseDir);
@@ -345,7 +343,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
       const userMessage: UserMessage = {
         id: uuidv4(),
         type: 'user',
-        mode: data.mode || 'code',
+        mode: data.mode || projectSettings?.currentMode || 'code', // Use projectSettings.currentMode as fallback
         content: data.content,
       };
 
@@ -516,13 +514,11 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
   };
 
   const handleModeChange = (mode: Mode) => {
-    setMode(mode);
-    window.api.patchProjectSettings(project.baseDir, { currentMode: mode });
+    void saveProjectSettings({ currentMode: mode });
   };
 
   const handleRenderMarkdownChanged = (renderMarkdown: boolean) => {
-    setRenderMarkdown(renderMarkdown);
-    window.api.patchProjectSettings(project.baseDir, { renderMarkdown });
+    void saveProjectSettings({ renderMarkdown });
   };
 
   const runPrompt = (prompt: string) => {
@@ -530,14 +526,18 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
       setQuestion(null);
     }
 
+    if (!projectSettings) {
+      return;
+    } // Should not happen if component is rendered
+
     if (editingMessageIndex !== null) {
       // This submission is an edit of a previous message
       const newMessages = messages.slice(0, editingMessageIndex);
       setEditingMessageIndex(null); // Clear editing state
       setMessages(newMessages);
-      window.api.redoLastUserPrompt(project.baseDir, mode, prompt);
+      window.api.redoLastUserPrompt(project.baseDir, projectSettings.currentMode, prompt);
     } else {
-      window.api.runPrompt(project.baseDir, prompt, mode);
+      window.api.runPrompt(project.baseDir, prompt, projectSettings.currentMode);
     }
   };
 
@@ -586,7 +586,10 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
     // Keep messages up to and excluding the one being redone
     const newMessages = messages.slice(0, lastUserMessageIndex);
     setMessages(newMessages);
-    window.api.redoLastUserPrompt(project.baseDir, mode);
+    if (projectSettings) {
+      // Ensure projectSettings is available
+      window.api.redoLastUserPrompt(project.baseDir, projectSettings.currentMode);
+    }
   };
 
   const handleRemoveMessage = (messageToRemove: Message) => {
@@ -598,6 +601,15 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
 
     setMessages((prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
   };
+
+  if (!projectSettings) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
+        <CgSpinner className="animate-spin w-10 h-10" />
+        <div className="mt-2 text-sm text-center text-white">{t('common.loadingProjectSettings')}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full bg-gradient-to-b from-neutral-950 to-neutral-900 relative">
@@ -614,8 +626,8 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
             baseDir={project.baseDir}
             modelsData={aiderModelsData}
             allModels={availableModels}
-            mode={mode}
-            renderMarkdown={renderMarkdown}
+            mode={projectSettings.currentMode}
+            renderMarkdown={projectSettings.renderMarkdown}
             onModelChange={handleModelChange}
             onRenderMarkdownChanged={handleRenderMarkdownChanged}
             onExportSessionToImage={exportMessagesToImage}
@@ -629,7 +641,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
             baseDir={project.baseDir}
             messages={messages}
             allFiles={allFiles}
-            renderMarkdown={renderMarkdown}
+            renderMarkdown={projectSettings.renderMarkdown}
             removeMessage={handleRemoveMessage}
             redoLastUserPrompt={handleRedoLastUserPrompt}
             editLastUserMessage={handleEditLastUserMessage}
@@ -658,7 +670,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
             baseDir={project.baseDir}
             inputHistory={inputHistory}
             processing={processing}
-            mode={mode}
+            mode={projectSettings.currentMode}
             onModeChanged={handleModeChange}
             runPrompt={runPrompt}
             editLastUserMessage={handleEditLastUserMessage}
@@ -706,7 +718,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
             clearMessages={clearMessages}
             refreshRepoMap={() => runCommand('map-refresh')}
             restartProject={restartProject}
-            mode={mode}
+            mode={projectSettings.currentMode}
           />
         </div>
       </ResizableBox>

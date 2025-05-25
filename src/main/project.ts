@@ -29,7 +29,7 @@ import {
   UsageReportData,
   UserMessageData,
 } from '@common/types';
-import { fileExists, parseUsageReport } from '@common/utils';
+import { fileExists, getActiveAgentProfile, parseUsageReport } from '@common/utils';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
 import { parse } from '@dotenvx/dotenvx';
@@ -1131,12 +1131,12 @@ export class Project {
       checkContextFilesIncluded,
       checkRepoMapIncluded,
     });
-    const { agentConfig } = this.store.getSettings();
-    if (checkContextFilesIncluded && !agentConfig.includeContextFiles && checkRepoMapIncluded && !agentConfig.includeRepoMap) {
+    const agentProfile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.baseDir));
+    if (!agentProfile || (checkContextFilesIncluded && !agentProfile.includeContextFiles && checkRepoMapIncluded && !agentProfile.includeRepoMap)) {
       return;
     }
 
-    const tokens = await this.agent.estimateTokens(this);
+    const tokens = await this.agent.estimateTokens(this, agentProfile);
     this.updateTokensInfo({
       agent: {
         cost: this.agentTotalCost,
@@ -1147,19 +1147,22 @@ export class Project {
   }
 
   settingsChanged(oldSettings: SettingsData, newSettings: SettingsData) {
-    const oldAgentConfig = oldSettings.agentConfig;
-    const newAgentConfig = newSettings.agentConfig;
+    const projectSettings = this.store.getProjectSettings(this.baseDir);
+    const oldAgentProfile = getActiveAgentProfile(oldSettings, projectSettings);
+    const newAgentProfile = getActiveAgentProfile(newSettings, projectSettings);
 
     // Check for changes in agent config properties that affect token count
-    const disabledServersChanged = JSON.stringify(oldAgentConfig?.disabledServers) !== JSON.stringify(newAgentConfig?.disabledServers);
-    const toolApprovalsChanged = JSON.stringify(oldAgentConfig?.toolApprovals) !== JSON.stringify(newAgentConfig?.toolApprovals);
-    const includeContextFilesChanged = oldAgentConfig?.includeContextFiles !== newAgentConfig?.includeContextFiles;
-    const includeRepoMapChanged = oldAgentConfig?.includeRepoMap !== newAgentConfig?.includeRepoMap;
-    const useAiderToolsChanged = oldAgentConfig?.useAiderTools !== newAgentConfig?.useAiderTools;
-    const usePowerToolsChanged = oldAgentConfig?.usePowerTools !== newAgentConfig?.usePowerTools;
-    const customInstructionsChanged = oldAgentConfig?.customInstructions !== newAgentConfig?.customInstructions;
+    const modelChanged = oldAgentProfile?.model !== newAgentProfile?.model;
+    const disabledServersChanged = JSON.stringify(oldAgentProfile?.enabledServers) !== JSON.stringify(newAgentProfile?.enabledServers);
+    const toolApprovalsChanged = JSON.stringify(oldAgentProfile?.toolApprovals) !== JSON.stringify(newAgentProfile?.toolApprovals);
+    const includeContextFilesChanged = oldAgentProfile?.includeContextFiles !== newAgentProfile?.includeContextFiles;
+    const includeRepoMapChanged = oldAgentProfile?.includeRepoMap !== newAgentProfile?.includeRepoMap;
+    const useAiderToolsChanged = oldAgentProfile?.useAiderTools !== newAgentProfile?.useAiderTools;
+    const usePowerToolsChanged = oldAgentProfile?.usePowerTools !== newAgentProfile?.usePowerTools;
+    const customInstructionsChanged = oldAgentProfile?.customInstructions !== newAgentProfile?.customInstructions;
 
     const agentSettingsAffectingTokensChanged =
+      modelChanged ||
       disabledServersChanged ||
       toolApprovalsChanged ||
       includeContextFilesChanged ||

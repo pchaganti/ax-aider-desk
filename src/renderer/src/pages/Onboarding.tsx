@@ -47,6 +47,7 @@ export const Onboarding = () => {
               <li>{t('onboarding.features.2')}</li>
               <li>{t('onboarding.features.3')}</li>
               <li>{t('onboarding.features.4')}</li>
+              <li>{t('onboarding.features.5')}</li>
             </ul>
             <p className="text-neutral-300 text-sm">{t('onboarding.getStarted')}</p>
           </div>
@@ -59,6 +60,7 @@ export const Onboarding = () => {
             <ul className="list-disc list-inside text-neutral-300 space-y-2 text-xs">
               <li>{t('onboarding.aider.options.1')}</li>
               <li>{t('onboarding.aider.options.2')}</li>
+              <li>{t('onboarding.aider.options.3')}</li>
             </ul>
             <p className="text-neutral-300 text-sm">{t('onboarding.aider.configureLater')}</p>
             <AiderSettings settings={settings!} setSettings={saveSettings} initialShowEnvVars={true} />

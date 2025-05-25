@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
-import { useTranslation } from 'react-i18next';
 import { ToolApprovalState } from '@common/types';
-import { TOOL_GROUP_NAME_SEPARATOR } from '@common/utils';
+import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { useTranslation } from 'react-i18next';
 
 import { Checkbox } from '../common/Checkbox';
 
@@ -19,7 +19,6 @@ export const McpServerSelectorItem = ({ serverName, disabled, toolApprovals, onT
 
   useEffect(() => {
     const loadTools = async () => {
-      // set to loading state after 500ms
       const timeoutId = setTimeout(() => setToolsCount(null), 500);
       try {
         const tools = await window.api.loadMcpServerTools(serverName);
@@ -30,9 +29,9 @@ export const McpServerSelectorItem = ({ serverName, disabled, toolApprovals, onT
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to load MCP server tools:', error);
-        setToolsCount(0); // Set count to 0 on error
+        setToolsCount(0);
       } finally {
-        clearTimeout(timeoutId); // Clear timeout regardless of success or error
+        clearTimeout(timeoutId);
       }
     };
 

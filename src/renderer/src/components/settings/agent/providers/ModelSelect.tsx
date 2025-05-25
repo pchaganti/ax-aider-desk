@@ -1,10 +1,10 @@
-import { PROVIDER_MODELS, ProviderName } from '@common/llm-providers';
+import { PROVIDER_MODELS, LlmProviderName } from '@common/agent';
 import { useTranslation } from 'react-i18next';
 
 import { Option, Select } from '@/components/common/Select';
 
 type Props = {
-  providerName: ProviderName;
+  providerName: LlmProviderName;
   currentModel: string;
   onChange: (model: string) => void;
 };

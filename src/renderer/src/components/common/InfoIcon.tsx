@@ -6,11 +6,12 @@ import { IconButton } from './IconButton';
 
 type Props = {
   tooltip: ReactNode;
+  tooltipId?: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
 };
 
-export const InfoIcon = ({ tooltip, className, size = 'md' }: Props) => {
+export const InfoIcon = ({ tooltip, tooltipId, className, size = 'md' }: Props) => {
   return (
     <IconButton
       icon={
@@ -23,6 +24,7 @@ export const InfoIcon = ({ tooltip, className, size = 'md' }: Props) => {
         />
       }
       tooltip={tooltip}
+      tooltipId={tooltipId}
       className={`ml-2 text-neutral-500 ${className || ''}`}
       onClick={() => {}}
     />

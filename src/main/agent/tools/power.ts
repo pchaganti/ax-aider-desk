@@ -7,9 +7,9 @@ import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
 import { glob } from 'glob';
 import { searchTool } from '@buger/probe';
-import { TOOL_GROUP_NAME_SEPARATOR } from '@common/utils';
-import { FileWriteMode } from '@common/types';
+import { AgentProfile, FileWriteMode, ToolApprovalState } from '@common/types';
 import {
+  TOOL_GROUP_NAME_SEPARATOR,
   POWER_TOOL_GROUP_NAME as TOOL_GROUP_NAME,
   POWER_TOOL_FILE_EDIT as TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ as TOOL_FILE_READ,
@@ -18,6 +18,7 @@ import {
   POWER_TOOL_GREP as TOOL_GREP,
   POWER_TOOL_SEMANTIC_SEARCH as TOOL_SEMANTIC_SEARCH,
   POWER_TOOL_BASH as TOOL_BASH,
+  POWER_TOOL_DESCRIPTIONS,
 } from '@common/tools';
 
 import { Project } from '../../project';
@@ -26,12 +27,11 @@ import { ApprovalManager } from './approval-manager';
 
 const execAsync = promisify(exec);
 
-export const createPowerToolset = (project: Project): ToolSet => {
-  const approvalManager = new ApprovalManager(project);
+export const createPowerToolset = (project: Project, profile: AgentProfile): ToolSet => {
+  const approvalManager = new ApprovalManager(project, profile);
 
   const fileEditTool = tool({
-    description:
-      'Atomically finds and replaces a specific string or pattern within a specified file. This tool is useful for making targeted changes to file content.',
+    description: POWER_TOOL_DESCRIPTIONS[TOOL_FILE_EDIT],
     parameters: z.object({
       filePath: z.string().describe('The path to the file to be edited (relative to the project root).'),
       searchTerm: z
@@ -87,12 +87,21 @@ export const createPowerToolset = (project: Project): ToolSet => {
   });
 
   const fileReadTool = tool({
-    description: 'Reads and returns the content of a specified file. Useful for inspecting file contents without adding them to the Aider context.',
+    description: POWER_TOOL_DESCRIPTIONS[TOOL_FILE_READ],
     parameters: z.object({
       filePath: z.string().describe('The path to the file to be read (relative to the project root).'),
     }),
     execute: async ({ filePath }, { toolCallId }) => {
       project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_READ, { filePath });
+
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_READ}`;
+      const questionText = `Approve reading file '${filePath}'?`;
+
+      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+
+      if (!isApproved) {
+        return `File read of '${filePath}' denied by user. Reason: ${userInput}`;
+      }
 
       const absolutePath = path.resolve(project.baseDir, filePath);
       try {
@@ -109,7 +118,7 @@ export const createPowerToolset = (project: Project): ToolSet => {
   });
 
   const fileWriteTool = tool({
-    description: 'Writes content to a specified file. Can create a new file, overwrite an existing file, or append to an existing file.',
+    description: POWER_TOOL_DESCRIPTIONS[TOOL_FILE_WRITE],
     parameters: z.object({
       filePath: z.string().describe('The path to the file to be written (relative to the project root).'),
       content: z.string().describe('The content to write to the file.'),
@@ -182,7 +191,7 @@ export const createPowerToolset = (project: Project): ToolSet => {
   });
 
   const globTool = tool({
-    description: 'Finds files and directories matching a specified glob pattern within the project. Useful for discovering files based on patterns.',
+    description: POWER_TOOL_DESCRIPTIONS[TOOL_GLOB],
     parameters: z.object({
       pattern: z.string().describe('The glob pattern to search for (e.g., src/**/*.ts, *.md).'),
       cwd: z
@@ -193,6 +202,15 @@ export const createPowerToolset = (project: Project): ToolSet => {
     }),
     execute: async ({ pattern, cwd, ignore }, { toolCallId }) => {
       project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_GLOB, { pattern, cwd, ignore });
+
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GLOB}`;
+      const questionText = `Approve glob search with pattern '${pattern}'?`;
+
+      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+
+      if (!isApproved) {
+        return `Glob search with pattern '${pattern}' denied by user. Reason: ${userInput}`;
+      }
 
       const absoluteCwd = cwd ? path.resolve(project.baseDir, cwd) : project.baseDir;
       try {
@@ -212,8 +230,7 @@ export const createPowerToolset = (project: Project): ToolSet => {
   });
 
   const grepTool = tool({
-    description:
-      'Searches for content matching a regular expression pattern within files specified by a glob pattern. Returns matching lines and their context.',
+    description: POWER_TOOL_DESCRIPTIONS[TOOL_GREP],
     parameters: z.object({
       filePattern: z.string().describe('A glob pattern specifying the files to search within (e.g., src/**/*.tsx, *.py).'),
       searchTerm: z.string().describe('The regular expression to search for within the files.'),
@@ -228,6 +245,15 @@ export const createPowerToolset = (project: Project): ToolSet => {
     }),
     execute: async ({ filePattern, searchTerm, contextLines, caseSensitive }, { toolCallId }) => {
       project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_GREP, { filePattern, searchTerm, contextLines, caseSensitive });
+
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GREP}`;
+      const questionText = `Approve grep search for '${searchTerm}' in files matching '${filePattern}'?`;
+
+      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText);
+
+      if (!isApproved) {
+        return `Grep search for '${searchTerm}' in files matching '${filePattern}' denied by user. Reason: ${userInput}`;
+      }
 
       try {
         const files = await glob(filePattern, {
@@ -288,7 +314,7 @@ export const createPowerToolset = (project: Project): ToolSet => {
   });
 
   const bashTool = tool({
-    description: 'Executes a shell command. For safety, commands may be sandboxed or require user approval (approval handled by Agent).',
+    description: POWER_TOOL_DESCRIPTIONS[TOOL_BASH],
     parameters: z.object({
       command: z.string().describe('The shell command to execute (e.g., ls -la, npm install).'),
       cwd: z.string().optional().describe('The working directory for the command (relative to project root). Default: project root.'),
@@ -465,13 +491,13 @@ export const createPowerToolset = (project: Project): ToolSet => {
   });
    */
 
-  return {
+  const allTools = {
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_EDIT}`]: fileEditTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_READ}`]: fileReadTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_WRITE}`]: fileWriteTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GLOB}`]: globTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GREP}`]: grepTool,
-    [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`]: searchTool(),
+    [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`]: searchTool(POWER_TOOL_DESCRIPTIONS[TOOL_SEMANTIC_SEARCH]),
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_BASH}`]: bashTool,
     // TODO: disabled for now until better defined
     // [`power${TOOL_GROUP_NAME_SEPARATOR}lint`]: lintTool,
@@ -480,4 +506,14 @@ export const createPowerToolset = (project: Project): ToolSet => {
     // [`power${TOOL_GROUP_NAME_SEPARATOR}get_tasks`]: getTasksTool,
     // [`power${TOOL_GROUP_NAME_SEPARATOR}update_task`]: updateTaskTool,
   };
+
+  // Filter out tools that are set to Never in toolApprovals
+  const filteredTools: ToolSet = {};
+  for (const [toolId, tool] of Object.entries(allTools)) {
+    if (profile.toolApprovals[toolId] !== ToolApprovalState.Never) {
+      filteredTools[toolId] = tool;
+    }
+  }
+
+  return filteredTools;
 };

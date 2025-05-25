@@ -27,7 +27,7 @@
     "open": "Open",
     "openProject": "Open Project",
     "lock": "Lock",
-    "unlock": "Unlock",
+    "default": "Default",
     "suffix.billion": "B",
     "suffix.million": "M",
     "suffix.thousand": "K"
@@ -45,7 +45,8 @@
       "1": "Manage multiple coding projects",
       "2": "Track your AI usage and costs",
       "3": "Interact with AI models in a structured way",
-      "4": "Visualize and manage your code files"
+      "4": "Visualize and manage your code files",
+      "5": "Use agentic flow for automated coding tasks and connection to MCP servers"
     },
     "getStarted": "Let's get started by configuring your Aider settings.",
     "aider": {
@@ -53,7 +54,8 @@
       "description": "To get started, please configure your Aider settings. You'll need to:",
       "options": {
         "1": "Add your API keys for the LLM provider you want to use",
-        "2": "Set any additional options for Aider"
+        "2": "Set any additional options for Aider",
+        "3": ".env and .aider.conf.yaml are also read as they would with Aider"
       },
       "configureLater": "You can also do that later in the Settings."
     }
@@ -122,6 +124,16 @@
     "apiKey": "API Key",
     "modelPlaceholder": "e.g. anthropic/claude-3.7-sonnet"
   },
+  "providers": {
+    "anthropic": "Anthropic",
+    "bedrock": "Bedrock",
+    "deepseek": "Deepseek",
+    "gemini": "Gemini",
+    "ollama": "Ollama",
+    "openai": "OpenAI",
+    "openai-compatible": "OpenAI Compatible",
+    "openrouter": "OpenRouter"
+  },
   "select": {
     "placeholder": "Select an option",
     "loadingSessions": "Loading sessions..."
@@ -148,19 +160,36 @@
     "agent": {
       "mcpServers": "MCP Servers",
       "provider": "Provider",
+      "providerSettings": "Provider Settings",
+      "context": "Context",
+      "runSettings": "Run Parameters",
       "maxIterations": "Max Iterations",
       "minTimeBetweenToolCalls": "Min Time Between Tool Calls (ms)",
       "maxTokens": "Max Tokens",
       "customInstructions": "Custom Instructions",
-      "customInstructionsInfo": "Custom instructions for the agent. Useful when you want to add specific instructions for specific MCP servers.",
+      "customInstructionsInfo": "You can use custom instructions to add specific instructions for specific MCP servers or to control flow of the agent.",
       "noServersConfigured": "No MCP servers configured.",
-      "computationalResources": "Maximum number of iterations for MCP tool calls. Helps control computational resources.",
+      "computationalResources": "Maximum number of iterations for the agent per run. Helps control computational resources.",
       "rateLimiting": "Sets the minimum time between tool calls to prevent rate limiting (e.g. for Brave or other API-constrained services).",
-      "tokensPerResponse": "Maximum number of tokens the MCP agent can use per response.",
-      "addServer": "Add server",
+      "tokensPerResponse": "Maximum number of tokens the agent can use per response.",
+      "addMcpServer": "Add",
       "editConfig": "Edit Config",
-      "reloadServers": "Reload Servers",
-      "envVarPlaceholder": "{{envVar}} env if empty"
+      "editMcpServersConfig": "Edit MCP Servers Config",
+      "reloadServers": "Reload",
+      "powerToolsTooltip": "Allows the agent to use tools for direct file operations (read, write, edit), searching (glob, grep, semantic search), and executing shell commands (bash).",
+      "aiderToolsTooltip": "Agent can use Aider to perform add/drop context files actions and run prompts.",
+      "useAiderTools": "Use Aider tools",
+      "usePowerTools": "Use Power tools",
+      "includeContextFiles": "Include context files",
+      "includeFilesTooltip": "Adds content of context files into the chat of agent. This will increase token usage.",
+      "includeRepoMap": "Include repository map",
+      "includeRepoMapTooltip": "Include the repository map from Aider in the agent's context. This can help the agent understand the project structure, but will increase token usage.",
+      "selectOrCreateProfile": "Select or create new agent profile",
+      "newProfileName": "New Profile",
+      "envVarPlaceholder": "{{envVar}} env var is used if left empty",
+      "createNewProfile": "Create New",
+      "genericTools": "Tools",
+      "noGenericToolsConfigured": "No tools configured."
     },
     "aider": {
       "options": "Options",
@@ -272,28 +301,16 @@
     "outputCostPerMillion": "Output Cost / 1M Tokens"
   },
   "mcp": {
-    "noDescription": "No description",
     "serverToolStatus": "{{enabledCount}} of {{count}} tools enabled",
-    "loading": "Loading...",
     "toolsCount_one": "{{count}} tool",
     "toolsCount_other": "{{count}} tools",
     "loadToolsError": "Failed to load MCP server tools",
     "noToolsFound": "No tools could be found. Check your configuration.",
-    "server_one": "server",
-    "server_other": "servers",
-    "aider": "aider",
-    "aiderOnly": "aider only",
-    "withFiles": "with files",
-    "useAiderTools": "Use Aider tools",
-    "usePowerTools": "Use Power tools",
-    "powerToolsTooltip": "Allows the agent to use tools for direct file operations (read, write, edit), searching (glob, grep, semantic search), and executing shell commands (bash).",
-    "aiderToolsTooltip": "Agent can use Aider to perform add/drop context files actions and run prompts.",
-    "includeContextFiles": "Include context files",
-    "includeFilesTooltip": "Adds content of context files into the chat of agent. This will increase token usage.",
-    "includeRepoMap": "Include repo map",
-    "includeRepoMapTooltip": "Include the repository map in the agent's context. This can help the agent understand the project structure, but may increase token usage.",
     "servers": "MCP servers",
-    "configureServers": "Configure",
+    "tools": "Tools"
+  },
+  "tool": {
+    "noDescription": "No description",
     "approval": {
       "never": "Never",
       "always": "Always",
@@ -427,6 +444,16 @@
     "invalidCommand": "Invalid command",
     "stopResponse": "Stop response",
     "sendMessage": "Send message (Enter)"
+  },
+  "agentProfiles": {
+    "title": "Agent Profiles",
+    "profileSettings": "Agent Profile: {{profileName}}",
+    "newProfileName": "New Profile",
+    "manageProfiles": "Manage Profiles",
+    "profiles": "Profiles",
+    "createNew": "New Profile",
+    "profileName": "Name",
+    "tools": "Tools"
   },
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",

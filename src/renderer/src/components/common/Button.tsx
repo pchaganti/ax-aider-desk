@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 
 type ButtonVariant = 'contained' | 'text' | 'outline';
-type ButtonColor = 'primary' | 'secondary';
+type ButtonColor = 'primary' | 'secondary' | 'danger';
 type ButtonSize = 'sm' | 'md';
 
 type Props = {
@@ -25,6 +25,11 @@ const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
     contained: 'bg-blue-600 hover:bg-blue-500 text-white',
     text: 'text-blue-600 hover:bg-blue-600/10',
     outline: 'border-blue-600 text-blue-600 hover:bg-blue-600/10',
+  },
+  danger: {
+    contained: 'bg-red-500 hover:bg-red-500 text-white',
+    text: 'text-red-500 hover:bg-red-500/10',
+    outline: 'border-red-500 text-red-500 hover:bg-red-500/10',
   },
 };
 
@@ -56,7 +61,7 @@ export const Button = ({
       onClick={onClick}
       disabled={disabled}
       autoFocus={autoFocus}
-      className={`rounded-lg font-medium transition-colors ${borderClass} ${baseColorClasses} ${baseSizeClasses} ${className}`}
+      className={`flex items-center space-x-1 rounded-lg font-medium transition-colors ${borderClass} ${baseColorClasses} ${baseSizeClasses} ${className}`}
     >
       {children}
     </button>

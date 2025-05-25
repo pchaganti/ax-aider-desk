@@ -1,4 +1,8 @@
 {
+  "languages": {
+    "en": "English",
+    "zh": "中文"
+  },
   "common": {
     "settings": "设置",
     "cancel": "取消",
@@ -23,7 +27,7 @@
     "open": "打开",
     "openProject": "打开项目",
     "lock": "锁定",
-    "unlock": "解锁",
+    "default": "默认",
     "suffix.billion": "十亿",
     "suffix.million": "百万",
     "suffix.thousand": "千"
@@ -41,7 +45,8 @@
       "1": "管理多个编程项目",
       "2": "跟踪您的 AI 使用情况和成本",
       "3": "以结构化方式与 AI 模型交互",
-      "4": "可视化和管理您的代码文件"
+      "4": "可视化和管理您的代码文件",
+      "5": "使用代理流程进行自动化编码任务并连接到 MCP 服务器"
     },
     "getStarted": "让我们从配置您的 Aider 设置开始。",
     "aider": {
@@ -49,7 +54,8 @@
       "description": "要开始使用，请配置您的 Aider 设置。您需要：",
       "options": {
         "1": "添加您想要使用的 LLM 提供商的 API 密钥",
-        "2": "为 Aider 设置任何其他选项"
+        "2": "为 Aider 设置任何其他选项",
+        "3": ".env 和 .aider.conf.yaml 文件也会像使用 Aider 一样被读取"
       },
       "configureLater": "您也可以稍后在设置中进行配置。"
     }
@@ -90,12 +96,12 @@
     "modelName": "模型",
     "baseUrlPlaceholder": "例如 http://localhost:8080/v1"
   },
-  "anthropic": {
-    "apiKey": "API 密钥"
-  },
   "ollama": {
     "baseUrl": "基础 URL",
     "baseUrlPlaceholder": "例如 http://localhost:11434/api"
+  },
+  "anthropic": {
+    "apiKey": "API 密钥"
   },
   "gemini": {
     "apiKey": "API 密钥"
@@ -117,6 +123,16 @@
   "openrouter": {
     "apiKey": "API 密钥",
     "modelPlaceholder": "例如 anthropic/claude-3.7-sonnet"
+  },
+  "providers": {
+    "anthropic": "Anthropic",
+    "bedrock": "Bedrock",
+    "deepseek": "Deepseek",
+    "gemini": "Gemini",
+    "ollama": "Ollama",
+    "openai": "OpenAI",
+    "openai-compatible": "OpenAI Compatible",
+    "openrouter": "OpenRouter"
   },
   "select": {
     "placeholder": "选择选项",
@@ -144,28 +160,44 @@
     "agent": {
       "mcpServers": "MCP 服务器",
       "provider": "提供商",
+      "providerSettings": "提供商设置",
+      "context": "上下文",
+      "runSettings": "运行参数",
       "maxIterations": "最大迭代次数",
       "minTimeBetweenToolCalls": "工具调用最小间隔时间(毫秒)",
       "maxTokens": "最大令牌数",
       "customInstructions": "自定义指令",
-      "customInstructionsInfo": "用于代理的自定义指令。有助于在特定 MCP 服务器上添加特定指令。",
-      "systemPromptWarning": "警告：修改系统提示可能导致 MCP 代理行为异常。只有在理解影响的情况下才更改此设置。",
+      "customInstructionsInfo": "您可以使用自定义指令为特定的 MCP 服务器添加特定指令，或控制代理的流程。",
       "noServersConfigured": "未配置 MCP 服务器。",
-      "computationalResources": "MCP 工具调用的最大迭代次数。帮助控制计算资源。",
+      "computationalResources": "代理每次运行的最大迭代次数。有助于控制计算资源。",
       "rateLimiting": "设置工具调用之间的最小时间以防止速率限制(例如对于 Brave 或其他 API 受限的服务)。",
-      "tokensPerResponse": "MCP 代理每次响应可以使用的最大令牌数。",
-      "addServer": "添加服务器",
+      "tokensPerResponse": "代理每次响应可以使用的最大令牌数。",
+      "addMcpServer": "添加",
       "editConfig": "编辑配置",
-      "reloadServers": "重新加载服务器",
-      "envVarPlaceholder": "如果为空，则使用 {{envVar}} 环境变量"
+      "editMcpServersConfig": "编辑 MCP 服务器配置",
+      "reloadServers": "重新加载",
+      "powerToolsTooltip": "允许代理使用强大的工具进行直接文件操作（读、写、编辑）、搜索（glob、grep、语义搜索）和执行 shell 命令（bash）。",
+      "aiderToolsTooltip": "代理可以使用Aider执行添加/删除上下文文件操作和运行提示。",
+      "useAiderTools": "使用Aider工具",
+      "usePowerTools": "使用 Power 工具",
+      "includeContextFiles": "包含上下文文件",
+      "includeFilesTooltip": "将上下文文件内容添加到代理的聊天中。这将增加令牌使用量。",
+      "includeRepoMap": "包含仓库地图",
+      "includeRepoMapTooltip": "在代理的上下文中包含仓库地图。这有助于代理理解项目结构，但可能会增加token使用量。",
+      "selectOrCreateProfile": "选择或创建新的代理配置",
+      "newProfileName": "新配置",
+      "envVarPlaceholder": "如果留空，则使用 {{envVar}} 环境变量",
+      "createNewProfile": "创建新配置",
+      "genericTools": "工具",
+      "noGenericToolsConfigured": "未配置工具。"
     },
     "aider": {
       "options": "选项",
       "optionsPlaceholder": "例如 --no-auto-commits --cache-prompts",
       "environmentVariables": "环境变量",
       "envVarsPlaceholder": "#################\n# LLM 参数:\n#\n# 包含 xxx_API_KEY 参数和您的 LLM 所需的其他参数。\n# 详情请见 https://aider.chat/docs/llms.html\n\n## OpenAI\n#OPENAI_API_KEY=\n\n## Anthropic\n#ANTHROPIC_API_KEY=",
-      "optionsDocumentation": "查看文档了解可用选项",
-      "envVarsDocumentation": "查看文档了解环境变量"
+      "optionsDocumentation": "查看文档了解可用选项：https://aider.chat/docs/faq.html#how-can-i-pass-command-line-options-to-aider",
+      "envVarsDocumentation": "查看文档了解环境变量：https://aider.chat/docs/llms.html"
     },
     "common": {
       "showSecrets": "显示密钥"
@@ -187,7 +219,8 @@
       "downloadUpdate": "下载",
       "downloadingUpdate": "正在下载更新",
       "newAiderDeskVersionReady": "新版本已准备好。重启 AiderDesk 以应用更新。",
-      "downloadAutomatically": "自动下载"
+      "downloadAutomatically": "自动下载更新",
+      "releaseNotes": "发行说明"
     }
   },
   "messages": {
@@ -226,7 +259,8 @@
   },
   "addFileDialog": {
     "title": "添加上下文文件",
-    "placeholder": "选择要添加的文件",
+    "placeholder": "输入要添加的文件或目录",
+    "placeholderFiles": "输入文件或目录，或按 Enter 键完成",
     "browse": "浏览文件",
     "readOnly": "只读",
     "browseFile": "浏览文件",
@@ -289,6 +323,15 @@
     "includeRepoMapTooltip": "在代理的上下文中包含仓库地图。这有助于代理理解项目结构，但可能会增加token使用量。",
     "servers": "MCP服务器",
     "configureServers": "配置服务器",
+    "approval": {
+      "never": "从不",
+      "always": "总是",
+      "ask": "询问"
+    },
+    "tools": "工具"
+  },
+  "tool": {
+    "noDescription": "无描述",
     "approval": {
       "never": "从不",
       "always": "总是",
@@ -368,7 +411,7 @@
       "fileWrite": {
         "overwrite": "重写文件: {{filePath}}",
         "append": "追加到文件: {{filePath}}",
-        "createOnly": "创建文件: {{filePath}}"
+        "createOnly": "创建文件: {{filePath}"
       },
       "fileEdit": {
         "title": "编辑文件: {{filePath}}",
@@ -389,6 +432,9 @@
   },
   "codeBlock": {
     "revertChanges": "撤销更改"
+  },
+  "diffViewer": {
+    "noChanges": "没有进行任何更改。内容相同。"
   },
   "promptField": {
     "placeholders": {
@@ -419,6 +465,16 @@
     "invalidCommand": "无效命令",
     "stopResponse": "停止响应",
     "sendMessage": "发送消息(Enter)"
+  },
+  "agentProfiles": {
+    "title": "代理配置",
+    "profileSettings": "代理配置: {{profileName}}",
+    "newProfileName": "新配置",
+    "manageProfiles": "管理配置",
+    "profiles": "配置列表",
+    "createNew": "创建新配置",
+    "profileName": "名称",
+    "tools": "工具"
   },
   "projectBar": {
     "toggleMarkdown": "Markdown 渲染",

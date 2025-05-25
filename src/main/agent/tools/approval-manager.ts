@@ -1,14 +1,17 @@
-import { QuestionData } from '@common/types';
+import { AgentProfile, QuestionData, ToolApprovalState } from '@common/types';
 
 import { Project } from '../../project';
 
 export class ApprovalManager {
   private alwaysApproveForRunKeys: Set<string> = new Set();
 
-  constructor(private readonly project: Project) {}
+  constructor(
+    private readonly project: Project,
+    private readonly profile: AgentProfile,
+  ) {}
 
   public async handleApproval(key: string, text: string, subject?: string): Promise<[boolean, string | undefined]> {
-    const isApprovedFromSet = this.alwaysApproveForRunKeys.has(key);
+    const isApprovedFromSet = this.alwaysApproveForRunKeys.has(key) || this.profile.toolApprovals[key] === ToolApprovalState.Always;
     if (isApprovedFromSet) {
       return [true, undefined]; // Pre-approved
     }
