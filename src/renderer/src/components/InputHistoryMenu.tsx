@@ -5,14 +5,13 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 type Props = {
   items: string[];
   highlightedIndex: number;
-  setHighlightedIndex: (index: number) => void;
   onSelect: (item: string) => void;
   onClose: () => void;
   onScrollTop?: () => void;
   keepHighlightAtTop?: boolean;
 };
 
-export const InputHistoryMenu = ({ items, highlightedIndex, setHighlightedIndex, onSelect, onClose, onScrollTop, keepHighlightAtTop = false }: Props) => {
+export const InputHistoryMenu = ({ items, highlightedIndex, onSelect, onClose, onScrollTop, keepHighlightAtTop = false }: Props) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const prevScrollTop = useRef(0);
 
@@ -45,8 +44,7 @@ export const InputHistoryMenu = ({ items, highlightedIndex, setHighlightedIndex,
         <div
           key={index}
           ref={index === highlightedIndex ? (el) => el?.scrollIntoView({ block: keepHighlightAtTop ? 'start' : 'nearest' }) : null}
-          className={`px-3 py-1 text-left text-xs cursor-pointer hover:bg-neutral-800 truncate ${index === highlightedIndex ? 'bg-neutral-800' : ''}`}
-          onMouseEnter={() => setHighlightedIndex(index)}
+          className={`px-3 py-1 text-left text-xs cursor-pointer hover:bg-neutral-850 truncate ${index === highlightedIndex ? 'bg-neutral-800' : ''}`}
           onClick={() => onSelect(item)}
         >
           {item}

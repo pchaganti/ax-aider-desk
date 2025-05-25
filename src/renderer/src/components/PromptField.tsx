@@ -619,7 +619,6 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           <InputHistoryMenu
             items={historyItems}
             highlightedIndex={highlightedHistoryItemIndex}
-            setHighlightedIndex={setHighlightedHistoryItemIndex}
             keepHighlightAtTop={keepHistoryHighlightTop}
             onScrollTop={loadMoreHistory}
             onSelect={(item) => {
