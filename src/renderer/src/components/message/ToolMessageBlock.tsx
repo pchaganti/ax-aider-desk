@@ -109,7 +109,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
 
       return (
         <div className="text-xs text-neutral-300 pt-2 px-3">
-          <pre className="whitespace-pre-wrap bg-neutral-900 p-2 rounded text-neutral-300 text-xxs my-1 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600">
+          <pre className="whitespace-pre-wrap bg-neutral-900 p-2 rounded text-neutral-300 text-xxs my-1 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-600">
             {promptText}
           </pre>
           {parsedResult?.json && 'deniedReason' in parsedResult.json && typeof parsedResult.json.deniedReason === 'string' && (
@@ -173,8 +173,8 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
           <CopyMessageButton content={rawContentToCopy} className="text-neutral-600 hover:text-neutral-300" />
         </div>
         <pre
-          className={`whitespace-pre-wrap max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600 bg-neutral-900 p-2 rounded text-[11px] ${
-            parsedResult.isError ? 'text-red-400' : 'text-neutral-300'
+          className={`whitespace-pre-wrap max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-600 bg-neutral-900 p-2 rounded text-[11px] ${
+            parsedResult.isError ? 'text-red-400' : 'text-neutral-200'
           }`}
         >
           {displayContent}
@@ -216,7 +216,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
           {Object.keys(message.args).length > 0 && (
             <div className="mb-3">
               <div className="font-semibold mb-1 text-neutral-200">{t('toolMessage.arguments')}</div>
-              <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600 bg-neutral-900 p-2 rounded text-neutral-300 text-[11px]">
+              <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600 bg-neutral-900 p-2 rounded text-neutral-200 text-xxs">
                 {JSON.stringify(message.args, null, 2)}
               </pre>
             </div>

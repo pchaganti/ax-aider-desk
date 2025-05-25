@@ -106,7 +106,7 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
       const absolutePath = path.resolve(project.baseDir, filePath);
       try {
         const content = await fs.readFile(absolutePath, 'utf8');
-        return `File content of '${filePath}':\n\n${content}`;
+        return `Here is the most recent content of '${filePath}' (ignore previous versions):\n\n${content}`;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {

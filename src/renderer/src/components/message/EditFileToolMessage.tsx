@@ -37,12 +37,18 @@ export const EditFileToolMessage = ({ message, onRemove }: Props) => {
 
       <div className="text-xs text-neutral-300 bg-neutral-850">
         {isRegex ? (
-          <div className="p-2 bg-neutral-900 rounded-md">
+          <div className="p-2 bg-neutral-900 rounded-md space-y-2">
             <p>
-              <strong>{t('toolMessage.power.fileEdit.searchTerm')}:</strong> <code>{searchTerm}</code> ({t('toolMessage.power.fileEdit.regex')})
+              <strong>
+                {t('toolMessage.power.fileEdit.searchTerm')} ({t('toolMessage.power.fileEdit.regex')}):
+              </strong>
+              <br />
+              <div className="mt-2 p-1 rounded-sm border border-neutral-800 whitespace-pre-wrap text-xxs text-neutral-200">{searchTerm}</div>
             </p>
             <p>
-              <strong>{t('toolMessage.power.fileEdit.replacementText')}:</strong> <code>{replacementText}</code>
+              <strong>{t('toolMessage.power.fileEdit.replacementText')}:</strong>
+              <br />
+              <div className="mt-2 p-1 rounded-sm border border-neutral-800 whitespace-pre-wrap text-xxs text-neutral-200">{replacementText}</div>
             </p>
             <p>
               <strong>{t('toolMessage.power.fileEdit.replaceAll')}:</strong> {replaceAll ? t('common.yes') : t('common.no')}
@@ -51,6 +57,7 @@ export const EditFileToolMessage = ({ message, onRemove }: Props) => {
         ) : (
           <CodeBlock baseDir="" language={language} file={filePath} isComplete={true} oldValue={searchTerm} newValue={replacementText} />
         )}
+        {message.content && <div className="px-2 mt-2 text-neutral-100 text-xxs">{JSON.parse(message.content)}</div>}
       </div>
       <MessageBar content={message.content} usageReport={message.usageReport} remove={onRemove} />
     </div>
