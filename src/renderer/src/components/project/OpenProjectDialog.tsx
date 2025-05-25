@@ -106,7 +106,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
 
       {recentProjects.length > 0 && (
         <Accordion className="mt-2" title={<div className="flex items-center gap-2 text-sm">{t('dialogs.recentProjects')}</div>}>
-          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+          <div className="flex flex-col gap-1 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800">
             {recentProjects.map((path) => (
               <button
                 key={path}
@@ -114,7 +114,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
                   onAddProject(path);
                   onClose();
                 }}
-                className="text-left p-1.5 rounded hover:bg-neutral-700/50 transition-colors truncate text-xs ml-2"
+                className="text-left p-1.5 rounded hover:bg-neutral-700/50 transition-colors truncate text-xs ml-2 flex-shrink-0"
                 title={path}
               >
                 {path}

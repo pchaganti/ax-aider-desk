@@ -10,6 +10,7 @@
 - agent profiles
 - added gemini-2.5-flash-preview-05-20 to agent models
 - added claude-sonnet-4-20250514 to agent models
+- correctly showing many recent project in open project dialog
 
 ## [0.14.1]
 
