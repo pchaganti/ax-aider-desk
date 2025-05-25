@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FaFolder } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
+import { ProjectData } from '@common/types';
 
 import { AutocompletionInput } from '@/components/AutocompletionInput';
 import { Accordion } from '@/components/common/Accordion';
@@ -11,23 +12,25 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 type Props = {
   onClose: () => void;
   onAddProject: (baseDir: string) => void;
+  openProjects: ProjectData[];
 };
 
-export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
+export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props) => {
   const { t } = useTranslation();
   const [projectPath, setProjectPath] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isValidPath, setIsValidPath] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [recentProjects, setRecentProjects] = useState<string[]>([]);
+  const [isProjectAlreadyOpen, setIsProjectAlreadyOpen] = useState(false);
 
   useEffect(() => {
     const loadRecentProjects = async () => {
       const projects = await window.api.getRecentProjects();
-      setRecentProjects(projects);
+      setRecentProjects(projects.filter((path) => !openProjects.some((project) => project.baseDir === path)));
     };
     void loadRecentProjects();
-  }, []);
+  }, [openProjects]);
 
   useEffect(() => {
     const updateSuggestions = async () => {
@@ -38,7 +41,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
       }
       if (showSuggestions) {
         const paths = await window.api.getFilePathSuggestions(projectPath, true);
-        setSuggestions(paths);
+        setSuggestions(paths.filter((path) => !openProjects.some((project) => project.baseDir === path)));
       } else {
         setSuggestions([]);
       }
@@ -46,8 +49,10 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
       setIsValidPath(isValid);
     };
 
+    setIsProjectAlreadyOpen(openProjects.some((project) => project.baseDir === projectPath));
+
     void updateSuggestions();
-  }, [projectPath, showSuggestions]);
+  }, [projectPath, showSuggestions, openProjects]);
 
   const handleSelectProject = async () => {
     try {
@@ -66,7 +71,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
   };
 
   const handleAddProject = () => {
-    if (projectPath && isValidPath) {
+    if (projectPath && isValidPath && !isProjectAlreadyOpen) {
       onAddProject(projectPath);
       onClose();
     }
@@ -78,7 +83,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
       onCancel={onClose}
       onConfirm={handleAddProject}
       confirmButtonText={t('common.open')}
-      disabled={!projectPath || !isValidPath}
+      disabled={!projectPath || !isValidPath || isProjectAlreadyOpen}
       width={600}
     >
       <StyledTooltip id="browseTooltipId" />
@@ -88,6 +93,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
         onChange={(value, isFromSuggestion) => {
           setShowSuggestions(!isFromSuggestion);
           setProjectPath(value);
+          setIsProjectAlreadyOpen(false);
         }}
         placeholder={t('dialogs.projectPathPlaceholder')}
         autoFocus
@@ -103,6 +109,8 @@ export const OpenProjectDialog = ({ onClose, onAddProject }: Props) => {
         }
         onSubmit={handleAddProject}
       />
+
+      {isProjectAlreadyOpen && <div className="text-red-500 text-xxs mt-1 px-2">{t('dialogs.projectAlreadyOpenWarning')}</div>}
 
       {recentProjects.length > 0 && (
         <Accordion className="mt-2" title={<div className="flex items-center gap-2 text-sm">{t('dialogs.recentProjects')}</div>}>

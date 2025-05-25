@@ -12,6 +12,7 @@
 - added claude-sonnet-4-20250514 to agent models
 - correctly showing many recent project in open project dialog
 - using carousel to projects list when there are many opened projects
+- warning for already open projects in Open Project dialog
 
 ## [0.14.1]
 

@@ -248,7 +248,8 @@
     "openProjectTitle": "OPEN PROJECT",
     "projectPathPlaceholder": "Type the path to your project or use icon to browse",
     "openButton": "Open",
-    "browseFoldersTooltip": "Browse folders"
+    "browseFoldersTooltip": "Browse folders",
+    "projectAlreadyOpenWarning": "This project is already open."
   },
   "mode": {
     "code": "Code",

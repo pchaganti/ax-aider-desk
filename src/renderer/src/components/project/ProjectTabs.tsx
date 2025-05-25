@@ -72,7 +72,7 @@ export const ProjectTabs = ({ openProjects, activeProject, onAddProject, onSetAc
             <MdChevronLeft className="h-5 w-5 text-neutral-400" />
           </button>
         )}
-        <div ref={tabsContainerRef} className="flex items-center flex-1 overflow-x-hidden scroll-smooth" onScroll={handleScroll}>
+        <div ref={tabsContainerRef} className="flex items-center overflow-x-hidden scroll-smooth" onScroll={handleScroll}>
           {openProjects.map((project) => (
             <Tab
               key={project.baseDir}

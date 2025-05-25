@@ -181,7 +181,9 @@ export const Home = () => {
             />
           </div>
         </div>
-        {isOpenProjectDialogVisible && <OpenProjectDialog onClose={() => setIsOpenProjectDialogVisible(false)} onAddProject={handleAddProject} />}
+        {isOpenProjectDialogVisible && (
+          <OpenProjectDialog onClose={() => setIsOpenProjectDialogVisible(false)} onAddProject={handleAddProject} openProjects={openProjects} />
+        )}
         {showSettingsTab !== null && <SettingsDialog onClose={() => setShowSettingsTab(null)} initialTab={showSettingsTab} />}
         {releaseNotesContent && versions && (
           <HtmlInfoDialog
