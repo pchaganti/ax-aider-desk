@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.15.1]
 
 - fixed agent providers settings for OpenRouter
 - correctly using provider and model based on selected Agent profile
