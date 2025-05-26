@@ -6,6 +6,7 @@ import { FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
 import {
   AVAILABLE_PROVIDERS,
   DEFAULT_AGENT_PROFILE,
+  getLlmProviderConfig,
   isAnthropicProvider,
   isBedrockProvider,
   isDeepseekProvider,
@@ -146,7 +147,7 @@ export const AgentSettings = ({ settings, setSettings }: Props) => {
   const { agentProfiles, mcpServers, llmProviders } = settings;
   const selectedProfile = agentProfiles.find((profile) => profile.id === selectedProfileId) || null;
   const defaultProfile = agentProfiles.find((profile) => profile.id === DEFAULT_AGENT_PROFILE.id) || DEFAULT_AGENT_PROFILE;
-  const selectedProvider = selectedProviderName ? llmProviders[selectedProviderName] : null;
+  const selectedProvider = selectedProviderName ? getLlmProviderConfig(selectedProviderName, settings) : null;
 
   const handleCreateNewProfile = () => {
     const newProfileId = uuidv4();

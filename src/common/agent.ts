@@ -220,13 +220,13 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   enabledServers: [],
 };
 
-export const getLlmProviderConfig = (providerName: LlmProviderName, settings: SettingsData | null): LlmProvider => {
+export const getLlmProviderConfig = (providerName: LlmProviderName, settings: SettingsData | null, model?: string): LlmProvider => {
   let provider = settings?.llmProviders[providerName] || null;
 
   if (!provider) {
     const baseConfig: LlmProviderBase = {
       name: providerName,
-      model: Object.keys(PROVIDER_MODELS[providerName]?.models || {})[0] || '',
+      model: model || Object.keys(PROVIDER_MODELS[providerName]?.models || {})[0],
     };
 
     switch (providerName) {
@@ -265,7 +265,12 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
           ...baseConfig,
         } as LlmProvider;
     }
-  }
 
-  return provider;
+    return provider;
+  } else {
+    return {
+      ...provider,
+      model: model || provider.model,
+    };
+  }
 };

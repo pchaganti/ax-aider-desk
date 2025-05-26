@@ -92,7 +92,8 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
         return;
       }
 
-      const [providerName, modelName] = selectedModelString.split('/');
+      const [providerName, ...modelNameParts] = selectedModelString.split('/');
+      const modelName = modelNameParts.join('/');
       if (!providerName || !modelName) {
         // eslint-disable-next-line no-console
         console.error('Invalid model string format:', selectedModelString);

@@ -1,5 +1,10 @@
 # Changelog
 
+## [UNRELEASED]
+
+- fixed agent providers settings for OpenRouter
+- correctly using provider and model based on selected Agent profile
+
 ## [0.15.0]
 
 - explicitly sending project base directory to Aider process

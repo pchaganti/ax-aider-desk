@@ -420,7 +420,7 @@ export class Agent {
     });
 
     try {
-      const llmProvider = getLlmProviderConfig(profile.provider, settings);
+      const llmProvider = getLlmProviderConfig(profile.provider, settings, profile.model);
       const model = createLlm(llmProvider, await this.getLlmEnv(project));
       const systemPrompt = await getSystemPrompt(
         project.baseDir,
