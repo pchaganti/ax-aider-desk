@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.15.0]
 
 - explicitly sending project base directory to Aider process
 - disabled spell check for input fields as it does not serve any purpose
