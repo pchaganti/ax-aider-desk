@@ -12,6 +12,18 @@ import { ROUTES } from '@/utils/routes';
 import '@/i18n';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 
+const ThemeManager = () => {
+  const { settings } = useSettings();
+
+  useEffect(() => {
+    const className = settings?.theme === 'light' ? 'theme-light' : 'theme-dark';
+    document.body.classList.remove('theme-light', 'theme-dark');
+    document.body.classList.add(className);
+  }, [settings?.theme]);
+
+  return null;
+};
+
 const AnimatedRoutes = () => {
   const { i18n } = useTranslation();
   const location = useLocation();
@@ -60,6 +72,7 @@ const App = () => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
       <Router>
         <SettingsProvider>
+          <ThemeManager />
           <AnimatedRoutes />
           <ToastContainer />
         </SettingsProvider>

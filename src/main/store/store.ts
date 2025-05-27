@@ -23,6 +23,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   startupMode: StartupMode.Empty,
   zoomLevel: 1,
   notificationsEnabled: false,
+  theme: 'dark',
   aiderDeskAutoUpdate: true,
   aider: {
     options: '',
