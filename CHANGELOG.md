@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- light mode theme
+
 ## [0.15.1]
 
 - fixed agent providers settings for OpenRouter
