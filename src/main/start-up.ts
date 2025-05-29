@@ -85,7 +85,7 @@ const setupAiderConnector = async (cleanInstall: boolean, updateProgress?: Updat
 
 const installAiderConnectorRequirements = async (cleanInstall: boolean, updateProgress?: UpdateProgressFunction): Promise<void> => {
   const pythonBinPath = getPythonVenvBinPath();
-  const packages = ['pip', 'aider-chat', 'python-socketio==5.12.1', 'websocket-client==1.8.0', 'nest-asyncio==1.6.0'];
+  const packages = ['pip', 'aider-chat', 'python-socketio==5.12.1', 'websocket-client==1.8.0', 'nest-asyncio==1.6.0', 'boto3==1.38.25'];
 
   logger.info('Starting Aider connector requirements installation', { packages });
 
@@ -94,7 +94,7 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
     if (updateProgress) {
       updateProgress({
         step: 'Installing Requirements',
-        message: `Installing package: ${pkg} (${currentPackage + 1}/${packages.length})`,
+        message: `Installing package: ${pkg.split('==')[0]} (${currentPackage + 1}/${packages.length})`,
       });
     }
     try {
