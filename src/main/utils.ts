@@ -2,9 +2,12 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
+import fsPromises from 'fs/promises';
 
 import { SettingsData } from '@common/types';
 import { parse } from '@dotenvx/dotenvx';
+import ignore from 'ignore';
+import { fileExists } from '@common/utils';
 
 import { PYTHON_COMMAND, PYTHON_VENV_DIR } from './constants';
 import logger from './logger';
@@ -100,4 +103,29 @@ export const parseAiderEnv = (settings: SettingsData): Record<string, string> =>
     ...aiderEnvVars, // Start with settings env
     ...(fileEnv ?? {}), // Override with file env if it exists
   };
+};
+
+export const isFileIgnored = async (projectBaseDir: string, filePath: string): Promise<boolean> => {
+  const gitignorePath = path.join(projectBaseDir, '.gitignore');
+
+  if (!(await fileExists(gitignorePath))) {
+    logger.debug('No .gitignore file found, not checking for ignored files');
+    return false;
+  }
+
+  try {
+    const gitignoreContent = await fsPromises.readFile(gitignorePath, 'utf8');
+    const ig = ignore().add(gitignoreContent);
+
+    // Make the path relative to the base directory
+    const absolutePath = path.resolve(projectBaseDir, filePath);
+    const relativePath = path.relative(projectBaseDir, absolutePath);
+
+    logger.debug(`Checking if file is ignored: ${relativePath}, ${absolutePath}`);
+
+    return ig.ignores(relativePath);
+  } catch (error) {
+    logger.debug(`Failed to check if file is ignored: ${filePath}`, { error });
+    return false;
+  }
 };

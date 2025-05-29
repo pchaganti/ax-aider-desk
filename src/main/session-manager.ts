@@ -4,7 +4,7 @@ import { promises as fs } from 'fs';
 import debounce from 'lodash/debounce';
 import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, SessionData } from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
-import ignore from 'ignore';
+import { isFileIgnored } from 'src/main/utils';
 
 import logger from './logger';
 import { Project } from './project';
@@ -60,23 +60,7 @@ export class SessionManager {
       return false;
     }
 
-    const gitignorePath = path.join(this.project.baseDir, '.gitignore');
-
-    if (!(await fileExists(gitignorePath))) {
-      logger.debug('No .gitignore file found, not checking for ignored files');
-      return false;
-    }
-
-    const gitignoreContent = await fs.readFile(gitignorePath, 'utf8');
-    const ig = ignore().add(gitignoreContent);
-
-    // Make the path relative to the base directory
-    const absolutePath = path.resolve(this.project.baseDir, contextFile.path);
-    const relativePath = path.relative(this.project.baseDir, absolutePath);
-
-    logger.debug(`Checking if file is ignored: ${relativePath}, ${absolutePath}`);
-
-    return ig.ignores(relativePath);
+    return isFileIgnored(this.project.baseDir, contextFile.path);
   }
 
   async addContextFile(contextFile: ContextFile) {

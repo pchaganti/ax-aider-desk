@@ -21,6 +21,7 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 import logger from 'src/main/logger';
+import { isFileIgnored } from 'src/main/utils';
 
 import { Project } from '../../project';
 
@@ -240,7 +241,7 @@ Include enough lines in each to uniquely match each set of lines that need to ch
           absolute: false, // Keep paths relative to cwd for easier processing
         });
         // Ensure paths are relative to project.baseDir
-        return files.map((file) => path.relative(project.baseDir, path.resolve(absoluteCwd, file)));
+        return files.filter((file) => !isFileIgnored(project.baseDir, file)).map((file) => path.relative(project.baseDir, path.resolve(absoluteCwd, file)));
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         return `Error executing glob pattern '${pattern}': ${errorMessage}`;
@@ -299,6 +300,9 @@ Include enough lines in each to uniquely match each set of lines that need to ch
         const searchRegex = new RegExp(searchTerm, caseSensitive ? undefined : 'i'); // Simpler for line-by-line test
 
         for (const absoluteFilePath of files) {
+          if (await isFileIgnored(project.baseDir, absoluteFilePath)) {
+            continue;
+          }
           const fileContent = await fs.readFile(absoluteFilePath, 'utf8');
           const lines = fileContent.split('\n');
           const relativeFilePath = path.relative(project.baseDir, absoluteFilePath);

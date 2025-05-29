@@ -9,6 +9,7 @@
 - ability to setup models for OpenRouter, Requesty, and OpenAI-compatible providers
 - added boto3 as preinstalled Python package
 - improved Agent model selector with search and preferred models
+- glob and grep power tools respect gitignore patterns
 
 ## [0.15.1]
 
