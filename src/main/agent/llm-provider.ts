@@ -7,6 +7,7 @@ import { createOllama } from 'ollama-ai-provider';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createRequesty } from '@requesty/ai-sdk';
 import {
   isAnthropicProvider,
   isBedrockProvider,
@@ -15,20 +16,27 @@ import {
   isOllamaProvider,
   isOpenAiCompatibleProvider,
   isOpenAiProvider,
-  isOpenRouterProvider, // Added import
+  isOpenRouterProvider,
+  isRequestyProvider,
   LlmProvider,
 } from '@common/agent';
+import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from 'src/main/constants';
+import { ReasoningEffort } from '@common/types';
 
 import type { LanguageModel } from 'ai';
 
-export const createLlm = (provider: LlmProvider, env: Record<string, string | undefined> = {}): LanguageModel => {
+export const createLlm = (provider: LlmProvider, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
+  if (!model) {
+    throw new Error(`Model name is required for ${provider.name} provider`);
+  }
+
   if (isAnthropicProvider(provider)) {
     const apiKey = provider.apiKey || env['ANTHROPIC_API_KEY'];
     if (!apiKey) {
       throw new Error('Anthropic API key is required in Agent provider settings or Aider environment variables (ANTHROPIC_API_KEY)');
     }
     const anthropicProvider = createAnthropic({ apiKey });
-    return anthropicProvider(provider.model);
+    return anthropicProvider(model);
   } else if (isOpenAiProvider(provider)) {
     const apiKey = provider.apiKey || env['OPENAI_API_KEY'];
     if (!apiKey) {
@@ -38,7 +46,7 @@ export const createLlm = (provider: LlmProvider, env: Record<string, string | un
       apiKey,
       compatibility: 'strict',
     });
-    return openAIProvider(provider.model, {
+    return openAIProvider(model, {
       structuredOutputs: false,
     });
   } else if (isGeminiProvider(provider)) {
@@ -47,14 +55,14 @@ export const createLlm = (provider: LlmProvider, env: Record<string, string | un
       throw new Error('Gemini API key is required in Agent provider settings or Aider environment variables (GEMINI_API_KEY)');
     }
     const googleProvider = createGoogleGenerativeAI({ apiKey });
-    return googleProvider(provider.model);
+    return googleProvider(model);
   } else if (isDeepseekProvider(provider)) {
     const apiKey = provider.apiKey || env['DEEPSEEK_API_KEY'];
     if (!apiKey) {
       throw new Error('Deepseek API key is required in Agent provider settings or Aider environment variables (DEEPSEEK_API_KEY)');
     }
     const deepseekProvider = createDeepSeek({ apiKey });
-    return deepseekProvider(provider.model);
+    return deepseekProvider(model);
   } else if (isOpenAiCompatibleProvider(provider)) {
     const apiKey = provider.apiKey || env['OPENAI_API_KEY'];
     if (!apiKey) {
@@ -64,17 +72,13 @@ export const createLlm = (provider: LlmProvider, env: Record<string, string | un
     if (!baseUrl) {
       throw new Error(`Base URL is required for ${provider.name} provider. Set it in Agent provider settings or via the OPENAI_API_BASE environment variable.`);
     }
-    const model = provider.model;
-    if (!model) {
-      throw new Error(`Model name is required for ${provider.name} provider`);
-    }
     // Use createOpenAICompatible to get a provider instance, then get the model
     const compatibleProvider = createOpenAICompatible({
       name: provider.name,
       apiKey,
       baseURL: baseUrl,
     });
-    return compatibleProvider(provider.model);
+    return compatibleProvider(model);
   } else if (isBedrockProvider(provider)) {
     const region = provider.region || env['AWS_REGION'];
     const accessKeyId = provider.accessKeyId || env['AWS_ACCESS_KEY_ID'];
@@ -105,19 +109,16 @@ export const createLlm = (provider: LlmProvider, env: Record<string, string | un
       // Let the SDK handle the default chain if explicit keys aren't provided
       credentialProvider: !accessKeyId && !secretAccessKey ? fromNodeProviderChain() : undefined,
     });
-    return bedrockProviderInstance(provider.model);
+    return bedrockProviderInstance(model);
   } else if (isOllamaProvider(provider)) {
     const baseUrl = provider.baseUrl || env['OLLAMA_API_BASE'];
     if (!baseUrl) {
       throw new Error('Base URL is required for Ollama provider. Set it in Agent provider settings or via the OLLAMA_API_BASE environment variable.');
     }
-    if (!provider.model) {
-      throw new Error('Model name is required for Ollama provider');
-    }
     // Ensure the baseUrl ends with /api for ollama-ai-provider
     const finalBaseUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
     const ollamaInstance = createOllama({ baseURL: finalBaseUrl });
-    return ollamaInstance(provider.model, {
+    return ollamaInstance(model, {
       simulateStreaming: true,
     });
   } else if (isOpenRouterProvider(provider)) {
@@ -125,16 +126,43 @@ export const createLlm = (provider: LlmProvider, env: Record<string, string | un
     if (!apiKey) {
       throw new Error('OpenRouter API key is required in Agent provider settings or Aider environment variables (OPENROUTER_API_KEY)');
     }
-    const openrouter = createOpenRouter({
+    const openRouter = createOpenRouter({
       apiKey,
+      compatibility: 'strict',
+      headers: {
+        'HTTP-Referer': AIDER_DESK_WEBSITE,
+        'X-Title': AIDER_DESK_TITLE,
+      },
       extraBody: {
         provider: {
           require_parameters: true,
         },
       },
     });
-    return openrouter.chat(provider.model);
+    return openRouter.chat(model);
+  } else if (isRequestyProvider(provider)) {
+    const apiKey = provider.apiKey || env['REQUESTY_API_KEY'];
+    if (!apiKey) {
+      throw new Error('Requesty API key is required in Agent provider settings or Aider environment variables (REQUESTY_API_KEY)');
+    }
+
+    const requestyProvider = createRequesty({
+      apiKey,
+      compatibility: 'strict',
+      headers: {
+        'HTTP-Referer': AIDER_DESK_WEBSITE,
+        'X-Title': AIDER_DESK_TITLE,
+      },
+      extraBody: {
+        ...(provider.useAutoCache && { requesty: { auto_cache: true } }),
+      },
+    });
+    return requestyProvider(model, {
+      includeReasoning: provider.reasoningEffort !== ReasoningEffort.None,
+      // @ts-expect-error Reasoning effort is not yet in the type definitions (https://github.com/requestyai/ai-sdk-requesty/pull/2)
+      reasoningEffort: provider.reasoningEffort === ReasoningEffort.None ? undefined : provider.reasoningEffort,
+    });
   } else {
-    throw new Error(`Unsupported MCP provider: ${JSON.stringify(provider)}`);
+    throw new Error(`Unsupported LLM provider: ${JSON.stringify(provider)}`);
   }
 };

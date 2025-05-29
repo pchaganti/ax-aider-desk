@@ -7,3 +7,4 @@ export * from './OpenAiCompatibleParameters';
 export * from './OllamaParameters';
 export * from './ModelSelect';
 export * from './OpenRouterParameters';
+export * from './RequestyParameters';

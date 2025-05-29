@@ -52,10 +52,10 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     }
   };
 
-  const handleNotificationsEnabledChange = () => {
+  const handleNotificationsEnabledChange = (checked: boolean) => {
     setSettings({
       ...settings,
-      notificationsEnabled: !settings.notificationsEnabled,
+      notificationsEnabled: checked,
     });
   };
 

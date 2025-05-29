@@ -20,6 +20,9 @@ export const OpenAiParameters = ({ provider, onChange }: Props) => {
 
   return (
     <div className="space-y-2">
+      <h3 className="text-md font-medium uppercase mb-5">
+        {t('providers.openai')} {t('settings.agent.providerSettings')}
+      </h3>
       <Input
         label={t('openai.apiKey')}
         type="password"

@@ -2,8 +2,7 @@ import fs from 'fs/promises';
 
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
-import { PROVIDER_MODELS } from './agent';
-import { AgentProfile, ProjectSettings, SettingsData, UsageReportData } from './types';
+import { ProjectSettings, SettingsData, UsageReportData } from './types';
 
 type TextContent =
   | string
@@ -87,31 +86,6 @@ export const normalizeBaseDir = (baseDir: string): string => {
 
 export const fileExists = async (fileName: string): Promise<boolean> => {
   return (await fs.stat(fileName).catch(() => null)) !== null;
-};
-
-export const calculateCost = (agentProfile: AgentProfile, sentTokens: number, receivedTokens: number) => {
-  const providerModels = PROVIDER_MODELS[agentProfile.provider];
-  if (!providerModels) {
-    return 0;
-  }
-
-  // Get the model name directly from the provider
-  const model = agentProfile.model;
-  if (!model) {
-    return 0;
-  }
-
-  // Find the model cost configuration
-  const modelCost = providerModels.models[model];
-  if (!modelCost) {
-    return 0;
-  }
-
-  // Calculate cost in dollars (costs are per million tokens)
-  const inputCost = (sentTokens * modelCost.inputCost) / 1_000_000;
-  const outputCost = (receivedTokens * modelCost.outputCost) / 1_000_000;
-
-  return inputCost + outputCost;
 };
 
 export const extractServerNameToolName = (toolCallName: string): [string, string] => {

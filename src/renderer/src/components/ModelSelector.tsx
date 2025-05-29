@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, KeyboardEvent } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, KeyboardEvent, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdClose, MdKeyboardArrowUp, MdKeyboardReturn } from 'react-icons/md';
 import { useDebounce } from 'react-use';
@@ -116,7 +116,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
     const isPreferred = settings.models.preferred.includes(model);
     index = index + (isPreferred || debouncedSearchTerm ? 0 : settings.models.preferred.length);
 
-    const handleRemovePreferredModel = (e: React.MouseEvent) => {
+    const handleRemovePreferredModel = (e: MouseEvent) => {
       e.stopPropagation();
 
       const updatedSettings = {

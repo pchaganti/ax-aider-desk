@@ -36,6 +36,9 @@ export const BedrockParameters = ({ provider, onChange }: Props) => {
 
   return (
     <div className="space-y-2">
+      <h3 className="text-md font-medium uppercase mb-5">
+        {t('providers.bedrock')} {t('settings.agent.providerSettings')}
+      </h3>
       <Input label={t('bedrock.region')} value={region} onChange={handleRegionChange} placeholder={t('bedrock.regionPlaceholder')} />
       <Input
         label={

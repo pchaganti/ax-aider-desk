@@ -26,7 +26,7 @@ export const GenericToolGroupItem = ({ name, tools, toolApprovals, onApprovalCha
     return (
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center">
-          {onEnabledChange && <Checkbox id={`enable-group-${name}`} checked={enabled || false} onChange={() => onEnabledChange(!enabled)} className="mr-2" />}
+          {onEnabledChange && <Checkbox id={`enable-group-${name}`} checked={enabled || false} onChange={onEnabledChange} className="mr-2" />}
           <span className="text-sm">{name}</span>
         </div>
         <div className="flex items-center">

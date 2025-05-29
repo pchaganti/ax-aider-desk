@@ -10,6 +10,7 @@ import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
 import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
 import { migrateSettingsV2toV3 } from './migrations/v2-to-v3';
 import { migrateOpenProjectsV3toV4, migrateSettingsV3toV4 } from './migrations/v3-to-v4';
+import { migrateSettingsV4toV5 } from './migrations/v4-to-v5';
 
 const SONNET_MODEL = 'claude-sonnet-4-20250514';
 const GEMINI_MODEL = 'gemini/gemini-2.5-pro-preview-05-06';
@@ -95,7 +96,7 @@ interface StoreSchema {
   releaseNotes?: string | null;
 }
 
-const CURRENT_SETTINGS_VERSION = 4;
+const CURRENT_SETTINGS_VERSION = 5;
 
 interface CustomStore<T> {
   get<K extends keyof T>(key: K): T[K] | undefined;
@@ -177,6 +178,11 @@ export class Store {
         settingsVersion = 4;
       }
 
+      if (settingsVersion === 4) {
+        settings = migrateSettingsV4toV5(settings);
+        settingsVersion = 5;
+      }
+
       this.store.set('settings', settings as SettingsData);
       this.store.set('openProjects', openProjects || []);
       this.store.set('settingsVersion', CURRENT_SETTINGS_VERSION);
@@ -231,10 +237,6 @@ export class Store {
 
   saveProjectSettings(baseDir: string, settings: ProjectSettings): ProjectSettings {
     const projects = this.getOpenProjects();
-
-    logger.info('Projects', {
-      projects,
-    });
 
     const projectIndex = projects.findIndex((project) => compareBaseDirs(project.baseDir, baseDir));
     if (projectIndex >= 0) {

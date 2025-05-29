@@ -87,8 +87,9 @@
   },
   "model": {
     "label": "Model",
+    "labelMultiple": "Models",
     "selectLabel": "Model",
-    "placeholder": "Enter model name"
+    "placeholder": "e.g. anthropic/claude-sonnet-4-20250514"
   },
   "openai": {
     "apiKey": "API Key",
@@ -120,9 +121,15 @@
     "sessionToken": "Session Token",
     "sessionTokenTooltip": "Optional session token for temporary credentials."
   },
-  "openrouter": {
+  "openRouter": {
     "apiKey": "API Key",
     "modelPlaceholder": "e.g. anthropic/claude-3.7-sonnet"
+  },
+  "requesty": {
+    "apiKey": "API Key",
+    "modelPlaceholder": "e.g. claude-4-sonnet",
+    "autoCacheLabel": "Use Auto Cache",
+    "autoCacheTooltip": "This will instruct the router to attempt to cache the response from the provider. If a similar request has been cached previously, it might be served from the cache (depending on the provider’s caching strategy and TTL)."
   },
   "providers": {
     "anthropic": "Anthropic",
@@ -132,7 +139,8 @@
     "ollama": "Ollama",
     "openai": "OpenAI",
     "openai-compatible": "OpenAI Compatible",
-    "openrouter": "OpenRouter"
+    "openrouter": "OpenRouter",
+    "requesty": "Requesty"
   },
   "select": {
     "placeholder": "Select an option",
@@ -408,7 +416,7 @@
       "glob": "Finding files matching pattern: {{pattern}}",
       "grep": "Searching files matching '{{filePattern}}' for '{{searchTerm}}'",
       "bash": "Executing bash command: '{{command}}'",
-      "semanticSearch": "Performing semantic search: {{query}}"
+      "semanticSearch": "Performing semantic search: '{{query}}' in path: '{{path}}'"
     },
     "errors": {
       "noSuchTool": "Attempted to use unknown tool: {{toolName}}",
@@ -464,5 +472,13 @@
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",
     "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected."
+  },
+  "reasoningEffort": {
+    "label": "Reasoning",
+    "tooltip": "Reasoning effort determines how much the model will think before taking action. High reasoning effort means the model will think more before taking action, but will also take longer to respond.",
+    "none": "None",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
   }
 }

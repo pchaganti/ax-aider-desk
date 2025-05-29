@@ -16,8 +16,8 @@ import {
   type ToolExecutionOptions,
   type ToolSet,
 } from 'ai';
-import { calculateCost, delay, extractServerNameToolName, getActiveAgentProfile } from '@common/utils';
-import { getLlmProviderConfig, LlmProviderName } from '@common/agent';
+import { delay, extractServerNameToolName, getActiveAgentProfile } from '@common/utils';
+import { getCacheControl, getLlmProviderConfig, LlmProviderName, calculateCost } from '@common/agent';
 // @ts-expect-error gpt-tokenizer is not typed
 import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
 import { jsonSchemaToZod } from '@n8n/json-schema-to-zod';
@@ -397,8 +397,18 @@ export class Agent {
     // Create new abort controller for this run
     this.abortController = new AbortController();
 
+    const cacheControl = getCacheControl(profile);
+
     // Track new messages created during this run
-    const agentMessages: CoreMessage[] = [{ role: 'user', content: prompt }];
+    const agentMessages: CoreMessage[] = [
+      {
+        role: 'user',
+        content: prompt,
+        providerOptions: {
+          ...cacheControl,
+        },
+      },
+    ];
     const messages = await this.prepareMessages(project, profile);
 
     // add user message
@@ -420,8 +430,8 @@ export class Agent {
     });
 
     try {
-      const llmProvider = getLlmProviderConfig(profile.provider, settings, profile.model);
-      const model = createLlm(llmProvider, await this.getLlmEnv(project));
+      const llmProvider = getLlmProviderConfig(profile.provider, settings);
+      const model = createLlm(llmProvider, profile.model, await this.getLlmEnv(project));
       const systemPrompt = await getSystemPrompt(
         project.baseDir,
         profile.useAiderTools,
@@ -728,7 +738,7 @@ export class Agent {
 
   private processStep<TOOLS extends ToolSet>(
     currentResponseId: string | null,
-    { reasoning, text, toolCalls, toolResults, finishReason, usage }: StepResult<TOOLS>,
+    { reasoning, text, toolCalls, toolResults, finishReason, usage, providerMetadata }: StepResult<TOOLS>,
     project: Project,
     profile: AgentProfile,
   ): void {
@@ -738,9 +748,10 @@ export class Agent {
       toolCalls: toolCalls?.map((tc) => tc.toolName),
       toolResults: toolResults?.map((tr) => tr.toolName),
       usage,
+      providerMetadata,
     });
 
-    const messageCost = calculateCost(profile, usage.promptTokens, usage.completionTokens);
+    const messageCost = calculateCost(profile, usage.promptTokens, usage.completionTokens, providerMetadata);
     const usageReport: UsageReportData = {
       sentTokens: usage.promptTokens,
       receivedTokens: usage.completionTokens,

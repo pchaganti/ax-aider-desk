@@ -94,7 +94,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
           case POWER_TOOL_BASH:
             return t('toolMessage.power.bash', { command: message.args.command as string });
           case POWER_TOOL_SEMANTIC_SEARCH:
-            return t('toolMessage.power.semanticSearch', { query: message.args.query as string });
+            return t('toolMessage.power.semanticSearch', { query: message.args.searchQuery as string, path: (message.args.path as string) || '' });
           default:
             return defaultLabel();
         }

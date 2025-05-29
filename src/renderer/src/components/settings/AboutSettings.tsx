@@ -43,7 +43,7 @@ export const AboutSettings = ({ settings, setSettings }: Props) => {
             <Checkbox
               label={t('settings.about.downloadAutomatically')}
               checked={settings.aiderDeskAutoUpdate}
-              onChange={() => setSettings({ ...settings, aiderDeskAutoUpdate: !settings.aiderDeskAutoUpdate })}
+              onChange={(checked) => setSettings({ ...settings, aiderDeskAutoUpdate: checked })}
             />
           </div>
           {isDownloading && (

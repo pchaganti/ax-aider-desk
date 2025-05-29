@@ -2,6 +2,8 @@ import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OpenAiCompatibleProvider } from '@common/agent';
 
+import { ProviderModels } from './ProviderModels';
+
 import { Input } from '@/components/common/Input';
 
 type Props = {
@@ -14,7 +16,7 @@ export const OpenAiCompatibleParameters = ({ provider, onChange }: Props) => {
 
   const baseUrl = provider.baseUrl || '';
   const apiKey = provider.apiKey || '';
-  const model = provider.model || '';
+  const models = provider.models || [];
 
   const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, baseUrl: e.target.value });
@@ -24,12 +26,15 @@ export const OpenAiCompatibleParameters = ({ provider, onChange }: Props) => {
     onChange({ ...provider, apiKey: e.target.value });
   };
 
-  const handleModelChange = (selectedModel: string) => {
-    onChange({ ...provider, model: selectedModel });
+  const handleModelsChange = (updatedModels: string[]) => {
+    onChange({ ...provider, models: updatedModels });
   };
 
   return (
-    <div className="mt-2 space-y-2">
+    <div className="space-y-2">
+      <h3 className="text-md font-medium uppercase mb-5">
+        {t('providers.openai-compatible')} {t('settings.agent.providerSettings')}
+      </h3>
       <Input label={t('openai.baseUrl')} type="text" value={baseUrl} onChange={handleBaseUrlChange} placeholder={t('openai.baseUrlPlaceholder')} />
       <Input
         label={t('openai.apiKey')}
@@ -38,7 +43,7 @@ export const OpenAiCompatibleParameters = ({ provider, onChange }: Props) => {
         onChange={handleApiKeyChange}
         placeholder={t('settings.agent.envVarPlaceholder', { envVar: 'OPENAI_API_KEY' })}
       />
-      <Input label={t('model.label')} type="text" value={model} onChange={(e) => handleModelChange(e.target.value)} placeholder={t('model.placeholder')} />
+      <ProviderModels models={models} onChange={handleModelsChange} />
     </div>
   );
 };

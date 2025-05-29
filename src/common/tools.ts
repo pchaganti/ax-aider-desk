@@ -55,6 +55,6 @@ export const POWER_TOOL_DESCRIPTIONS = {
   [POWER_TOOL_GLOB]: 'Finds files and directories matching a specified glob pattern within the project. Useful for discovering files based on patterns.',
   [POWER_TOOL_GREP]:
     'Searches for content matching a regular expression pattern within files specified by a glob pattern. Returns matching lines and their context.',
-  [POWER_TOOL_SEMANTIC_SEARCH]: 'Performs semantic search across the project files.',
+  [POWER_TOOL_SEMANTIC_SEARCH]: 'Search code in the repository using Elasticsearch-like query syntax. Use this tool first for any code-related questions.',
   [POWER_TOOL_BASH]: 'Executes a shell command. For safety, commands may be sandboxed or require user approval (approval handled by Agent).',
 } as const;

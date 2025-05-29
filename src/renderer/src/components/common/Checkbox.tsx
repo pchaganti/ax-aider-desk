@@ -1,10 +1,10 @@
 import { InputHTMLAttributes, ReactNode } from 'react';
 import clsx from 'clsx';
 
-type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
+type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'size' | 'onChange'> & {
   label?: ReactNode;
   checked: boolean;
-  onChange: () => void;
+  onChange: (checked: boolean) => void;
   className?: string;
   size?: 'sm' | 'md';
 };
@@ -20,19 +20,19 @@ export const Checkbox = ({ label, checked, onChange, className = '', size = 'sm'
         },
         className,
       )}
-      onClick={onChange}
+      onClick={() => onChange(!checked)}
     >
       <div
         className="relative flex items-center justify-center"
         onClick={(e) => {
           e.stopPropagation();
-          onChange();
+          onChange(!checked);
         }}
       >
         <input
           type="checkbox"
           checked={checked}
-          onChange={onChange}
+          onChange={() => onChange(!checked)}
           className="sr-only" // Hide the actual input but keep it accessible
           {...props}
         />

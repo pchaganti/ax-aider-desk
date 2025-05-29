@@ -1,7 +1,7 @@
 import { forwardRef, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdEdit, MdKeyboardArrowUp } from 'react-icons/md';
-import { AVAILABLE_PROVIDERS, isOllamaProvider, PROVIDER_MODELS } from '@common/agent';
+import { AVAILABLE_PROVIDERS, isOllamaProvider, OpenAiCompatibleProvider, OpenRouterProvider, PROVIDER_MODELS, RequestyProvider } from '@common/agent';
 import { AgentProfile, SettingsData } from '@common/types';
 
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
@@ -53,10 +53,11 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
           }
           break;
         case 'openrouter':
+        case 'requesty':
         case 'openai-compatible': {
-          const providerModel = settings?.llmProviders[provider]?.model;
-          if (providerModel) {
-            models.push(`${provider}/${providerModel}`);
+          const llmProvider = settings?.llmProviders[provider] as OpenRouterProvider | RequestyProvider | OpenAiCompatibleProvider;
+          if (llmProvider) {
+            models.push(...llmProvider.models.sort().map((model) => `${provider}/${model}`));
           }
           break;
         }

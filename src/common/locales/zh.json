@@ -120,9 +120,13 @@
     "sessionToken": "会话令牌",
     "sessionTokenTooltip": "临时凭证的可选会话令牌。"
   },
-  "openrouter": {
+  "openRouter": {
     "apiKey": "API 密钥",
     "modelPlaceholder": "例如 anthropic/claude-3.7-sonnet"
+  },
+  "requesty": {
+    "apiKey": "API 密钥",
+    "modelPlaceholder": "例如 claude-4-sonnet"
   },
   "providers": {
     "anthropic": "Anthropic",
@@ -132,7 +136,8 @@
     "ollama": "Ollama",
     "openai": "OpenAI",
     "openai-compatible": "OpenAI Compatible",
-    "openrouter": "OpenRouter"
+    "openrouter": "OpenRouter",
+    "requesty": "Requesty"
   },
   "select": {
     "placeholder": "选择选项",
@@ -429,7 +434,7 @@
       "glob": "查找匹配模式的文件: {{pattern}}",
       "grep": "在匹配 {{filePattern}} 的文件中搜索 {{searchTerm}}",
       "bash": "执行 bash 命令: {{command}}",
-      "semanticSearch": "执行语义搜索: {{query}}"
+      "semanticSearch": "执行语义搜索: {{query}} {{path}}"
     },
     "errors": {
       "noSuchTool": "尝试使用未知工具: {{toolName}}",

@@ -6,20 +6,21 @@ import { promisify } from 'util';
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
 import { glob } from 'glob';
-import { searchTool } from '@buger/probe';
+import { search, searchSchema } from '@buger/probe';
 import { AgentProfile, FileWriteMode, ToolApprovalState } from '@common/types';
 import {
-  TOOL_GROUP_NAME_SEPARATOR,
-  POWER_TOOL_GROUP_NAME as TOOL_GROUP_NAME,
+  POWER_TOOL_BASH as TOOL_BASH,
+  POWER_TOOL_DESCRIPTIONS,
   POWER_TOOL_FILE_EDIT as TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ as TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE as TOOL_FILE_WRITE,
   POWER_TOOL_GLOB as TOOL_GLOB,
   POWER_TOOL_GREP as TOOL_GREP,
+  POWER_TOOL_GROUP_NAME as TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH as TOOL_SEMANTIC_SEARCH,
-  POWER_TOOL_BASH as TOOL_BASH,
-  POWER_TOOL_DESCRIPTIONS,
+  TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
+import logger from 'src/main/logger';
 
 import { Project } from '../../project';
 
@@ -34,11 +35,19 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
     description: POWER_TOOL_DESCRIPTIONS[TOOL_FILE_EDIT],
     parameters: z.object({
       filePath: z.string().describe('The path to the file to be edited (relative to the project root).'),
-      searchTerm: z
+      searchTerm: z.string().describe(
+        `The string or regular expression to find in the file.
+*EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
+Include enough lines in each to uniquely match each set of lines that need to change.`,
+      ),
+      replacementText: z
         .string()
-        .describe('The string or regular expression to find in the file. When editing a code, make sure you use multiple lines in the search if possible.'),
-      replacementText: z.string().describe('The string to replace the searchTerm with.'),
-      isRegex: z.boolean().optional().default(false).describe('Whether the searchTerm should be treated as a regular expression. Default: false.'),
+        .describe('The string to replace the searchTerm with. Do not use escape characters \\ in the string like \\n or \\" and others'),
+      isRegex: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Whether the searchTerm should be treated as a regular expression. Use regex only when it is really needed. Default: false.'),
       replaceAll: z.boolean().optional().default(false).describe('Whether to replace all occurrences or just the first one. Default: false.'),
     }),
     execute: async (args, { toolCallId }) => {
@@ -71,7 +80,7 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
         }
 
         if (fileContent === modifiedContent) {
-          return `Warning: Search term '${searchTerm}' did not result in changes in '${filePath}'. File content remains the same.`;
+          return "Warning: Given 'searchTerm' was not found in the file. Content remains the same. When you try again make sure to exactly match content, character for character, including all comments, docstrings, etc.";
         }
 
         await fs.writeFile(absolutePath, modifiedContent, 'utf8');
@@ -92,7 +101,9 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
       filePath: z.string().describe('The path to the file to be read (relative to the project root or absolute if outside of project directory).'),
     }),
     execute: async ({ filePath }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_READ, { filePath });
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_READ, {
+        filePath,
+      });
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_READ}`;
       const questionText = `Approve reading file '${filePath}'?`;
@@ -121,7 +132,7 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
     description: POWER_TOOL_DESCRIPTIONS[TOOL_FILE_WRITE],
     parameters: z.object({
       filePath: z.string().describe('The path to the file to be written (relative to the project root).'),
-      content: z.string().describe('The content to write to the file.'),
+      content: z.string().describe('The content to write to the file. Do not use escape characters \\ in the string like \\n or \\" and others.'),
       mode: z
         .nativeEnum(FileWriteMode)
         .optional()
@@ -131,7 +142,11 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
         ),
     }),
     execute: async ({ filePath, content, mode }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_WRITE, { filePath, content, mode });
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_WRITE, {
+        filePath,
+        content,
+        mode,
+      });
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_WRITE}`;
       const questionText =
@@ -201,7 +216,11 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
       ignore: z.array(z.string()).optional().describe('An array of glob patterns to ignore.'),
     }),
     execute: async ({ pattern, cwd, ignore }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_GLOB, { pattern, cwd, ignore });
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_GLOB, {
+        pattern,
+        cwd,
+        ignore,
+      });
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GLOB}`;
       const questionText = `Approve glob search with pattern '${pattern}'?`;
@@ -244,7 +263,12 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
       caseSensitive: z.boolean().optional().default(false).describe('Whether the search should be case sensitive. Default: false.'),
     }),
     execute: async ({ filePattern, searchTerm, contextLines, caseSensitive }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_GREP, { filePattern, searchTerm, contextLines, caseSensitive });
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_GREP, {
+        filePattern,
+        searchTerm,
+        contextLines,
+        caseSensitive,
+      });
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GREP}`;
       const questionText = `Approve grep search for '${searchTerm}' in files matching '${filePattern}'?`;
@@ -321,7 +345,11 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
       timeout: z.number().int().min(0).optional().default(60000).describe('Timeout for the command execution in milliseconds. Default: 60000 ms.'),
     }),
     execute: async ({ command, cwd, timeout }, { toolCallId }) => {
-      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_BASH, { command, cwd, timeout });
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_BASH, {
+        command,
+        cwd,
+        timeout,
+      });
 
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_BASH}`;
       const questionText = 'Approve executing bash command?';
@@ -352,6 +380,53 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
           stderr: execError.stderr || execError.message || String(error),
           exitCode: typeof execError.code === 'number' ? execError.code : 1,
         };
+      }
+    },
+  });
+
+  const searchTool = tool({
+    description: POWER_TOOL_DESCRIPTIONS[TOOL_SEMANTIC_SEARCH],
+    parameters: searchSchema,
+    execute: async ({ query: searchQuery, path, allow_tests, exact, maxTokens: paramMaxTokens, language }, { toolCallId }) => {
+      project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_SEMANTIC_SEARCH, { searchQuery, path });
+
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`;
+      const questionText = 'Approve running codebase search?';
+      const questionSubject = `Query: ${searchQuery}\nPath: ${path || '.'}\nAllow Tests: ${allow_tests}\nExact: ${exact}\nLanguage: ${language}`;
+
+      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+
+      if (!isApproved) {
+        return `Search execution denied by user. Reason: ${userInput}`;
+      }
+
+      // Use parameter maxTokens if provided, otherwise use the default
+      const effectiveMaxTokens = paramMaxTokens || 10000;
+
+      let searchPath = path || project.baseDir;
+      if (searchPath === '.' || searchPath === './') {
+        // If path is "." or "./", use the project baseDir
+        searchPath = project.baseDir;
+      }
+
+      try {
+        const results = await search({
+          query: searchQuery,
+          path: searchPath,
+          allow_tests,
+          exact,
+          json: false,
+          maxTokens: effectiveMaxTokens,
+          language,
+        });
+
+        logger.info(`Search results: ${JSON.stringify(results)}`);
+
+        return results;
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('Error executing search command:', error);
+        return `Error executing search command: ${errorMessage}`;
       }
     },
   });
@@ -497,7 +572,7 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_WRITE}`]: fileWriteTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GLOB}`]: globTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GREP}`]: grepTool,
-    [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`]: searchTool(POWER_TOOL_DESCRIPTIONS[TOOL_SEMANTIC_SEARCH]),
+    [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`]: searchTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_BASH}`]: bashTool,
     // TODO: disabled for now until better defined
     // [`power${TOOL_GROUP_NAME_SEPARATOR}lint`]: lintTool,

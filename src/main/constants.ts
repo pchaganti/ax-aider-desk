@@ -7,6 +7,8 @@ if (is.dev) {
   app.setPath('userData', `${app.getPath('userData')}-dev`);
 }
 
+export const AIDER_DESK_TITLE = 'AiderDesk';
+export const AIDER_DESK_WEBSITE = 'https://github.com/hotovo/aider-desk';
 export const AIDER_DESK_DIR = app.getPath('userData');
 export const RESOURCES_DIR = is.dev ? path.join(__dirname, '..', '..', 'resources') : process.resourcesPath;
 export const LOGS_DIR = path.join(AIDER_DESK_DIR, 'logs');

@@ -19,7 +19,7 @@ export const AgentProfileItem = ({ profile, isSelected, onClick, isDefault }: Pr
   return (
     <div
       className={clsx(
-        'w-full rounded-sm justify-start mb-0.5 truncate text-left h-auto py-1 px-2 text-sm cursor-pointer',
+        'w-full rounded-sm justify-start truncate text-left h-auto py-1 px-2 text-sm cursor-pointer',
         'transition-colors duration-200 ease-in-out',
         isSelected ? 'bg-neutral-800 text-white' : 'hover:bg-neutral-700/50 text-neutral-300',
       )}

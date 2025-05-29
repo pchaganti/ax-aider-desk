@@ -7,6 +7,13 @@ export type Mode = 'code' | 'ask' | 'architect' | 'context' | 'agent';
 
 export type EditFormat = 'diff' | 'diff-fenced' | 'whole' | 'udiff' | 'udiff-simple' | 'patch';
 
+export enum ReasoningEffort {
+  High = 'high',
+  Medium = 'medium',
+  Low = 'low',
+  None = 'none',
+}
+
 export interface ResponseChunkData {
   messageId: string;
   baseDir: string;

@@ -2,6 +2,8 @@ import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OpenRouterProvider } from '@common/agent';
 
+import { ProviderModels } from './ProviderModels';
+
 import { Input } from '@/components/common/Input';
 
 type Props = {
@@ -13,32 +15,34 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
 
   const apiKey = provider.apiKey || '';
-  const model = provider.model || '';
+  const models = provider.models || [];
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
   };
 
-  const handleModelChange = (selectedModel: string) => {
-    onChange({ ...provider, model: selectedModel });
+  const handleModelsChange = (updatedModels: string[]) => {
+    onChange({ ...provider, models: updatedModels });
   };
 
   return (
-    <div className="mt-2 space-y-2">
+    <div className="space-y-2">
+      <h3 className="text-md font-medium uppercase">
+        {t('providers.openrouter')} {t('settings.agent.providerSettings')}
+      </h3>
+      <div className="!mt-0 !mb-5">
+        <a href="https://requesty.ai" target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 hover:underline">
+          https://openrouter.ai
+        </a>
+      </div>
       <Input
-        label={t('openrouter.apiKey')}
+        label={t('openRouter.apiKey')}
         type="password"
         value={apiKey}
         onChange={handleApiKeyChange}
         placeholder={t('settings.agent.envVarPlaceholder', { envVar: 'OPENROUTER_API_KEY' })}
       />
-      <Input
-        label={t('model.label')}
-        type="text"
-        value={model}
-        onChange={(e) => handleModelChange(e.target.value)}
-        placeholder={t('openrouter.modelPlaceholder')}
-      />
+      <ProviderModels models={models} onChange={handleModelsChange} />
     </div>
   );
 };

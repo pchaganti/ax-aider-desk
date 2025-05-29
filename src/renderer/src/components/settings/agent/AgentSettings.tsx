@@ -15,6 +15,7 @@ import {
   isOpenAiCompatibleProvider,
   isOpenAiProvider,
   isOpenRouterProvider,
+  isRequestyProvider,
   LlmProvider,
   LlmProviderName,
 } from '@common/agent';
@@ -50,6 +51,7 @@ import {
   OpenAiCompatibleParameters,
   OpenAiParameters,
   OpenRouterParameters,
+  RequestyParameters,
 } from './providers';
 import { AgentProfileItem } from './AgentProfileItem';
 
@@ -350,7 +352,7 @@ export const AgentSettings = ({ settings, setSettings }: Props) => {
 
         <div className="mt-6 pt-4">
           <h4 className="text-sm uppercase font-medium">{t('settings.agent.providerSettings')}</h4>
-          <div className="py-2 space-y-0.5">
+          <div className="py-2">
             {AVAILABLE_PROVIDERS.map((providerName) => (
               <button
                 key={providerName}
@@ -358,9 +360,10 @@ export const AgentSettings = ({ settings, setSettings }: Props) => {
                   setSelectedProviderName(providerName);
                   setSelectedProfileId(null);
                 }}
-                className={`w-full text-left px-2 py-1 rounded-sm text-sm transition-colors ${
-                  selectedProviderName === providerName ? 'bg-neutral-800 text-white' : 'text-neutral-300 hover:bg-neutral-800'
-                }`}
+                className={clsx(
+                  'w-full text-left px-2 py-1 rounded-sm text-sm transition-colors',
+                  selectedProviderName === providerName ? 'bg-neutral-800 text-white' : 'text-neutral-300 hover:bg-neutral-800',
+                )}
               >
                 {t(`providers.${providerName}`)}
               </button>
@@ -372,20 +375,16 @@ export const AgentSettings = ({ settings, setSettings }: Props) => {
       {/* Center content area for provider settings or profile settings */}
       <div className="flex-1 px-4 pr-6 pt-4 pb-6 space-y-4 overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 scrollbar-thumb-rounded-full">
         {selectedProvider ? (
-          <div className="space-y-5">
-            <h3 className="text-md font-medium uppercase">
-              {t(`providers.${selectedProvider.name}`)} {t('settings.agent.providerSettings')}
-            </h3>
-            <div>
-              {isOpenAiProvider(selectedProvider) && <OpenAiParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-              {isAnthropicProvider(selectedProvider) && <AnthropicParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-              {isGeminiProvider(selectedProvider) && <GeminiParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-              {isDeepseekProvider(selectedProvider) && <DeepseekParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-              {isBedrockProvider(selectedProvider) && <BedrockParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-              {isOpenAiCompatibleProvider(selectedProvider) && <OpenAiCompatibleParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-              {isOllamaProvider(selectedProvider) && <OllamaParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-              {isOpenRouterProvider(selectedProvider) && <OpenRouterParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
-            </div>
+          <div>
+            {isOpenAiProvider(selectedProvider) && <OpenAiParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
+            {isAnthropicProvider(selectedProvider) && <AnthropicParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
+            {isGeminiProvider(selectedProvider) && <GeminiParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
+            {isDeepseekProvider(selectedProvider) && <DeepseekParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
+            {isBedrockProvider(selectedProvider) && <BedrockParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
+            {isOpenAiCompatibleProvider(selectedProvider) && <OpenAiCompatibleParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
+            {isOllamaProvider(selectedProvider) && <OllamaParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
+            {isOpenRouterProvider(selectedProvider) && <OpenRouterParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
+            {isRequestyProvider(selectedProvider) && <RequestyParameters provider={selectedProvider} onChange={handleProviderParamsChange} />}
           </div>
         ) : selectedProfile ? (
           <div className="space-y-2">
@@ -466,7 +465,7 @@ export const AgentSettings = ({ settings, setSettings }: Props) => {
                     </div>
                   }
                   checked={selectedProfile.includeContextFiles}
-                  onChange={() => handleProfileSettingChange('includeContextFiles', !selectedProfile.includeContextFiles)}
+                  onChange={(checked) => handleProfileSettingChange('includeContextFiles', checked)}
                 />
                 <Checkbox
                   label={
@@ -476,7 +475,7 @@ export const AgentSettings = ({ settings, setSettings }: Props) => {
                     </div>
                   }
                   checked={selectedProfile.includeRepoMap}
-                  onChange={() => handleProfileSettingChange('includeRepoMap', !selectedProfile.includeRepoMap)}
+                  onChange={(checked) => handleProfileSettingChange('includeRepoMap', checked)}
                 />
               </div>,
             )}

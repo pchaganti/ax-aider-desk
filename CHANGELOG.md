@@ -3,6 +3,10 @@
 ## [UNRELEASED]
 
 - light mode theme
+- added Requesty provider in Agent
+- fixed search power tool usage
+- explicit caching for Anthropic models in Agent
+- ability to setup models for OpenRouter, Requesty, and OpenAI-compatible providers
 
 ## [0.15.1]
 

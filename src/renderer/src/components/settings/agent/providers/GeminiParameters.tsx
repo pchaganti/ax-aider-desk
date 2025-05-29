@@ -19,7 +19,10 @@ export const GeminiParameters = ({ provider, onChange }: Props) => {
   };
 
   return (
-    <div className="mt-2 space-y-2">
+    <div className="space-y-2">
+      <h3 className="text-md font-medium uppercase mb-5">
+        {t('providers.gemini')} {t('settings.agent.providerSettings')}
+      </h3>
       <Input
         label={t('gemini.apiKey')}
         type="password"

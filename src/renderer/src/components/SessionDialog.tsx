@@ -50,8 +50,8 @@ export const SessionDialog = ({ onClose, onSave, initialName = '', initialLoadMe
         <div className="pt-2">
           <h3 className="text-sm font-medium mb-2">{t('session.loadSettings')}</h3>
           <div className="space-y-2">
-            <Checkbox label={t('session.loadMessages')} checked={loadMessages} onChange={() => setLoadMessages(!loadMessages)} />
-            <Checkbox label={t('session.loadFiles')} checked={loadFiles} onChange={() => setLoadFiles(!loadFiles)} />
+            <Checkbox label={t('session.loadMessages')} checked={loadMessages} onChange={setLoadMessages} />
+            <Checkbox label={t('session.loadFiles')} checked={loadFiles} onChange={setLoadFiles} />
           </div>
         </div>
       </div>

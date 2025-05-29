@@ -20,6 +20,9 @@ export const AnthropicParameters = ({ provider, onChange }: Props) => {
 
   return (
     <div className="space-y-2">
+      <h3 className="text-md font-medium uppercase mb-5">
+        {t('providers.anthropic')} {t('settings.agent.providerSettings')}
+      </h3>
       <Input
         label={t('anthropic.apiKey')}
         type="password"

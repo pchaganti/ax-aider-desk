@@ -27,10 +27,6 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [isReadOnly, setIsReadOnly] = useState(initialReadOnly);
 
-  const toggleReadOnly = () => {
-    setIsReadOnly(!isReadOnly);
-  };
-
   useEffect(() => {
     const updateSuggestions = async () => {
       if (!inputValue) {
@@ -224,7 +220,7 @@ export const AddFileDialog = ({ onClose, onAddFiles, baseDir, initialReadOnly = 
         </div>
       )}
       <div className="mt-3 ml-2">
-        <Checkbox label={t('addFileDialog.readOnly')} checked={isReadOnly} onChange={toggleReadOnly} />
+        <Checkbox label={t('addFileDialog.readOnly')} checked={isReadOnly} onChange={setIsReadOnly} />
       </div>
     </ConfirmDialog>
   );

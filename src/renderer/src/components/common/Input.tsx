@@ -1,12 +1,13 @@
 import { forwardRef, InputHTMLAttributes, ReactNode } from 'react';
 
 export type Props = InputHTMLAttributes<HTMLInputElement> & {
+  wrapperClassName?: string;
   label?: ReactNode;
 };
 
-export const Input = forwardRef<HTMLInputElement, Props>(({ label, className = '', ...props }, ref) => {
+export const Input = forwardRef<HTMLInputElement, Props>(({ wrapperClassName, label, className = '', ...props }, ref) => {
   return (
-    <div>
+    <div className={wrapperClassName}>
       {label && <label className="block text-sm font-medium text-neutral-100 mb-1">{label}</label>}
       <input
         ref={ref}

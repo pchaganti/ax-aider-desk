@@ -61,9 +61,7 @@ export const McpServerItem = ({
     return (
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center">
-          {onEnabledChange && (
-            <Checkbox id={`enable-server-${serverName}`} checked={enabled || false} onChange={() => onEnabledChange(!enabled)} className="mr-2" />
-          )}
+          {onEnabledChange && <Checkbox id={`enable-server-${serverName}`} checked={enabled || false} onChange={onEnabledChange} className="mr-2" />}
           <span className="text-sm">{serverName}</span>
         </div>
         <div className="flex items-center">
