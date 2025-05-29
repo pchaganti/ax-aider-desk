@@ -200,7 +200,8 @@ export interface SettingsData {
     environmentVariables: string;
   };
   models: {
-    preferred: string[];
+    aiderPreferred: string[];
+    agentPreferred: string[];
   };
   agentProfiles: AgentProfile[];
   mcpServers: Record<string, McpServerConfig>;

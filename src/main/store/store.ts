@@ -3,6 +3,7 @@ import { normalizeBaseDir } from '@common/utils';
 import { DEFAULT_AGENT_PROFILE, LlmProvider, LlmProviderName } from '@common/agent';
 import { parseAiderEnv } from 'src/main/utils';
 import { v4 as uuidv4 } from 'uuid';
+import { migrateSettingsV5toV6 } from 'src/main/store/migrations/v5-to-v6';
 
 import logger from '../logger';
 
@@ -31,7 +32,8 @@ export const DEFAULT_SETTINGS: SettingsData = {
     environmentVariables: '',
   },
   models: {
-    preferred: [SONNET_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, DEEPSEEK_MODEL],
+    aiderPreferred: [SONNET_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, DEEPSEEK_MODEL],
+    agentPreferred: [],
   },
   agentProfiles: [DEFAULT_AGENT_PROFILE],
   mcpServers: {},
@@ -96,7 +98,7 @@ interface StoreSchema {
   releaseNotes?: string | null;
 }
 
-const CURRENT_SETTINGS_VERSION = 5;
+const CURRENT_SETTINGS_VERSION = 6;
 
 interface CustomStore<T> {
   get<K extends keyof T>(key: K): T[K] | undefined;
@@ -181,6 +183,11 @@ export class Store {
       if (settingsVersion === 4) {
         settings = migrateSettingsV4toV5(settings);
         settingsVersion = 5;
+      }
+
+      if (settingsVersion === 5) {
+        settings = migrateSettingsV5toV6(settings);
+        settingsVersion = 6;
       }
 
       this.store.set('settings', settings as SettingsData);

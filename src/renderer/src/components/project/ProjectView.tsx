@@ -688,6 +688,7 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
             runTests={runTests}
             redoLastUserPrompt={handleRedoLastUserPrompt}
             openModelSelector={() => projectTopBarRef.current?.openMainModelSelector()}
+            openAgentModelSelector={() => projectTopBarRef.current?.openAgentModelSelector()}
             disabled={!aiderModelsData}
           />
         </div>

@@ -5,7 +5,6 @@ import { useDebounce } from 'react-use';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
-import { useSettings } from '@/context/SettingsContext';
 
 export type ModelSelectorRef = {
   open: () => void;
@@ -15,11 +14,12 @@ type Props = {
   models: string[];
   selectedModel?: string;
   onChange: (model: string) => void;
+  preferredModels: string[];
+  removePreferredModel: (model: string) => void;
 };
 
-export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, selectedModel, onChange }, ref) => {
+export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, selectedModel, onChange, preferredModels, removePreferredModel }, ref) => {
   const { t } = useTranslation();
-  const { settings, saveSettings } = useSettings();
   const [modelSearchTerm, setModelSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [highlightedModelIndex, setHighlightedModelIndex] = useState(-1);
@@ -62,11 +62,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
   };
 
   const onModelSelectorSearchInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (!settings) {
-      return;
-    }
-
-    const visiblePreferredModels = debouncedSearchTerm ? [] : settings.models.preferred;
+    const visiblePreferredModels = debouncedSearchTerm ? [] : preferredModels;
     const sortedModels = [...visiblePreferredModels, ...models.filter((model) => !visiblePreferredModels.includes(model))];
     const filteredModels = sortedModels.filter((model) => model.toLowerCase().includes(debouncedSearchTerm.toLowerCase()));
 
@@ -109,25 +105,12 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
   const showCustomModelHint = filteredModels.length === 0 && modelSearchTerm.trim() !== '';
 
   const renderModelItem = (model: string, index: number) => {
-    if (!settings) {
-      return null;
-    }
-
-    const isPreferred = settings.models.preferred.includes(model);
-    index = index + (isPreferred || debouncedSearchTerm ? 0 : settings.models.preferred.length);
+    const isPreferred = preferredModels.includes(model);
+    index = index + (isPreferred || debouncedSearchTerm ? 0 : preferredModels.length);
 
     const handleRemovePreferredModel = (e: MouseEvent) => {
       e.stopPropagation();
-
-      const updatedSettings = {
-        ...settings,
-        models: {
-          ...settings.models,
-          preferred: settings.models.preferred.filter((m) => m !== model),
-        },
-      };
-
-      void saveSettings(updatedSettings);
+      removePreferredModel(model);
     };
 
     return (
@@ -183,7 +166,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
           <div className="overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600 max-h-48">
             {!debouncedSearchTerm && (
               <>
-                {settings?.models.preferred.map(renderModelItem)}
+                {preferredModels.map(renderModelItem)}
                 <div key="divider" className="border-t border-neutral-700 my-1" />
               </>
             )}

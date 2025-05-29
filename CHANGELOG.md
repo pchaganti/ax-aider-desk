@@ -8,6 +8,7 @@
 - explicit caching for Anthropic models in Agent
 - ability to setup models for OpenRouter, Requesty, and OpenAI-compatible providers
 - added boto3 as preinstalled Python package
+- improved Agent model selector with search and preferred models
 
 ## [0.15.1]
 

@@ -51,6 +51,7 @@ type Props = {
   words?: string[];
   inputHistory?: string[];
   openModelSelector?: () => void;
+  openAgentModelSelector?: () => void;
   mode: Mode;
   onModeChanged: (mode: Mode) => void;
   runPrompt: (prompt: string) => void;
@@ -89,6 +90,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       redoLastUserPrompt,
       editLastUserMessage,
       openModelSelector,
+      openAgentModelSelector,
       disabled = false,
     }: Props,
     ref,
@@ -165,7 +167,17 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           case '/code':
           case '/context':
           case '/ask':
-          case '/agent':
+          case '/agent': {
+            const prompt = text.replace(command, '').trim();
+            setText(prompt);
+            const newMode = command.slice(1) as Mode;
+            if (mode === 'agent') {
+              openAgentModelSelector?.();
+            } else {
+              onModeChanged(newMode);
+            }
+            break;
+          }
           case '/architect': {
             const prompt = text.replace(command, '').trim();
             setText(prompt);

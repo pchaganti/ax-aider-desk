@@ -21,6 +21,7 @@ import { useBooleanState } from '@/hooks/useBooleanState';
 
 export type ProjectTopBarRef = {
   openMainModelSelector: () => void;
+  openAgentModelSelector: () => void;
 };
 
 type Props = {
@@ -39,6 +40,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
   ({ baseDir, allModels = [], modelsData, mode, renderMarkdown, onModelChange, onRenderMarkdownChanged, onExportSessionToImage, runCommand }, ref) => {
     const { t } = useTranslation();
     const { settings, saveSettings } = useSettings();
+    const agentModelSelectorRef = useRef<ModelSelectorRef>(null);
     const mainModelSelectorRef = useRef<ModelSelectorRef>(null);
     const architectModelSelectorRef = useRef<ModelSelectorRef>(null);
     const [sessions, setSessions] = useState<SessionData[]>([]);
@@ -52,6 +54,9 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         } else {
           mainModelSelectorRef.current?.open();
         }
+      },
+      openAgentModelSelector: () => {
+        agentModelSelectorRef.current?.open();
       },
     }));
 
@@ -101,7 +106,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
           ...settings,
           models: {
             ...settings.models,
-            preferred: [model, ...settings.models.preferred.filter((m) => m !== model)],
+            aiderPreferred: [...new Set([model, ...settings.models.aiderPreferred])],
           },
         };
         void saveSettings(updatedSettings);
@@ -222,6 +227,20 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
       }
     }, [sessionPopupVisible, loadSessions]);
 
+    const handleRemovePreferredModel = (model: string) => {
+      if (!settings) {
+        return;
+      }
+      const updatedSettings = {
+        ...settings,
+        models: {
+          ...settings.models,
+          aiderPreferred: settings.models.aiderPreferred.filter((preferred) => preferred !== model),
+        },
+      };
+      void saveSettings(updatedSettings);
+    };
+
     return (
       <div className="relative group h-[24px]">
         {!modelsData ? (
@@ -237,7 +256,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                   <div className="flex items-center space-x-1">
                     <RiRobot2Line className="w-4 h-4 text-neutral-100 mr-1" data-tooltip-id="agent-tooltip" />
                     <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
-                    <AgentModelSelector />
+                    <AgentModelSelector ref={agentModelSelectorRef} />
                   </div>
                   <div className="h-3 w-px bg-neutral-600/50"></div>
                 </>
@@ -257,6 +276,8 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                           models={allModels}
                           selectedModel={modelsData.architectModel || modelsData.mainModel}
                           onChange={updateArchitectModel}
+                          preferredModels={settings?.models.aiderPreferred || []}
+                          removePreferredModel={handleRemovePreferredModel}
                         />
                       </div>
                       <div className="h-3 w-px bg-neutral-600/50"></div>
@@ -270,13 +291,26 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                   id="main-model-tooltip"
                   content={renderModelInfo(t(mode === 'architect' ? 'modelSelector.editorModel' : 'modelSelector.mainModel'), modelsData.info)}
                 />
-                <ModelSelector ref={mainModelSelectorRef} models={allModels} selectedModel={modelsData.mainModel} onChange={updateMainModel} />
+                <ModelSelector
+                  ref={mainModelSelectorRef}
+                  models={allModels}
+                  selectedModel={modelsData.mainModel}
+                  onChange={updateMainModel}
+                  preferredModels={settings?.models.aiderPreferred || []}
+                  removePreferredModel={handleRemovePreferredModel}
+                />
               </div>
               <div className="h-3 w-px bg-neutral-600/50"></div>
               <div className="flex items-center space-x-1">
                 <BsFilter className="w-4 h-4 text-neutral-100 mr-1" data-tooltip-id="weak-model-tooltip" data-tooltip-content={t('modelSelector.weakModel')} />
                 <StyledTooltip id="weak-model-tooltip" />
-                <ModelSelector models={allModels} selectedModel={modelsData.weakModel || modelsData.mainModel} onChange={updateWeakModel} />
+                <ModelSelector
+                  models={allModels}
+                  selectedModel={modelsData.weakModel || modelsData.mainModel}
+                  onChange={updateWeakModel}
+                  preferredModels={settings?.models.aiderPreferred || []}
+                  removePreferredModel={handleRemovePreferredModel}
+                />
               </div>
               {modelsData.editFormat && (
                 <>

@@ -1,36 +1,32 @@
-import { forwardRef, KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdEdit, MdKeyboardArrowUp } from 'react-icons/md';
-import { AVAILABLE_PROVIDERS, isOllamaProvider, OpenAiCompatibleProvider, OpenRouterProvider, PROVIDER_MODELS, RequestyProvider } from '@common/agent';
+import { MdEdit } from 'react-icons/md';
+import {
+  AVAILABLE_PROVIDERS,
+  isOllamaProvider,
+  LlmProviderName,
+  OpenAiCompatibleProvider,
+  OpenRouterProvider,
+  PROVIDER_MODELS,
+  RequestyProvider,
+} from '@common/agent';
 import { AgentProfile, SettingsData } from '@common/types';
+
+import { ModelSelector, ModelSelectorRef } from './ModelSelector';
 
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { IconButton } from '@/components/common/IconButton';
-import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { useOllamaModels } from '@/hooks/useOllamaModels';
 import { useSettings } from '@/context/SettingsContext';
 import { useProjectSettings } from '@/context/ProjectSettingsContext';
+import { showErrorNotification } from '@/utils/notifications';
 
-type Props = Record<string, never>;
-
-export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _ref) => {
+export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
   const { t } = useTranslation();
   const { settings, saveSettings } = useSettings();
   const { projectSettings } = useProjectSettings();
-  const [highlightedModelIndex, setHighlightedModelIndex] = useState(-1);
-  const [visible, show, hide] = useBooleanState(false);
   const [settingsDialogVisible, showSettingsDialog, hideSettingsDialog] = useBooleanState(false);
-  const modelSelectorRef = useRef<HTMLDivElement>(null);
-  const highlightedModelRef = useRef<HTMLDivElement>(null);
-
-  useClickOutside(modelSelectorRef, hide);
-
-  useEffect(() => {
-    if (!visible) {
-      setHighlightedModelIndex(-1);
-    }
-  }, [visible]);
 
   const activeAgentProfile = useMemo(() => {
     return settings?.agentProfiles.find((profile) => profile.id === projectSettings?.agentProfileId);
@@ -63,7 +59,6 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
         }
         default:
           models.push(...Object.keys(PROVIDER_MODELS[provider]?.models || {}).map((model) => `${provider}/${model}`));
-          // For any other provider, we assume it has a known set of models
           break;
       }
     });
@@ -79,14 +74,6 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
 
   const selectedModelDisplay = activeAgentProfile ? `${activeAgentProfile.provider}/${activeAgentProfile.model}` : t('common.notSet');
 
-  const toggleVisible = useCallback(() => {
-    if (visible) {
-      hide();
-    } else {
-      show();
-    }
-  }, [visible, hide, show]);
-
   const onModelSelected = useCallback(
     (selectedModelString: string) => {
       if (!settings) {
@@ -96,94 +83,77 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
       const [providerName, ...modelNameParts] = selectedModelString.split('/');
       const modelName = modelNameParts.join('/');
       if (!providerName || !modelName) {
-        // eslint-disable-next-line no-console
-        console.error('Invalid model string format:', selectedModelString);
-        return; // Invalid format
+        showErrorNotification(
+          t('modelSelector.invalidModelSelection', {
+            model: selectedModelString,
+          }),
+        );
+        return;
+      }
+
+      if (!AVAILABLE_PROVIDERS.includes(providerName as LlmProviderName)) {
+        showErrorNotification(
+          t('modelSelector.providerNotSupported', {
+            provider: providerName,
+            providers: AVAILABLE_PROVIDERS.join(', '),
+          }),
+        );
+        return;
       }
 
       const updatedProfiles = settings?.agentProfiles.map((profile) => {
         if (profile.id === activeAgentProfile?.id) {
           return {
             ...profile,
-            model: modelName,
             provider: providerName,
+            model: modelName,
           } as AgentProfile;
         }
         return profile;
       });
 
+      // Update llmProvider models if needed
+      const updatedLlmProviders = { ...settings.llmProviders };
+      if (['openrouter', 'requesty', 'openai-compatible'].includes(providerName)) {
+        const provider = updatedLlmProviders[providerName];
+        if (provider && Array.isArray(provider.models) && !provider.models.includes(modelName)) {
+          updatedLlmProviders[providerName] = {
+            ...provider,
+            models: [...provider.models, modelName],
+          };
+        }
+      }
+
       const updatedSettings: SettingsData = {
         ...settings,
         agentProfiles: updatedProfiles || [],
+        models: {
+          ...settings.models,
+          agentPreferred: [...new Set([selectedModelString, ...settings.models.agentPreferred])],
+        },
+        llmProviders: updatedLlmProviders,
       };
       void saveSettings(updatedSettings);
-      hide();
     },
-    [settings, saveSettings, hide, activeAgentProfile?.id],
+    [settings, saveSettings, t, activeAgentProfile?.id],
   );
 
-  const onModelSelectorKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setHighlightedModelIndex((prev) => {
-          const newIndex = Math.min(prev + 1, agentModels.length - 1);
-          setTimeout(
-            () =>
-              highlightedModelRef.current?.scrollIntoView({
-                block: 'nearest',
-              }),
-            0,
-          );
-          return newIndex;
-        });
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedModelIndex((prev) => {
-          const newIndex = Math.max(prev - 1, 0);
-          setTimeout(
-            () =>
-              highlightedModelRef.current?.scrollIntoView({
-                block: 'nearest',
-              }),
-            0,
-          );
-          return newIndex;
-        });
-        break;
-      case 'Enter':
-        if (highlightedModelIndex !== -1) {
-          e.preventDefault();
-          const selected = agentModels[highlightedModelIndex];
-          onModelSelected(selected);
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        hide();
-        break;
-    }
-  };
-
-  const renderModelItem = (modelString: string, index: number) => {
-    const isSelected = modelString === selectedModelDisplay;
-    return (
-      <div
-        key={modelString}
-        ref={index === highlightedModelIndex ? highlightedModelRef : undefined}
-        className={`flex items-center w-full hover:bg-neutral-700 transition-colors duration-200 ${index === highlightedModelIndex ? 'bg-neutral-700' : 'text-neutral-300'}`}
-      >
-        <button
-          onClick={() => onModelSelected(modelString)}
-          className={`flex-grow px-3 py-1 text-left text-xs
-                        ${isSelected ? 'text-white font-bold' : ''}`}
-        >
-          {modelString}
-        </button>
-      </div>
-    );
-  };
+  const removePreferredModel = useCallback(
+    (model: string) => {
+      if (!settings) {
+        return;
+      }
+      const updatedSettings = {
+        ...settings,
+        models: {
+          ...settings.models,
+          agentPreferred: (settings.models.agentPreferred || []).filter((m: string) => m !== model),
+        },
+      };
+      void saveSettings(updatedSettings);
+    },
+    [settings, saveSettings],
+  );
 
   if (!activeAgentProfile) {
     return <div className="text-xs text-neutral-400">{t('modelSelector.noActiveAgentProvider')}</div>;
@@ -191,23 +161,16 @@ export const AgentModelSelector = forwardRef<HTMLDivElement, Props>((_props, _re
 
   return (
     <>
-      <div className="relative flex items-center space-x-1" ref={modelSelectorRef}>
-        <button onClick={toggleVisible} className="flex items-center hover:text-neutral-300 focus:outline-none transition-colors duration-200 text-xs">
-          <span>{selectedModelDisplay}</span>
-          <MdKeyboardArrowUp className={`w-3 h-3 ml-1 transform transition-transform ${visible ? '' : 'rotate-180'}`} />
-        </button>
+      <div className="relative flex items-center space-x-1">
+        <ModelSelector
+          ref={ref}
+          models={agentModels}
+          selectedModel={selectedModelDisplay}
+          onChange={onModelSelected}
+          preferredModels={settings?.models.agentPreferred || []}
+          removePreferredModel={removePreferredModel}
+        />
         <IconButton icon={<MdEdit className="w-4 h-4" />} onClick={showSettingsDialog} className="p-0.5 hover:bg-neutral-700 rounded-md" />
-        {visible && agentModels.length > 0 && (
-          <div
-            className="absolute top-full left-[-5px] mt-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-10 flex flex-col w-auto min-w-[500px]"
-            onKeyDown={onModelSelectorKeyDown}
-            tabIndex={-1} // Make the div focusable for keydown events
-          >
-            <div className="overflow-y-auto scrollbar-thin scrollbar-track-neutral-800 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600 max-h-48">
-              {agentModels.map(renderModelItem)}
-            </div>
-          </div>
-        )}
       </div>
       {settingsDialogVisible && <SettingsDialog onClose={hideSettingsDialog} initialTab={2} />}
     </>

@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import type { ToastOptions } from 'react-toastify';
 
 const baseOptions: ToastOptions = {
-  position: 'bottom-right',
+  position: 'top-right',
   autoClose: 3000,
   hideProgressBar: true,
   closeOnClick: true,
@@ -14,7 +14,7 @@ const baseOptions: ToastOptions = {
     color: '#333652',
   },
   style: {
-    backgroundColor: '#222431',
+    backgroundColor: '#2a2c3f',
     color: '#f1f3f5',
     border: '1px solid #343a40',
     borderRadius: '0.375rem',
@@ -46,7 +46,7 @@ export const showErrorNotification = (message: string) => {
     ...options,
     style: {
       ...options.style,
-      color: '#dd7171',
+      color: '#e16b6b',
     },
   });
 };
@@ -57,7 +57,7 @@ export const showInfoNotification = (message: string) => {
     ...options,
     style: {
       ...options.style,
-      color: '#dee2e6',
+      color: '#f1f3f5',
     },
   });
 };
