@@ -240,8 +240,17 @@ Include enough lines in each to uniquely match each set of lines that need to ch
           nodir: false,
           absolute: false, // Keep paths relative to cwd for easier processing
         });
-        // Ensure paths are relative to project.baseDir
-        return files.filter((file) => !isFileIgnored(project.baseDir, file)).map((file) => path.relative(project.baseDir, path.resolve(absoluteCwd, file)));
+        const result: string[] = [];
+
+        for (const file of files) {
+          if (await isFileIgnored(project.baseDir, file)) {
+            continue;
+          }
+          // Ensure paths are relative to project.baseDir
+          result.push(path.relative(project.baseDir, path.resolve(absoluteCwd, file)));
+        }
+
+        return result;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         return `Error executing glob pattern '${pattern}': ${errorMessage}`;
