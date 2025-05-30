@@ -53,7 +53,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
           {isExpanded ? <IoChevronDown /> : <IoChevronUp />}
         </button>
       </div>
-      <div className="text-xxs text-neutral-400">
+      <div className="text-2xs text-neutral-400">
         <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-24 mb-2' : 'max-h-0'}`}>
           {renderLabelValue('costInfo.files', `${filesTotalTokens} tokens, $${filesTotalCost.toFixed(5)}`, t)}
           <div className="flex items-center h-[20px]">
@@ -119,7 +119,7 @@ export const CostInfo = ({ tokensInfo, aiderTotalCost, clearMessages, refreshRep
           <div className="h-1 bg-neutral-800 rounded-sm overflow-hidden mb-1 flex-1">
             <div className="h-full bg-neutral-200 rounded-full" style={{ width: `${progressPercentage}%` }}></div>
           </div>
-          <div className="text-neutral-400 text-xxs">
+          <div className="text-neutral-400 text-2xs">
             {tokensEstimated && <span className="font-semibold font-mono mr-0.5">~</span>}
             {maxInputTokens > 0
               ? t('costInfo.tokenUsage', {

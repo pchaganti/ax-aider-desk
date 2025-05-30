@@ -46,7 +46,7 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
   return (
     <div className="mt-3 pt-3 h-[30px] flex items-center justify-end gap-2 border-t border-neutral-800 px-1 relative">
       {usageReport && (
-        <div className="mt-[4px] flex items-center gap-3 px-2 text-xxs text-neutral-500 group-hover:text-neutral-200 transition-colors">
+        <div className="mt-[4px] flex items-center gap-3 px-2 text-2xs text-neutral-500 group-hover:text-neutral-200 transition-colors">
           <span className="flex items-center gap-1" data-tooltip-id="usage-info-tooltip" data-tooltip-content={t('responseMessage.inputTokens')}>
             <FaArrowUp className="w-2.5 h-2.5 mb-[3px]" /> {usageReport.sentTokens}
           </span>
@@ -75,7 +75,7 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
           <ul>
             {edit && (
               <li
-                className="flex items-center gap-1 px-2 py-1 text-xxs text-neutral-100 hover:bg-neutral-700 cursor-pointer transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-2xs text-neutral-100 hover:bg-neutral-700 cursor-pointer transition-colors"
                 onClick={handleEditClick}
               >
                 <MdEdit className="w-4 h-4" />
@@ -84,7 +84,7 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
             )}
             {redo && (
               <li
-                className="flex items-center gap-1 px-2 py-1 text-xxs text-neutral-100 hover:bg-neutral-700 cursor-pointer transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-2xs text-neutral-100 hover:bg-neutral-700 cursor-pointer transition-colors"
                 onClick={handleRedoClick}
               >
                 <MdRedo className="w-4 h-4" />
@@ -93,7 +93,7 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
             )}
             {remove && (
               <li
-                className="flex items-center gap-1 px-2 py-1 text-xxs text-neutral-100 hover:bg-neutral-700 cursor-pointer transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-2xs text-neutral-100 hover:bg-neutral-700 cursor-pointer transition-colors"
                 onClick={handleRemoveClick}
               >
                 <MdDeleteForever className="w-4 h-4" />

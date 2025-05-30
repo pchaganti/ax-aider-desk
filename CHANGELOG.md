@@ -10,6 +10,7 @@
 - added boto3 as preinstalled Python package
 - improved Agent model selector with search and preferred models
 - glob and grep power tools respect gitignore patterns
+- added descriptions for commands
 
 ## [0.15.1]
 

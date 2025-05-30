@@ -64,11 +64,11 @@ export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
         <div className="flex w-full">
           <div className="flex-1 overflow-auto px-4 py-3 border-r border-neutral-850">
             <h3 className="mt-0 mb-2 text-xs font-semibold text-neutral-200">Old Value</h3>
-            <pre className="whitespace-pre-wrap break-words m-0 text-xxs text-neutral-100 leading-normal bg-neutral-850 px-3 py-2 rounded">{oldValue}</pre>
+            <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-neutral-100 leading-normal bg-neutral-850 px-3 py-2 rounded">{oldValue}</pre>
           </div>
           <div className="flex-1 overflow-auto px-4 py-3">
             <h3 className="mt-0 mb-2 text-xs font-semibold text-neutral-200">New Value</h3>
-            <pre className="whitespace-pre-wrap break-words m-0 text-xxs text-neutral-100 leading-normal bg-neutral-850 px-3 py-2 rounded">{newValue}</pre>
+            <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-neutral-100 leading-normal bg-neutral-850 px-3 py-2 rounded">{newValue}</pre>
           </div>
         </div>
         {diffError.message && (

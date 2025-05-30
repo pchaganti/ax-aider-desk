@@ -43,12 +43,12 @@ export const EditFileToolMessage = ({ message, onRemove }: Props) => {
                 {t('toolMessage.power.fileEdit.searchTerm')} ({t('toolMessage.power.fileEdit.regex')}):
               </strong>
               <br />
-              <div className="mt-2 p-1 rounded-sm border border-neutral-800 whitespace-pre-wrap text-xxs text-neutral-200">{searchTerm}</div>
+              <div className="mt-2 p-1 rounded-sm border border-neutral-800 whitespace-pre-wrap text-2xs text-neutral-200">{searchTerm}</div>
             </p>
             <p>
               <strong>{t('toolMessage.power.fileEdit.replacementText')}:</strong>
               <br />
-              <div className="mt-2 p-1 rounded-sm border border-neutral-800 whitespace-pre-wrap text-xxs text-neutral-200">{replacementText}</div>
+              <div className="mt-2 p-1 rounded-sm border border-neutral-800 whitespace-pre-wrap text-2xs text-neutral-200">{replacementText}</div>
             </p>
             <p>
               <strong>{t('toolMessage.power.fileEdit.replaceAll')}:</strong> {replaceAll ? t('common.yes') : t('common.no')}
@@ -57,7 +57,7 @@ export const EditFileToolMessage = ({ message, onRemove }: Props) => {
         ) : (
           <CodeBlock baseDir="" language={language} file={filePath} isComplete={true} oldValue={searchTerm} newValue={replacementText} />
         )}
-        {message.content && <div className="px-2 mt-2 text-neutral-100 text-xxs">{JSON.parse(message.content)}</div>}
+        {message.content && <div className="px-2 mt-2 text-neutral-100 text-2xs">{JSON.parse(message.content)}</div>}
       </div>
       <MessageBar content={message.content} usageReport={message.usageReport} remove={onRemove} />
     </div>

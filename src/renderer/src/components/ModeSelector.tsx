@@ -74,7 +74,7 @@ export const ModeSelector = ({ mode, onModeChange }: Props) => {
         className="flex items-center gap-1 px-2 py-1 bg-neutral-850 text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100 focus:outline-none transition-colors duration-200 text-xs border-neutral-600 border rounded-md"
       >
         <CurrentModeIcon className="w-4 h-4" />
-        <span className="mb-[-2px] ml-1 text-xxs">{t(currentModeLabelKey)}</span>
+        <span className="mb-[-2px] ml-1 text-2xs">{t(currentModeLabelKey)}</span>
         {modeSelectorVisible ? <MdKeyboardArrowUp className="w-4 h-4 ml-0.5" /> : <MdKeyboardArrowDown className="w-4 h-4 ml-0.5" />}
       </button>
 

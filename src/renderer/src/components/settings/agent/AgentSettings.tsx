@@ -443,7 +443,7 @@ export const AgentSettings = ({ settings, setSettings }: Props) => {
             {renderSectionAccordion(
               t('settings.agent.customInstructions'),
               <div>
-                <div className="text-xxs text-neutral-100 mb-3">{t('settings.agent.customInstructionsInfo')}</div>
+                <div className="text-2xs text-neutral-100 mb-3">{t('settings.agent.customInstructionsInfo')}</div>
                 <TextArea
                   value={selectedProfile.customInstructions}
                   onChange={(e) => handleProfileSettingChange('customInstructions', e.target.value)}

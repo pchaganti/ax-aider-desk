@@ -12,6 +12,7 @@ import { showErrorNotification } from '@/utils/notifications';
 import { ModeSelector } from '@/components/ModeSelector';
 import { AgentSelector } from '@/components/McpSelector';
 import { InputHistoryMenu } from '@/components/InputHistoryMenu';
+import { CommandSuggestion } from '@/components/CommandSuggestion';
 
 const COMMANDS = ['/code', '/context', '/agent', '/ask', '/architect', '/add', '/model', '/read-only'];
 const CONFIRM_COMMANDS = [
@@ -167,22 +168,23 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           case '/code':
           case '/context':
           case '/ask':
-          case '/agent': {
-            const prompt = text.replace(command, '').trim();
-            setText(prompt);
-            const newMode = command.slice(1) as Mode;
-            if (mode === 'agent') {
-              openAgentModelSelector?.();
-            } else {
-              onModeChanged(newMode);
-            }
-            break;
-          }
           case '/architect': {
             const prompt = text.replace(command, '').trim();
             setText(prompt);
             const newMode = command.slice(1) as Mode;
             onModeChanged(newMode);
+            break;
+          }
+          case '/agent': {
+            const prompt = text.replace(command, '').trim();
+            setText(prompt);
+            const newMode = command.slice(1) as Mode;
+            console.log('here');
+            if (mode === 'agent') {
+              openAgentModelSelector?.();
+            } else {
+              onModeChanged(newMode);
+            }
             break;
           }
           case '/add':
@@ -309,7 +311,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
         }
       }
       if (newText.startsWith('/')) {
-        const matched = [...new Set([...COMMANDS, ...CONFIRM_COMMANDS])].filter((cmd) => cmd.toLowerCase().startsWith(newText.toLowerCase()));
+        const matched = [...new Set([...COMMANDS, ...CONFIRM_COMMANDS])].filter((cmd) => cmd.toLowerCase().startsWith(newText.toLowerCase())).sort();
         setFilteredSuggestions(matched);
         setSuggestionsVisible(matched.length > 0);
       } else if (word.length > 0) {
@@ -602,10 +604,10 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
         </div>
         {suggestionsVisible && filteredSuggestions.length > 0 && (
           <div
-            className="absolute bg-neutral-950 text-xs shadow-lg z-10 text-white
+            className="absolute bg-neutral-900 border border-neutral-700 rounded-md text-xs shadow-lg z-10 text-neutral-100
             scrollbar-thin
             scrollbar-track-neutral-900
-            scrollbar-thumb-neutral-700
+            scrollbar-thumb-neutral-800
             hover:scrollbar-thumb-neutral-600"
             style={{
               bottom: `calc(100% - 4px - ${cursorPosition.top}px)`,
@@ -618,11 +620,11 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
             {filteredSuggestions.map((suggestion, index) => (
               <div
                 key={index}
-                ref={index === highlightedSuggestionIndex ? (el) => el?.scrollIntoView({ block: 'nearest' }) : null}
+                ref={index === highlightedSuggestionIndex ? (el) => el?.scrollIntoView() : null}
                 className={`px-2 py-1 cursor-pointer ${index === highlightedSuggestionIndex ? 'bg-neutral-700' : 'hover:bg-neutral-850'}`}
                 onClick={() => acceptSuggestion(suggestion)}
               >
-                {suggestion}
+                {suggestion.startsWith('/') ? <CommandSuggestion command={suggestion.slice(1)} /> : <span>{suggestion}</span>}
               </div>
             ))}
           </div>

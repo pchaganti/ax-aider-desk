@@ -152,8 +152,8 @@ export const AgentSelector = () => {
         )}
       >
         <RiToolsFill className="w-3.5 h-3.5" />
-        <span className="text-xxs truncate max-w-[250px] -mb-0.5">{activeProfile.name}</span>
-        <span className="text-xxs font-mono text-neutral-500">({enabledToolsCount ?? '...'})</span>
+        <span className="text-2xs truncate max-w-[250px] -mb-0.5">{activeProfile.name}</span>
+        <span className="text-2xs font-mono text-neutral-500">({enabledToolsCount ?? '...'})</span>
         {activeProfile.useAiderTools && <MdOutlineHdrAuto className="w-3.5 h-3.5 text-green-400 opacity-70" />}
         {activeProfile.usePowerTools && <MdFlashOn className="w-3.5 h-3.5 text-purple-400 opacity-70" />}
         {activeProfile.includeContextFiles && <MdOutlineFileCopy className="w-3 h-3 text-yellow-400 opacity-70" />}
@@ -179,7 +179,7 @@ export const AgentSelector = () => {
                 <div
                   key={profile.id}
                   className={clsx(
-                    'pl-6 pr-2 py-1 cursor-pointer transition-colors text-xxs relative',
+                    'pl-6 pr-2 py-1 cursor-pointer transition-colors text-2xs relative',
                     profile.id === activeProfile.id ? 'bg-neutral-750 text-neutral-100' : 'hover:bg-neutral-800 text-neutral-300',
                   )}
                   onClick={() => handleSwitchProfile(profile.id)}
@@ -197,7 +197,7 @@ export const AgentSelector = () => {
               title={
                 <div className="flex items-center w-full">
                   <span className="text-xs flex-1 font-medium text-neutral-200 text-left px-1 uppercase">{t('mcp.servers')}</span>
-                  <span className="text-xxs text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">
+                  <span className="text-2xs text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">
                     {enabledServers.length}/{Object.keys(mcpServers).length}
                   </span>
                 </div>

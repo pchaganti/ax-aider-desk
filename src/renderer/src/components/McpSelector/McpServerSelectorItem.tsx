@@ -44,7 +44,7 @@ export const McpServerSelectorItem = ({ serverName, disabled, toolApprovals, onT
       {toolsCount === null ? (
         <CgSpinner className="animate-spin text-xs text-neutral-700 ml-2" />
       ) : (
-        <span className="text-xxs text-neutral-700 ml-2 whitespace-nowrap">{t('mcp.toolsCount', { count: toolsCount })}</span>
+        <span className="text-2xs text-neutral-700 ml-2 whitespace-nowrap">{t('mcp.toolsCount', { count: toolsCount })}</span>
       )}
     </div>
   );

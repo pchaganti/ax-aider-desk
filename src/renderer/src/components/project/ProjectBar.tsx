@@ -77,7 +77,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         }
 
         return (
-          <div className="text-xxs text-neutral-200">
+          <div className="text-2xs text-neutral-200">
             <div className="flex items-center font-semibold text-xs text-neutral-100 mb-0.5">{modelName}</div>
             <div className="flex items-center">
               <span className="flex-1 mr-2">{t('modelInfo.maxInputTokens')}:</span> {info.max_input_tokens}

@@ -482,5 +482,31 @@
     "low": "Low",
     "medium": "Medium",
     "high": "High"
+  },
+  "commands": {
+    "add": "Add files to the context",
+    "agent": "Switch to agent mode. If already in agent mode, opens the agent model selector. Any text after the command is used as a prompt",
+    "architect": "Switch to architect mode. Architect mode is used to plan changes to the code base and execute them",
+    "ask": "Switch to ask mode. Ask questions about the code base without editing any files",
+    "clear": "Clear the chat history",
+    "code": "Switch to code mode. Ask for changes to your code",
+    "commit": "Commit unstaged changes to the repo",
+    "context": "Switch to context mode. Ask for changes and Aider will add relevant files to the context",
+    "copy-context": "Copy the current chat context as markdown, suitable to paste into a web UI",
+    "drop": "Remove files from the context to free up context space",
+    "edit-last": "Edits the last user message",
+    "map": "Print out the current repository map",
+    "map-refresh": "Force a refresh of the repository map",
+    "model": "Open the model selector",
+    "read-only": "Add files to the chat that are for reference only, or turn added files to read-only",
+    "redo": "Redoes the last user prompt.",
+    "reasoning-effort": "Set the reasoning effort level (values: number or low/medium/high depending on model)",
+    "reset": "Drop all files and clear the chat history",
+    "run": "Run a shell command and optionally add the output to the chat",
+    "test": "Run a predefined test command and add the output to the chat on non-zero exit code",
+    "think-tokens": "Set the thinking token budget (supports formats like 8096, 8k, 10.5k, 0.5M)",
+    "tokens": "Report on the number of tokens used by the current chat context",
+    "undo": "Undo the last git commit if it was done by Aider",
+    "web": "Scrape a webpage, and store in the context"
   }
 }

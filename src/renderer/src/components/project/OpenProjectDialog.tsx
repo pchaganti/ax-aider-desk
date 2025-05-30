@@ -110,7 +110,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
         onSubmit={handleAddProject}
       />
 
-      {isProjectAlreadyOpen && <div className="text-red-500 text-xxs mt-1 px-2">{t('dialogs.projectAlreadyOpenWarning')}</div>}
+      {isProjectAlreadyOpen && <div className="text-red-500 text-2xs mt-1 px-2">{t('dialogs.projectAlreadyOpenWarning')}</div>}
 
       {recentProjects.length > 0 && (
         <Accordion className="mt-2" title={<div className="flex items-center gap-2 text-sm">{t('dialogs.recentProjects')}</div>}>

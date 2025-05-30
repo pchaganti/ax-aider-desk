@@ -38,7 +38,7 @@ export const InputHistoryMenu = ({ items, highlightedIndex, onSelect, onClose, o
     <div
       ref={menuRef}
       onScroll={handleScroll}
-      className="absolute bottom-full mb-1 bg-neutral-950 border border-neutral-850 rounded-md z-10 max-h-48 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700 max-w-full"
+      className="absolute bottom-full mb-1 bg-neutral-900 border border-neutral-700 rounded-md shadow-lg z-10 max-h-48 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700 w-full"
     >
       {items.map((item, index) => (
         <div

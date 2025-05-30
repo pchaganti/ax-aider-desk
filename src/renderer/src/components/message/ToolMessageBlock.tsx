@@ -109,11 +109,11 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
 
       return (
         <div className="text-xs text-neutral-300 pt-2 px-3">
-          <pre className="whitespace-pre-wrap bg-neutral-900 p-2 rounded text-neutral-300 text-xxs my-1 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-600">
+          <pre className="whitespace-pre-wrap bg-neutral-900 p-2 rounded text-neutral-300 text-2xs my-1 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-600">
             {promptText}
           </pre>
           {parsedResult?.json && 'deniedReason' in parsedResult.json && typeof parsedResult.json.deniedReason === 'string' && (
-            <div className="flex items-start gap-1 text-neutral-100 text-xxs font-normal mt-2 whitespace-pre-wrap px-1">
+            <div className="flex items-start gap-1 text-neutral-100 text-2xs font-normal mt-2 whitespace-pre-wrap px-1">
               {t('toolMessage.deniedByReason', { reason: parsedResult.json.deniedReason })}
             </div>
           )}
@@ -216,7 +216,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
           {Object.keys(message.args).length > 0 && (
             <div className="mb-3">
               <div className="font-semibold mb-1 text-neutral-200">{t('toolMessage.arguments')}</div>
-              <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600 bg-neutral-900 p-2 rounded text-neutral-200 text-xxs">
+              <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-neutral-900 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600 bg-neutral-900 p-2 rounded text-neutral-200 text-2xs">
                 {JSON.stringify(message.args, null, 2)}
               </pre>
             </div>
