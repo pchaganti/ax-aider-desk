@@ -1,6 +1,5 @@
 import { forwardRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdEdit } from 'react-icons/md';
 import {
   AVAILABLE_PROVIDERS,
   isOllamaProvider,
@@ -11,6 +10,7 @@ import {
   RequestyProvider,
 } from '@common/agent';
 import { AgentProfile, SettingsData } from '@common/types';
+import { BiCog } from 'react-icons/bi';
 
 import { ModelSelector, ModelSelectorRef } from './ModelSelector';
 
@@ -170,9 +170,9 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
           preferredModels={settings?.models.agentPreferred || []}
           removePreferredModel={removePreferredModel}
         />
-        <IconButton icon={<MdEdit className="w-4 h-4" />} onClick={showSettingsDialog} className="p-0.5 hover:bg-neutral-700 rounded-md" />
+        <IconButton icon={<BiCog className="w-4 h-4" />} onClick={showSettingsDialog} className="p-0.5 hover:bg-neutral-700 rounded-md" />
       </div>
-      {settingsDialogVisible && <SettingsDialog onClose={hideSettingsDialog} initialTab={2} />}
+      {settingsDialogVisible && <SettingsDialog onClose={hideSettingsDialog} initialTab={2} initialAgentProvider={activeAgentProfile?.provider} />}
     </>
   );
 });

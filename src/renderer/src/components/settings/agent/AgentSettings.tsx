@@ -1,7 +1,6 @@
 import { AgentProfile, GenericTool, McpServerConfig, SettingsData, ToolApprovalState } from '@common/types';
 import { ReactNode, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { useTranslation } from 'react-i18next';
 import { FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
 import {
   AVAILABLE_PROVIDERS,
@@ -23,21 +22,22 @@ import { BiTrash } from 'react-icons/bi';
 import clsx from 'clsx';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILE,
-  AIDER_TOOL_GET_CONTEXT_FILES,
-  AIDER_TOOL_DROP_CONTEXT_FILE,
-  AIDER_TOOL_RUN_PROMPT,
   AIDER_TOOL_DESCRIPTIONS,
+  AIDER_TOOL_DROP_CONTEXT_FILE,
+  AIDER_TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
-  POWER_TOOL_GROUP_NAME,
+  AIDER_TOOL_RUN_PROMPT,
+  POWER_TOOL_BASH,
+  POWER_TOOL_DESCRIPTIONS,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE,
   POWER_TOOL_GLOB,
   POWER_TOOL_GREP,
+  POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
-  POWER_TOOL_BASH,
-  POWER_TOOL_DESCRIPTIONS,
 } from '@common/tools';
+import { useTranslation } from 'react-i18next';
 
 import { McpServer, McpServerForm } from './McpServerForm';
 import { McpServerItem } from './McpServerItem';
@@ -54,19 +54,14 @@ import {
   RequestyParameters,
 } from './providers';
 import { AgentProfileItem } from './AgentProfileItem';
+import { AgentRules } from './AgentRules';
 
 import { Button } from '@/components/common/Button';
 import { Slider } from '@/components/common/Slider';
 import { InfoIcon } from '@/components/common/InfoIcon';
-import { TextArea } from '@/components/common/TextArea';
 import { Accordion } from '@/components/common/Accordion';
 import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
-
-const CUSTOM_INSTRUCTIONS_PLACEHOLDER = `## Probe Tools Usage
-
-- use probe tools when you need to find files related to users request
-- think about the search queries you need to use to find the files`;
 
 const tools: Record<string, GenericTool[]> = {
   [AIDER_TOOL_GROUP_NAME]: [
@@ -133,16 +128,18 @@ const tools: Record<string, GenericTool[]> = {
 type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
+  initialProfileId?: string;
+  initialProvider?: LlmProviderName;
 };
 
-export const AgentSettings = ({ settings, setSettings }: Props) => {
+export const AgentSettings = ({ settings, setSettings, initialProfileId, initialProvider }: Props) => {
   const { t } = useTranslation();
   const [isAddingMcpServer, setIsAddingMcpServer] = useState(false);
   const [editingMcpServer, setEditingMcpServer] = useState<McpServer | null>(null);
   const [isEditingMcpServersConfig, setIsEditingMcpServersConfig] = useState(false);
   const [mcpServersReloadTrigger, setMcpServersReloadTrigger] = useState(0);
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(DEFAULT_AGENT_PROFILE.id);
-  const [selectedProviderName, setSelectedProviderName] = useState<LlmProviderName | null>(null);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(initialProfileId || DEFAULT_AGENT_PROFILE.id);
+  const [selectedProviderName, setSelectedProviderName] = useState<LlmProviderName | null>(initialProvider || null);
   const [mcpServersExpanded, setMcpServersExpanded] = useState(false);
   const profileNameInputRef = useRef<HTMLInputElement>(null);
 
@@ -441,17 +438,8 @@ export const AgentSettings = ({ settings, setSettings }: Props) => {
             )}
 
             {renderSectionAccordion(
-              t('settings.agent.customInstructions'),
-              <div>
-                <div className="text-2xs text-neutral-100 mb-3">{t('settings.agent.customInstructionsInfo')}</div>
-                <TextArea
-                  value={selectedProfile.customInstructions}
-                  onChange={(e) => handleProfileSettingChange('customInstructions', e.target.value)}
-                  rows={10}
-                  className="w-full resize-none"
-                  placeholder={CUSTOM_INSTRUCTIONS_PLACEHOLDER}
-                />
-              </div>,
+              t('settings.agent.rules'),
+              <AgentRules profile={selectedProfile} handleProfileSettingChange={handleProfileSettingChange} />,
             )}
 
             {renderSectionAccordion(

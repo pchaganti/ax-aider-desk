@@ -49,12 +49,13 @@ Restrictions:
 
 export const POWER_TOOL_DESCRIPTIONS = {
   [POWER_TOOL_FILE_EDIT]:
-    'Atomically finds and replaces a specific string or pattern within a specified file. This tool is useful for making targeted changes to file content.',
+    'Atomically finds and replaces a specific string or pattern within a specified file. This tool is useful for making targeted changes to file content. Before editing, make sure you read the file and you know the actual content.',
   [POWER_TOOL_FILE_READ]: 'Reads and returns the content of a specified file. Useful for inspecting file contents without adding them to the Aider context.',
   [POWER_TOOL_FILE_WRITE]: 'Writes content to a specified file. Can create a new file, overwrite an existing file, or append to an existing file.',
   [POWER_TOOL_GLOB]: 'Finds files and directories matching a specified glob pattern within the project. Useful for discovering files based on patterns.',
   [POWER_TOOL_GREP]:
     'Searches for content matching a regular expression pattern within files specified by a glob pattern. Returns matching lines and their context.',
-  [POWER_TOOL_SEMANTIC_SEARCH]: 'Search code in the repository using Elasticsearch-like query syntax. Use this tool first for any code-related questions.',
+  [POWER_TOOL_SEMANTIC_SEARCH]:
+    'Search code in the repository using Elasticsearch-like query syntax. Use this tool first for any code-related questions to find out relationships between files and what files need to be changed.',
   [POWER_TOOL_BASH]: 'Executes a shell command. For safety, commands may be sandboxed or require user approval (approval handled by Agent).',
 } as const;

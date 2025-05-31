@@ -9,6 +9,9 @@ module.exports = {
         sans: ['Inter', ...defaultTheme.fontFamily.sans],
       },
       colors: {
+        text: {
+          error: '#e16b6b',
+        },
         neutral: {
           50: '#f8f9fa',
           100: '#f1f3f5',

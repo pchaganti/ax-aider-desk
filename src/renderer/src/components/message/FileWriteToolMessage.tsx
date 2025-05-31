@@ -42,6 +42,8 @@ export const FileWriteToolMessage = ({ message, onRemove }: Props) => {
   const contentToWrite = message.args.content as string;
   const filePath = message.args.filePath as string;
 
+  const copyContent = JSON.stringify({ args: message.args, result: message.content && JSON.parse(message.content) }, null, 2);
+
   const language = getLanguageFromPath(filePath);
 
   return (
@@ -58,7 +60,7 @@ export const FileWriteToolMessage = ({ message, onRemove }: Props) => {
           {contentToWrite}
         </CodeBlock>
       </div>
-      <MessageBar content={message.content} usageReport={message.usageReport} remove={onRemove} />
+      <MessageBar content={copyContent} usageReport={message.usageReport} remove={onRemove} />
     </div>
   );
 };

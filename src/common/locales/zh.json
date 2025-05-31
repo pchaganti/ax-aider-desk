@@ -167,12 +167,13 @@
       "provider": "提供商",
       "providerSettings": "提供商设置",
       "context": "上下文",
+      "addRuleFiles": "将项目中的 `.aider-desk/rules` 目录下的规则文件添加为只读文件。",
       "runSettings": "运行参数",
       "maxIterations": "最大迭代次数",
       "minTimeBetweenToolCalls": "工具调用最小间隔时间(毫秒)",
       "maxTokens": "最大令牌数",
-      "customInstructions": "自定义指令",
-      "customInstructionsInfo": "您可以使用自定义指令为特定的 MCP 服务器添加特定指令，或控制代理的流程。",
+      "rules": "自定义指令",
+      "rulesInfo": "您可以使用自定义指令为特定的 MCP 服务器添加特定指令，或控制代理的流程。",
       "noServersConfigured": "未配置 MCP 服务器。",
       "computationalResources": "代理每次运行的最大迭代次数。有助于控制计算资源。",
       "rateLimiting": "设置工具调用之间的最小时间以防止速率限制(例如对于 Brave 或其他 API 受限的服务)。",
@@ -270,14 +271,26 @@
   },
   "addFileDialog": {
     "title": "添加上下文文件",
-    "placeholder": "输入要添加的文件或目录",
-    "placeholderFiles": "输入文件或目录，或按 Enter 键完成",
     "browse": "浏览文件",
-    "readOnly": "只读",
+    "readOnly": "只读"
+  },
+  "fileFinder": {
+    "addPathTooltip": "添加路径",
     "browseFile": "浏览文件",
     "browseDirectory": "浏览目录",
-    "removeFileTooltip": "移除文件",
-    "addPathTooltip": "添加路径"
+    "placeholder": {
+      "filesOnly": "输入要添加的文件",
+      "directoriesOnly": "输入要添加的目录",
+      "filesAndDirectories": "输入要添加的文件或目录"
+    },
+    "placeholderFinish": {
+      "filesOnly": "输入文件或按 Enter 键完成",
+      "directoriesOnly": "输入目录或按 Enter 键完成",
+      "filesAndDirectories": "输入文件或目录，或按 Enter 键完成"
+    }
+  },
+  "fileChip": {
+    "removeFileTooltip": "移除文件"
   },
   "contextFiles": {
     "title": "上下文文件",

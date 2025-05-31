@@ -6,6 +6,8 @@ out
 .DS_Store
 *.log*
 .aider*
+!.aider-desk
+.aider-desk/sessions
 .junie*
 .env
 

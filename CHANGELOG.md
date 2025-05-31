@@ -11,6 +11,9 @@
 - improved Agent model selector with search and preferred models
 - glob and grep power tools respect gitignore patterns
 - added descriptions for commands
+- adding paths of working files for improved reference in Agent when full context files are not included
+- tool messages now correctly copy the full JSON content of the tool
+- rule files for Agent and optionally for Aider
 
 ## [0.15.1]
 

@@ -198,6 +198,7 @@ export interface SettingsData {
   aider: {
     options: string;
     environmentVariables: string;
+    addRuleFiles: boolean;
   };
   models: {
     aiderPreferred: string[];

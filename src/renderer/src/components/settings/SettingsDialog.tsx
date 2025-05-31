@@ -2,6 +2,7 @@ import { SettingsData } from '@common/types';
 import { useEffect, useMemo, useState } from 'react';
 import { isEqual } from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { LlmProviderName } from '@common/agent';
 
 import { Settings } from '@/pages/Settings';
 import { useSettings } from '@/context/SettingsContext';
@@ -10,9 +11,11 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 type Props = {
   onClose: () => void;
   initialTab?: number;
+  initialAgentProfileId?: string;
+  initialAgentProvider?: LlmProviderName;
 };
 
-export const SettingsDialog = ({ onClose, initialTab = 0 }: Props) => {
+export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId, initialAgentProvider }: Props) => {
   const { t, i18n } = useTranslation();
 
   const { settings: originalSettings, saveSettings } = useSettings();
@@ -125,6 +128,8 @@ export const SettingsDialog = ({ onClose, initialTab = 0 }: Props) => {
           onLanguageChange={handleLanguageChange}
           onZoomChange={handleZoomChange}
           initialTab={initialTab}
+          initialAgentProfileId={initialAgentProfileId}
+          initialAgentProvider={initialAgentProvider}
         />
       )}
     </ConfirmDialog>

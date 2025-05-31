@@ -30,6 +30,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   aider: {
     options: '',
     environmentVariables: '',
+    addRuleFiles: true,
   },
   models: {
     aiderPreferred: [SONNET_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, DEEPSEEK_MODEL],

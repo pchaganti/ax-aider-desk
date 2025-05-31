@@ -46,6 +46,8 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
   const parsedResult = !isExecuting ? parseToolContent(message.content) : null;
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+  const copyContent = JSON.stringify({ args: message.args, result: message.content && JSON.parse(message.content) }, null, 2);
+
   useEffect(() => {
     // Auto-collapse only during the initial phase
     if (isInitialAutoExpand) {
@@ -232,7 +234,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
           )}
         </div>
       </div>
-      <MessageBar content={message.content} usageReport={message.usageReport} remove={onRemove} />
+      <MessageBar content={copyContent} usageReport={message.usageReport} remove={onRemove} />
     </div>
   );
 };

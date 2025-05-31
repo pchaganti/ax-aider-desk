@@ -17,7 +17,7 @@ import {
   type ToolSet,
 } from 'ai';
 import { delay, extractServerNameToolName, getActiveAgentProfile } from '@common/utils';
-import { getCacheControl, getLlmProviderConfig, LlmProviderName, calculateCost } from '@common/agent';
+import { calculateCost, getCacheControl, getLlmProviderConfig, LlmProviderName } from '@common/agent';
 // @ts-expect-error gpt-tokenizer is not typed
 import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
 import { jsonSchemaToZod } from '@n8n/json-schema-to-zod';
@@ -179,6 +179,30 @@ export class Agent {
           }
         }
       }
+    }
+
+    return messages;
+  }
+
+  private async getWorkingFilesMessages(project: Project): Promise<CoreMessage[]> {
+    const messages: CoreMessage[] = [];
+    const contextFiles = project.getContextFiles();
+
+    if (contextFiles.length > 0) {
+      const fileList = contextFiles
+        .map((file) => {
+          return `- ${file.path}`;
+        })
+        .join('\n');
+
+      messages.push({
+        role: 'user',
+        content: `The following files are currently in the working context:\n\n${fileList}`,
+      });
+      messages.push({
+        role: 'assistant',
+        content: 'OK, I have noted the files in the context.',
+      });
     }
 
     return messages;
@@ -432,13 +456,7 @@ export class Agent {
     try {
       const llmProvider = getLlmProviderConfig(profile.provider, settings);
       const model = createLlm(llmProvider, profile.model, await this.getLlmEnv(project));
-      const systemPrompt = await getSystemPrompt(
-        project.baseDir,
-        profile.useAiderTools,
-        profile.usePowerTools,
-        profile.includeContextFiles,
-        profile.customInstructions,
-      );
+      const systemPrompt = await getSystemPrompt(project.baseDir, profile);
 
       // repairToolCall function that attempts to repair tool calls
       const repairToolCall = async ({ toolCall, tools, error, messages, system }) => {
@@ -687,9 +705,11 @@ export class Agent {
     messages.push(...project.getContextMessages());
 
     if (profile.includeContextFiles) {
-      // Get and store new context files messages
       const contextFilesMessages = await this.getContextFilesMessages(project, profile);
       messages.push(...contextFilesMessages);
+    } else {
+      const workingFilesMessages = await this.getWorkingFilesMessages(project);
+      messages.push(...workingFilesMessages);
     }
 
     return messages;
@@ -698,13 +718,7 @@ export class Agent {
   async estimateTokens(project: Project, profile: AgentProfile): Promise<number> {
     try {
       const toolSet = await this.getAvailableTools(project, profile);
-      const systemPrompt = await getSystemPrompt(
-        project.baseDir,
-        profile.useAiderTools,
-        profile.usePowerTools,
-        profile.includeContextFiles,
-        profile.customInstructions,
-      );
+      const systemPrompt = await getSystemPrompt(project.baseDir, profile);
       const messages = await this.prepareMessages(project, profile);
 
       // Format tools for the prompt

@@ -38,7 +38,7 @@ import { TaskManager } from './task-manager';
 import { SessionManager } from './session-manager';
 import { Agent } from './agent';
 import { Connector } from './connector';
-import { AIDER_DESK_CONNECTOR_DIR, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from './constants';
+import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from './constants';
 import logger from './logger';
 import { MessageAction, ResponseMessage } from './messages';
 import { DEFAULT_MAIN_MODEL, Store } from './store';
@@ -276,6 +276,10 @@ export class Project {
 
     if (thinkingTokens !== undefined && !optionsArgsSet.has('--thinking-tokens')) {
       args.push('--thinking-tokens', thinkingTokens);
+    }
+
+    if (settings.aider.addRuleFiles) {
+      args.push('--read', AIDER_DESK_PROJECT_RULES_DIR);
     }
 
     logger.info('Running Aider with args:', { args });

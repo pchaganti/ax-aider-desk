@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { RiToolsFill } from 'react-icons/ri';
 import { getLanguageFromPath } from '@common/utils';
+import clsx from 'clsx';
 
 import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
@@ -19,6 +20,9 @@ export const EditFileToolMessage = ({ message, onRemove }: Props) => {
   const replacementText = message.args.replacementText as string;
   const isRegex = message.args.isRegex as boolean;
   const replaceAll = message.args.replaceAll as boolean;
+  const content = message.content && JSON.parse(message.content);
+
+  const copyContent = JSON.stringify({ args: message.args, result: content }, null, 2);
 
   const getToolDisplayName = (): string => {
     return t('toolMessage.power.fileEdit.title', { filePath });
@@ -57,9 +61,9 @@ export const EditFileToolMessage = ({ message, onRemove }: Props) => {
         ) : (
           <CodeBlock baseDir="" language={language} file={filePath} isComplete={true} oldValue={searchTerm} newValue={replacementText} />
         )}
-        {message.content && <div className="px-2 mt-2 text-neutral-100 text-2xs">{JSON.parse(message.content)}</div>}
+        {content && <div className={clsx('px-2 mt-2 text-2xs text-neutral-100', content.startsWith('Warning') && 'text-text-error')}>{content}</div>}
       </div>
-      <MessageBar content={message.content} usageReport={message.usageReport} remove={onRemove} />
+      <MessageBar content={copyContent} usageReport={message.usageReport} remove={onRemove} />
     </div>
   );
 };

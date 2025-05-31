@@ -262,7 +262,9 @@ export const AgentSelector = () => {
 
       <StyledTooltip id="agent-selector-tooltip" />
 
-      {showAgentProfilesDialog && <SettingsDialog onClose={() => setShowAgentProfilesDialog(false)} initialTab={2} />}
+      {showAgentProfilesDialog && (
+        <SettingsDialog onClose={() => setShowAgentProfilesDialog(false)} initialTab={2} initialAgentProfileId={projectSettings?.agentProfileId} />
+      )}
     </div>
   );
 };
