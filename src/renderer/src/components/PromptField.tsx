@@ -10,7 +10,7 @@ import getCaretCoordinates from 'textarea-caret';
 
 import { showErrorNotification } from '@/utils/notifications';
 import { ModeSelector } from '@/components/ModeSelector';
-import { AgentSelector } from '@/components/McpSelector';
+import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/InputHistoryMenu';
 import { CommandSuggestion } from '@/components/CommandSuggestion';
 
