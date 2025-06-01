@@ -40,7 +40,7 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
         `The string or regular expression to find in the file.
 *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
 Include enough lines in each to uniquely match each set of lines that need to change.
-Do not use escape characters \\ in the string like \\n or \\" and others.`,
+Do not use escape characters \\ in the string like \\n or \\" and others. Do not start the search term with a \\ character.`,
       ),
       replacementText: z
         .string()
@@ -82,7 +82,11 @@ Do not use escape characters \\ in the string like \\n or \\" and others.`,
         }
 
         if (fileContent === modifiedContent) {
-          return "Warning: Given 'searchTerm' was not found in the file. Content remains the same. When you try again make sure to exactly match content, character for character, including all comments, docstrings, etc.";
+          const improveInfo = searchTerm.startsWith('\\\n')
+            ? 'Do not start the search term with a \\ character. No escape characters are needed.'
+            : 'When you try again make sure to exactly match content, character for character, including all comments, docstrings, etc.';
+
+          return `Warning: Given 'searchTerm' was not found in the file. Content remains the same. ${improveInfo}`;
         }
 
         await fs.writeFile(absolutePath, modifiedContent, 'utf8');
