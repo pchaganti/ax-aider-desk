@@ -48,8 +48,16 @@ Restrictions:
 } as const;
 
 export const POWER_TOOL_DESCRIPTIONS = {
-  [POWER_TOOL_FILE_EDIT]:
-    'Atomically finds and replaces a specific string or pattern within a specified file. This tool is useful for making targeted changes to file content. Before editing, make sure you read the file and you know the actual content. When editing multiple lines, include the entire line in the search term, not just the part you want to change.',
+  [POWER_TOOL_FILE_EDIT]: `Atomically finds and replaces a specific string or pattern within a specified file. This tool is useful for making targeted changes to file content. Before editing, make sure you read the file and you know the actual content. When editing multiple lines, include the entire line in the search term, not just the part you want to change. <example>
+searchTerm: "
+const myFunction = () => {
+  let value = 10;
+",
+replaceText: "
+const myFunction = () => {
+  let newValue = 5;
+  let value = 10;
+"</example>`,
   [POWER_TOOL_FILE_READ]: 'Reads and returns the content of a specified file. Useful for inspecting file contents without adding them to the Aider context.',
   [POWER_TOOL_FILE_WRITE]: 'Writes content to a specified file. Can create a new file, overwrite an existing file, or append to an existing file.',
   [POWER_TOOL_GLOB]: 'Finds files and directories matching a specified glob pattern within the project. Useful for discovering files based on patterns.',

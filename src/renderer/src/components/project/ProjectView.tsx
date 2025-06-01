@@ -4,6 +4,7 @@ import {
   InputHistoryData,
   LogData,
   Mode,
+  ModelInfo,
   ModelsData,
   ProjectData,
   QuestionData,
@@ -19,7 +20,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { ResizableBox } from 'react-resizable';
 import { v4 as uuidv4 } from 'uuid';
-import { PROVIDER_MODELS } from '@common/agent';
 import clsx from 'clsx';
 import { getActiveAgentProfile } from '@common/utils';
 
@@ -57,10 +57,11 @@ type AddFileDialogOptions = {
 
 type Props = {
   project: ProjectData;
+  modelsInfo: Record<string, ModelInfo>;
   isActive?: boolean;
 };
 
-export const ProjectView = ({ project, isActive = false }: Props) => {
+export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
@@ -95,13 +96,15 @@ export const ProjectView = ({ project, isActive = false }: Props) => {
     if (projectSettings.currentMode === 'agent') {
       const activeAgentProfile = getActiveAgentProfile(settings, projectSettings);
       if (activeAgentProfile) {
-        return PROVIDER_MODELS[activeAgentProfile.provider]?.models[activeAgentProfile.model]?.maxInputTokens ?? 0;
+        const modelParts = activeAgentProfile.model.split('/');
+
+        return modelsInfo[modelParts[modelParts.length - 1]]?.maxInputTokens || 0;
       }
       return 0;
     } else {
       return aiderModelsData?.info?.max_input_tokens ?? 0;
     }
-  }, [projectSettings, settings, aiderModelsData?.info?.max_input_tokens]);
+  }, [projectSettings, settings, modelsInfo, aiderModelsData?.info?.max_input_tokens]);
 
   useEffect(() => {
     window.api.startProject(project.baseDir);

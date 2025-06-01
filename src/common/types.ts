@@ -287,6 +287,16 @@ export enum FileWriteMode {
   CreateOnly = 'create_only',
 }
 
+export interface ModelInfo {
+  maxInputTokens: number;
+  maxOutputTokens: number;
+  inputCostPerToken: number;
+  outputCostPerToken: number;
+  cacheWriteInputTokenCost?: number;
+  cacheReadInputTokenCost?: number;
+  supportsTools: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;

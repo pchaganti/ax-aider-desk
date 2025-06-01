@@ -21,9 +21,10 @@ import {
   LlmProvider,
 } from '@common/agent';
 import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from 'src/main/constants';
-import { ReasoningEffort } from '@common/types';
+import { AgentProfile, ReasoningEffort } from '@common/types';
+import { ModelInfoManager } from 'src/main/model-info-manager';
 
-import type { LanguageModel } from 'ai';
+import type { JSONValue, LanguageModel } from 'ai';
 
 export const createLlm = (provider: LlmProvider, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
   if (!model) {
@@ -165,4 +166,66 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
   } else {
     throw new Error(`Unsupported LLM provider: ${JSON.stringify(provider)}`);
   }
+};
+
+type AnthropicMetadata = {
+  anthropic: {
+    cacheCreationInputTokens?: number;
+    cacheReadInputTokens?: number;
+  };
+};
+
+export const calculateCost = (
+  modelInfoManager: ModelInfoManager,
+  profile: AgentProfile,
+  sentTokens: number,
+  receivedTokens: number,
+  providerMetadata?: AnthropicMetadata | unknown,
+) => {
+  // Get the model name directly from the provider
+  const model = profile.model;
+  if (!model) {
+    return 0;
+  }
+  const modelInfo = modelInfoManager.getModelInfo(model);
+  if (!modelInfo) {
+    return 0;
+  }
+
+  // Calculate cost in dollars (costs are per million tokens)
+  const inputCost = sentTokens * modelInfo.inputCostPerToken;
+  const outputCost = receivedTokens * modelInfo.outputCostPerToken;
+  let cacheCost = 0;
+
+  if (profile.provider === 'anthropic') {
+    const anthropicMetadata = providerMetadata as AnthropicMetadata;
+    const cacheCreationInputTokens = anthropicMetadata.anthropic?.cacheCreationInputTokens ?? 0;
+    const cacheReadInputTokens = anthropicMetadata?.anthropic?.cacheReadInputTokens ?? 0;
+    const cacheCreationCost = cacheCreationInputTokens * (modelInfo.cacheWriteInputTokenCost ?? modelInfo.inputCostPerToken);
+    const cacheReadCost = cacheReadInputTokens * (modelInfo.cacheReadInputTokenCost ?? 0);
+
+    cacheCost = cacheCreationCost + cacheReadCost;
+  }
+
+  return inputCost + outputCost + cacheCost;
+};
+
+export const getCacheControl = (profile: AgentProfile): Record<string, Record<string, JSONValue>> => {
+  if (profile.provider === 'anthropic') {
+    return {
+      anthropic: {
+        cacheControl: { type: 'ephemeral' },
+      },
+    };
+  } else if (profile.provider === 'openrouter' || profile.provider === 'requesty') {
+    if (profile.model.startsWith('anthropic/')) {
+      return {
+        anthropic: {
+          cacheControl: { type: 'ephemeral' },
+        },
+      };
+    }
+  }
+
+  return {};
 };

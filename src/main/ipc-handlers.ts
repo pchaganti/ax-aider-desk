@@ -5,6 +5,7 @@ import { McpManager } from 'src/main/agent/mcp-manager';
 
 import { Agent } from './agent';
 import { getFilePathSuggestions, isProjectPath, isValidPath } from './file-system';
+import { ModelInfoManager } from './model-info-manager';
 import { ProjectManager } from './project-manager';
 import { Store, getDefaultProjectSettings } from './store';
 import { scrapeWeb } from './web-scrapper';
@@ -19,6 +20,7 @@ export const setupIpcHandlers = (
   mcpManager: McpManager,
   agent: Agent,
   versionsManager: VersionsManager,
+  modelInfoManager: ModelInfoManager,
   telemetryManager: TelemetryManager,
 ) => {
   ipcMain.handle('load-settings', () => {
@@ -304,6 +306,15 @@ export const setupIpcHandlers = (
       return OS.MacOS;
     } else {
       return OS.Linux;
+    }
+  });
+
+  ipcMain.handle('load-models-info', async () => {
+    try {
+      return await modelInfoManager.getAllModelsInfo();
+    } catch (error) {
+      logger.error('Error loading models info:', error);
+      return {}; // Return empty object or handle error as appropriate
     }
   });
 };

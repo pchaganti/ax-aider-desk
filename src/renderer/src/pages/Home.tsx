@@ -1,4 +1,4 @@
-import { ProjectData } from '@common/types';
+import { ModelInfo, ProjectData } from '@common/types';
 import { useCallback, useEffect, useState } from 'react';
 import { MdSettings, MdUpload } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,7 @@ export const Home = () => {
   const [isTabbing, setIsTabbing] = useState(false);
   const [showSettingsTab, setShowSettingsTab] = useState<number | null>(null);
   const [releaseNotesContent, setReleaseNotesContent] = useState<string | null>(null);
+  const [modelsInfo, setModelsInfo] = useState<Record<string, ModelInfo>>({});
 
   const activeProject = openProjects.find((project) => project.active) || openProjects[0];
 
@@ -57,6 +58,21 @@ export const Home = () => {
     };
 
     void checkReleaseNotes();
+  }, []);
+
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const info = await window.api.loadModelsInfo();
+        console.log(info);
+        setModelsInfo(info);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error loading models info:', error);
+      }
+    };
+
+    void loadModels();
   }, []);
 
   const setActiveProject = async (baseDir: string) => {
@@ -124,7 +140,7 @@ export const Home = () => {
             display: activeProject?.baseDir === project.baseDir ? 'block' : 'none',
           }}
         >
-          <ProjectView project={project} isActive={activeProject?.baseDir === project.baseDir} />
+          <ProjectView project={project} isActive={activeProject?.baseDir === project.baseDir} modelsInfo={modelsInfo} />
         </div>
       </ProjectSettingsProvider>
     ));

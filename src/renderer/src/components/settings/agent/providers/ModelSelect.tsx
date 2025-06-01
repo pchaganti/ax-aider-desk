@@ -1,4 +1,4 @@
-import { PROVIDER_MODELS, LlmProviderName } from '@common/agent';
+import { DEFAULT_AGENT_PROVIDER_MODELS, LlmProviderName } from '@common/agent';
 import { useTranslation } from 'react-i18next';
 
 import { Option, Select } from '@/components/common/Select';
@@ -17,7 +17,7 @@ export const ModelSelect = ({ providerName, currentModel, onChange }: Props) => 
   };
 
   const getModelOptions = (): Option[] => {
-    const models = PROVIDER_MODELS[providerName]?.models || {};
+    const models = DEFAULT_AGENT_PROVIDER_MODELS[providerName] || [];
     return Object.keys(models).map((model) => ({
       value: model,
       label: model,

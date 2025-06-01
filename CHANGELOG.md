@@ -17,6 +17,7 @@
 - auto-approve for Agent flow and tools to remove interaction with user
 - anonymous telemetry data collection
 - enhanced paste functionality to support multiple files in Add Context Files dialog
+- loading models info with context window and costs for Agent
 
 ## [0.15.1]
 

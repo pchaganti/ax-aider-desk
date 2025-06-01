@@ -17,7 +17,7 @@ import {
   type ToolSet,
 } from 'ai';
 import { delay, extractServerNameToolName, getActiveAgentProfile } from '@common/utils';
-import { calculateCost, getCacheControl, getLlmProviderConfig, LlmProviderName } from '@common/agent';
+import { getLlmProviderConfig, LlmProviderName } from '@common/agent';
 // @ts-expect-error gpt-tokenizer is not typed
 import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
 import { jsonSchemaToZod } from '@n8n/json-schema-to-zod';
@@ -25,6 +25,7 @@ import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.j
 import { ZodSchema } from 'zod';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { TelemetryManager } from 'src/main/telemetry-manager';
+import { ModelInfoManager } from 'src/main/model-info-manager';
 
 import { parseAiderEnv } from '../utils';
 import logger from '../logger';
@@ -35,7 +36,7 @@ import { createPowerToolset } from './tools/power';
 import { getSystemPrompt } from './prompts';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
-import { createLlm } from './llm-provider';
+import { calculateCost, createLlm, getCacheControl } from './llm-provider';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 
@@ -49,6 +50,7 @@ export class Agent {
   constructor(
     private readonly store: Store,
     private readonly mcpManager: McpManager,
+    private readonly modelInfoManager: ModelInfoManager,
     private readonly telemetryManager: TelemetryManager,
   ) {}
 
@@ -753,7 +755,7 @@ export class Agent {
       providerMetadata,
     });
 
-    const messageCost = calculateCost(profile, usage.promptTokens, usage.completionTokens, providerMetadata);
+    const messageCost = calculateCost(this.modelInfoManager, profile, usage.promptTokens, usage.completionTokens, providerMetadata);
     const usageReport: UsageReportData = {
       sentTokens: usage.promptTokens,
       receivedTokens: usage.completionTokens,

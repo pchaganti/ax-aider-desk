@@ -6,7 +6,7 @@ import {
   LlmProviderName,
   OpenAiCompatibleProvider,
   OpenRouterProvider,
-  PROVIDER_MODELS,
+  DEFAULT_AGENT_PROVIDER_MODELS,
   RequestyProvider,
 } from '@common/agent';
 import { AgentProfile, SettingsData } from '@common/types';
@@ -58,7 +58,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
           break;
         }
         default:
-          models.push(...Object.keys(PROVIDER_MODELS[provider]?.models || {}).map((model) => `${provider}/${model}`));
+          models.push(...(DEFAULT_AGENT_PROVIDER_MODELS[provider] || []).map((model) => `${provider}/${model}`));
           break;
       }
     });

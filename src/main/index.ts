@@ -19,6 +19,7 @@ import { Store } from './store';
 import { VersionsManager } from './versions-manager';
 import logger from './logger';
 import { TelemetryManager } from './telemetry-manager';
+import { ModelInfoManager } from './model-info-manager';
 
 const initStore = async (): Promise<Store> => {
   const store = new Store();
@@ -77,7 +78,10 @@ const initWindow = async (store: Store) => {
 
   void mcpManager.initMcpConnectors(store.getSettings().mcpServers, activeProject?.baseDir);
 
-  const agent = new Agent(store, mcpManager, telemetryManager);
+  const modelInfoManager = new ModelInfoManager();
+  void modelInfoManager.init();
+
+  const agent = new Agent(store, mcpManager, modelInfoManager, telemetryManager);
 
   // Initialize project manager
   const projectManager = new ProjectManager(mainWindow, store, agent, telemetryManager);
@@ -94,7 +98,7 @@ const initWindow = async (store: Store) => {
   // Initialize Versions Manager (this also sets up listeners)
   const versionsManager = new VersionsManager(mainWindow, store);
 
-  setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, telemetryManager);
+  setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, modelInfoManager, telemetryManager);
 
   const beforeQuit = async () => {
     await mcpManager.close();

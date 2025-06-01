@@ -16,8 +16,6 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 
-import type { JSONValue } from 'ai';
-
 export type LlmProviderName = 'openai' | 'anthropic' | 'gemini' | 'bedrock' | 'deepseek' | 'openai-compatible' | 'ollama' | 'openrouter' | 'requesty';
 
 export interface LlmProviderBase {
@@ -111,125 +109,12 @@ export type LlmProvider =
   | OpenRouterProvider
   | RequestyProvider;
 
-// prices in dollars per million tokens
-export const PROVIDER_MODELS: Partial<
-  Record<
-    LlmProviderName,
-    {
-      models: Record<
-        string,
-        {
-          inputCost: number;
-          outputCost: number;
-          cacheCreationInputCost?: number;
-          cacheReadInputCost?: number;
-          maxInputTokens?: number;
-        }
-      >;
-    }
-  >
-> = {
-  openai: {
-    models: {
-      'gpt-4o-mini': {
-        inputCost: 0.15,
-        outputCost: 0.6,
-        maxInputTokens: 128_000,
-      },
-      'o4-mini': {
-        inputCost: 1.1,
-        outputCost: 4.4,
-        maxInputTokens: 200_000,
-      },
-      'gpt-4.1': {
-        inputCost: 2,
-        outputCost: 8,
-        maxInputTokens: 1_047_576,
-      },
-      'gpt-4.1-mini': {
-        inputCost: 0.4,
-        outputCost: 1.6,
-        maxInputTokens: 1_047_576,
-      },
-    },
-  },
-  anthropic: {
-    models: {
-      'claude-sonnet-4-20250514': {
-        inputCost: 3.0,
-        outputCost: 15.0,
-        cacheCreationInputCost: 3.75,
-        cacheReadInputCost: 0.3,
-        maxInputTokens: 200_000,
-      },
-      'claude-3-7-sonnet-20250219': {
-        inputCost: 3.0,
-        outputCost: 15.0,
-        cacheCreationInputCost: 3.75,
-        cacheReadInputCost: 0.3,
-        maxInputTokens: 200_000,
-      },
-      'claude-3-5-haiku-20241022': {
-        inputCost: 0.8,
-        outputCost: 4.0,
-        cacheCreationInputCost: 1,
-        cacheReadInputCost: 0.08,
-        maxInputTokens: 200_000,
-      },
-    },
-  },
-  gemini: {
-    models: {
-      'gemini-2.5-pro-preview-05-06': {
-        inputCost: 1.25,
-        outputCost: 10,
-        maxInputTokens: 1_048_576,
-      },
-      'gemini-2.5-flash-preview-05-20': {
-        inputCost: 0.15,
-        outputCost: 0.6,
-        maxInputTokens: 1_048_576,
-      },
-      'gemini-2.0-flash': {
-        inputCost: 0.1,
-        outputCost: 0.4,
-        maxInputTokens: 1_048_576,
-      },
-      'gemini-2.5-pro-exp-03-25': {
-        inputCost: 0,
-        outputCost: 0,
-        maxInputTokens: 1_048_576,
-      },
-      'gemini-2.0-flash-exp': {
-        inputCost: 0,
-        outputCost: 0,
-        maxInputTokens: 1_048_576,
-      },
-    },
-  },
-  deepseek: {
-    models: {
-      'deepseek-chat': {
-        inputCost: 0.27,
-        outputCost: 1.1,
-        maxInputTokens: 163_840,
-      },
-    },
-  },
-  bedrock: {
-    models: {
-      'us.anthropic.claude-3-7-sonnet-20250219-v1:0': {
-        inputCost: 3.0,
-        outputCost: 15.0,
-        maxInputTokens: 200_000,
-      },
-      'anthropic.claude-3-7-sonnet-20250219-v1:0': {
-        inputCost: 3.0,
-        outputCost: 15.0,
-        maxInputTokens: 200_000,
-      },
-    },
-  },
+export const DEFAULT_AGENT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string[]>> = {
+  openai: ['gpt-4o-mini', 'o4-mini', 'gpt-4.1', 'gpt-4.1-mini'],
+  anthropic: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],
+  gemini: ['gemini-2.5-pro-preview-05-06', 'gemini-2.5-flash-preview-05-20', 'gemini-2.0-flash', 'gemini-2.5-pro-exp-03-25', 'gemini-2.0-flash-exp'],
+  deepseek: ['deepseek-chat'],
+  bedrock: ['us.anthropic.claude-3-7-sonnet-20250219-v1:0', 'anthropic.claude-3-7-sonnet-20250219-v1:0'],
 };
 
 const DEFAULT_AGENT_PROFILE_ID = 'default';
@@ -238,7 +123,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   id: DEFAULT_AGENT_PROFILE_ID,
   name: 'Default',
   provider: 'anthropic',
-  model: Object.keys(PROVIDER_MODELS.anthropic!.models)[0],
+  model: DEFAULT_AGENT_PROVIDER_MODELS.anthropic![0],
   maxIterations: 20,
   maxTokens: 2000,
   minTimeBetweenToolCalls: 0,
@@ -338,67 +223,4 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
       ...provider,
     };
   }
-};
-
-export const getCacheControl = (profile: AgentProfile): Record<string, Record<string, JSONValue>> => {
-  if (profile.provider === 'anthropic') {
-    return {
-      anthropic: {
-        cacheControl: { type: 'ephemeral' },
-      },
-    };
-  } else if (profile.provider === 'openrouter' || profile.provider === 'requesty') {
-    if (profile.model.startsWith('anthropic/')) {
-      return {
-        anthropic: {
-          cacheControl: { type: 'ephemeral' },
-        },
-      };
-    }
-  }
-
-  return {};
-};
-
-type AnthropicMetadata = {
-  anthropic: {
-    cacheCreationInputTokens?: number;
-    cacheReadInputTokens?: number;
-  };
-};
-
-export const calculateCost = (profile: AgentProfile, sentTokens: number, receivedTokens: number, providerMetadata?: AnthropicMetadata | unknown) => {
-  const providerModels = PROVIDER_MODELS[profile.provider];
-  if (!providerModels) {
-    return 0;
-  }
-
-  // Get the model name directly from the provider
-  const model = profile.model;
-  if (!model) {
-    return 0;
-  }
-
-  // Find the model cost configuration
-  const modelCost = providerModels.models[model];
-  if (!modelCost) {
-    return 0;
-  }
-
-  // Calculate cost in dollars (costs are per million tokens)
-  const inputCost = (sentTokens * modelCost.inputCost) / 1_000_000;
-  const outputCost = (receivedTokens * modelCost.outputCost) / 1_000_000;
-  let cacheCost = 0;
-
-  if (profile.provider === 'anthropic') {
-    const anthropicMetadata = providerMetadata as AnthropicMetadata;
-    const cacheCreationInputTokens = anthropicMetadata.anthropic?.cacheCreationInputTokens ?? 0;
-    const cacheReadInputTokens = anthropicMetadata?.anthropic?.cacheReadInputTokens ?? 0;
-    const cacheCreationCost = (cacheCreationInputTokens * (modelCost.cacheCreationInputCost ?? 0)) / 1_000_000;
-    const cacheReadCost = (cacheReadInputTokens * (modelCost.cacheReadInputCost ?? 0)) / 1_000_000;
-
-    cacheCost = cacheCreationCost + cacheReadCost;
-  }
-
-  return inputCost + outputCost + cacheCost;
 };
