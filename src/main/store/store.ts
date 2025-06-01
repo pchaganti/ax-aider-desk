@@ -1,8 +1,7 @@
-import { ProjectData, ProjectSettings, SettingsData, StartupMode, WindowState } from '@common/types';
+import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, WindowState } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { DEFAULT_AGENT_PROFILE, LlmProvider, LlmProviderName } from '@common/agent';
 import { parseAiderEnv } from 'src/main/utils';
-import { v4 as uuidv4 } from 'uuid';
 import { migrateSettingsV5toV6 } from 'src/main/store/migrations/v5-to-v6';
 
 import logger from '../logger';
@@ -130,6 +129,20 @@ export class Store {
       };
     }
 
+    const getAgentProfiles = () => {
+      const mergeDefaultProperties = (agentProfile: AgentProfile) => ({
+        ...DEFAULT_AGENT_PROFILE,
+        ...agentProfile,
+      });
+
+      const defaultProfile = settings.agentProfiles?.find((profile) => profile.id === DEFAULT_AGENT_PROFILE.id);
+      if (!defaultProfile) {
+        return [DEFAULT_AGENT_PROFILE, ...(settings.agentProfiles || []).map(mergeDefaultProperties)];
+      }
+
+      return settings.agentProfiles.map(mergeDefaultProperties);
+    };
+
     // Ensure proper merging for nested objects
     return {
       ...DEFAULT_SETTINGS,
@@ -142,13 +155,7 @@ export class Store {
         ...DEFAULT_SETTINGS.models,
         ...settings?.models,
       },
-      agentProfiles:
-        settings.agentProfiles && settings.agentProfiles.length > 0
-          ? settings.agentProfiles
-          : DEFAULT_SETTINGS.agentProfiles.map((profile) => ({
-              ...profile,
-              id: uuidv4(),
-            })),
+      agentProfiles: getAgentProfiles(),
       mcpServers: settings.mcpServers || DEFAULT_SETTINGS.mcpServers,
     };
   }
