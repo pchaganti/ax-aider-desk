@@ -194,6 +194,7 @@
       "includeFilesTooltip": "Adds content of context files into the chat of agent. This will increase token usage.",
       "includeRepoMap": "Include repository map",
       "includeRepoMapTooltip": "Include the repository map from Aider in the agent's context. This can help the agent understand the project structure, but will increase token usage.",
+      "autoApprove": "Auto approve",
       "selectOrCreateProfile": "Select or create new agent profile",
       "newProfileName": "New Profile",
       "envVarPlaceholder": "{{envVar}} env var is used if left empty",

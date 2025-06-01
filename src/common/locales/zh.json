@@ -190,6 +190,7 @@
       "includeFilesTooltip": "将上下文文件内容添加到代理的聊天中。这将增加令牌使用量。",
       "includeRepoMap": "包含仓库地图",
       "includeRepoMapTooltip": "在代理的上下文中包含仓库地图。这有助于代理理解项目结构，但可能会增加token使用量。",
+      "autoApprove": "自动批准",
       "selectOrCreateProfile": "选择或创建新的代理配置",
       "newProfileName": "新配置",
       "envVarPlaceholder": "如果留空，则使用 {{envVar}} 环境变量",

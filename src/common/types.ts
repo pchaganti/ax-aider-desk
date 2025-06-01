@@ -185,6 +185,7 @@ export interface AgentProfile {
   usePowerTools: boolean;
   useAiderTools: boolean;
   customInstructions: string;
+  autoApprove: boolean;
 }
 
 export interface SettingsData {

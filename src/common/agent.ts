@@ -263,6 +263,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   useAiderTools: true,
   customInstructions: '',
   enabledServers: [],
+  autoApprove: false,
 };
 
 export const getLlmProviderConfig = (providerName: LlmProviderName, settings: SettingsData | null): LlmProvider => {

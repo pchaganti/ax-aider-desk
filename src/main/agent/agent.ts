@@ -3,7 +3,7 @@ import path from 'path';
 import { homedir } from 'os';
 
 import dotenv from 'dotenv';
-import { AgentProfile, ContextFile, ContextMessage, McpTool, QuestionData, SettingsData, ToolApprovalState, UsageReportData } from '@common/types';
+import { AgentProfile, ContextFile, ContextMessage, McpTool, SettingsData, ToolApprovalState, UsageReportData } from '@common/types';
 import {
   APICallError,
   type CoreMessage,
@@ -36,6 +36,7 @@ import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
 import { createLlm } from './llm-provider';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
+import { ApprovalManager } from './tools/approval-manager';
 
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
 
@@ -210,6 +211,7 @@ export class Agent {
 
   private async getAvailableTools(project: Project, profile: AgentProfile): Promise<ToolSet> {
     const mcpConnectors = await this.mcpManager.getConnectors();
+    const approvalManager = new ApprovalManager(project, profile);
 
     // Build the toolSet directly from enabled clients and tools
     const toolSet: ToolSet = mcpConnectors.reduce((acc, mcpConnector) => {
@@ -231,7 +233,7 @@ export class Agent {
           return; // Do not add the tool if it's never approved
         }
 
-        acc[toolId] = this.convertMpcToolToAiSdkTool(profile.provider, mcpConnector.serverName, project, profile, mcpConnector.client, tool);
+        acc[toolId] = this.convertMpcToolToAiSdkTool(profile.provider, mcpConnector.serverName, project, profile, mcpConnector.client, tool, approvalManager);
       });
 
       return acc;
@@ -261,6 +263,7 @@ export class Agent {
     profile: AgentProfile,
     mcpClient: McpSdkClient,
     toolDef: McpTool,
+    approvalManager: ApprovalManager,
   ): Tool {
     const toolId = `${serverName}${TOOL_GROUP_NAME_SEPARATOR}${toolDef.name}`;
     let zodSchema: ZodSchema;
@@ -273,39 +276,20 @@ export class Agent {
     }
 
     const execute = async (args: { [x: string]: unknown } | undefined, { toolCallId }: ToolExecutionOptions) => {
-      // --- Tool Approval Logic ---
-      const currentApprovalState = profile.toolApprovals[toolId] || ToolApprovalState.Always; // Default to Always
-
-      if (currentApprovalState === ToolApprovalState.Never) {
-        logger.warn(`Tool execution denied (Never): ${toolId}`);
-        return `Tool execution denied by user configuration (${toolId}).`;
-      }
-
       project.addToolMessage(toolCallId, serverName, toolDef.name, args);
 
-      if (currentApprovalState === ToolApprovalState.Ask) {
-        const questionData: QuestionData = {
-          baseDir: project.baseDir,
-          text: `Approve tool ${toolDef.name} from ${serverName} MCP server?`,
-          subject: `${JSON.stringify(args)}`,
-          defaultAnswer: 'y',
-          key: toolId, // Use toolId as the key for storing the answer
-        };
+      // --- Tool Approval Logic ---
+      const questionKey = toolId;
+      const questionText = `Approve tool ${toolDef.name} from ${serverName} MCP server?`;
+      const questionSubject = args ? JSON.stringify(args) : undefined;
 
-        // Ask the question and wait for the answer
-        const [yesNoAnswer, userInput] = await project.askQuestion(questionData);
+      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
 
-        const isApproved = yesNoAnswer === 'y';
-
-        if (!isApproved) {
-          logger.warn(`Tool execution denied by user: ${toolId}`);
-          return `Tool execution denied by user.${userInput ? ` User input: ${userInput}` : ''}`;
-        }
-        logger.debug(`Tool execution approved by user: ${toolId}`);
-      } else {
-        // If Always approved
-        logger.debug(`Tool execution automatically approved (Always): ${toolId}`);
+      if (!isApproved) {
+        logger.warn(`Tool execution denied by user: ${toolId}`);
+        return `Tool execution denied by user.${userInput ? ` User input: ${userInput}` : ''}`;
       }
+      logger.debug(`Tool execution approved: ${toolId}`);
       // --- End Tool Approval Logic ---
 
       // Enforce minimum time between tool calls

@@ -39,7 +39,8 @@ export const createPowerToolset = (project: Project, profile: AgentProfile): Too
       searchTerm: z.string().describe(
         `The string or regular expression to find in the file.
 *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
-Include enough lines in each to uniquely match each set of lines that need to change.`,
+Include enough lines in each to uniquely match each set of lines that need to change.
+Do not use escape characters \\ in the string like \\n or \\" and others.`,
       ),
       replacementText: z
         .string()

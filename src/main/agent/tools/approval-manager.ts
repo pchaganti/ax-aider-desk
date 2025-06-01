@@ -11,6 +11,10 @@ export class ApprovalManager {
   ) {}
 
   public async handleApproval(key: string, text: string, subject?: string): Promise<[boolean, string | undefined]> {
+    if (this.profile.autoApprove) {
+      return [true, undefined]; // Auto-approve
+    }
+
     const isApprovedFromSet = this.alwaysApproveForRunKeys.has(key) || this.profile.toolApprovals[key] === ToolApprovalState.Always;
     if (isApprovedFromSet) {
       return [true, undefined]; // Pre-approved

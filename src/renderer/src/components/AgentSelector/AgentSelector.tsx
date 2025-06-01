@@ -16,6 +16,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { Accordion } from '@/components/common/Accordion';
 import { useSettings } from '@/context/SettingsContext';
 import { useProjectSettings } from '@/context/ProjectSettingsContext';
+import { Checkbox } from '@/components/common/Checkbox';
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
 
 export const AgentSelector = () => {
@@ -223,38 +224,46 @@ export const AgentSelector = () => {
           </div>
 
           {/* Quick Settings */}
-          <div className="px-3 py-1">
-            <div className="flex items-center justify-end gap-1">
-              <IconButton
-                icon={<MdOutlineHdrAuto className={clsx('w-3.5 h-3.5', activeProfile.useAiderTools ? 'text-green-400' : 'text-neutral-500 opacity-50')} />}
-                onClick={() => handleToggleProfileSetting('useAiderTools', !activeProfile.useAiderTools)}
-                className="p-1.5 hover:bg-neutral-850 rounded-md"
-                tooltip={t('settings.agent.useAiderTools')}
-                tooltipId="agent-selector-tooltip"
+          <div className="px-3 py-2">
+            <div className="flex items-center justify-between gap-1">
+              <Checkbox
+                label={t('settings.agent.autoApprove')}
+                checked={activeProfile.autoApprove ?? false}
+                onChange={(isChecked) => handleToggleProfileSetting('autoApprove', isChecked)}
+                size="sm"
               />
-              <IconButton
-                icon={<MdFlashOn className={clsx('w-3.5 h-3.5', activeProfile.usePowerTools ? 'text-purple-400' : 'text-neutral-500 opacity-50')} />}
-                onClick={() => handleToggleProfileSetting('usePowerTools', !activeProfile.usePowerTools)}
-                className="p-1.5 hover:bg-neutral-850 rounded-md"
-                tooltip={t('settings.agent.usePowerTools')}
-                tooltipId="agent-selector-tooltip"
-              />
-              <IconButton
-                icon={
-                  <MdOutlineFileCopy className={clsx('w-3.5 h-3.5', activeProfile.includeContextFiles ? 'text-yellow-400' : 'text-neutral-500 opacity-50')} />
-                }
-                onClick={() => handleToggleProfileSetting('includeContextFiles', !activeProfile.includeContextFiles)}
-                className="p-1.5 hover:bg-neutral-850 rounded-md"
-                tooltip={t('settings.agent.includeContextFiles')}
-                tooltipId="agent-selector-tooltip"
-              />
-              <IconButton
-                icon={<MdOutlineMap className={clsx('w-3.5 h-3.5', activeProfile.includeRepoMap ? 'text-blue-400' : 'text-neutral-500 opacity-50')} />}
-                onClick={() => handleToggleProfileSetting('includeRepoMap', !activeProfile.includeRepoMap)}
-                className="p-1.5 hover:bg-neutral-850 rounded-md"
-                tooltip={t('settings.agent.includeRepoMap')}
-                tooltipId="agent-selector-tooltip"
-              />
+              <div className="flex items-center gap-1">
+                <IconButton
+                  icon={<MdOutlineHdrAuto className={clsx('w-3.5 h-3.5', activeProfile.useAiderTools ? 'text-green-400' : 'text-neutral-500 opacity-50')} />}
+                  onClick={() => handleToggleProfileSetting('useAiderTools', !activeProfile.useAiderTools)}
+                  className="p-1.5 hover:bg-neutral-850 rounded-md"
+                  tooltip={t('settings.agent.useAiderTools')}
+                  tooltipId="agent-selector-tooltip"
+                />
+                <IconButton
+                  icon={<MdFlashOn className={clsx('w-3.5 h-3.5', activeProfile.usePowerTools ? 'text-purple-400' : 'text-neutral-500 opacity-50')} />}
+                  onClick={() => handleToggleProfileSetting('usePowerTools', !activeProfile.usePowerTools)}
+                  className="p-1.5 hover:bg-neutral-850 rounded-md"
+                  tooltip={t('settings.agent.usePowerTools')}
+                  tooltipId="agent-selector-tooltip"
+                />
+                <IconButton
+                  icon={
+                    <MdOutlineFileCopy className={clsx('w-3.5 h-3.5', activeProfile.includeContextFiles ? 'text-yellow-400' : 'text-neutral-500 opacity-50')} />
+                  }
+                  onClick={() => handleToggleProfileSetting('includeContextFiles', !activeProfile.includeContextFiles)}
+                  className="p-1.5 hover:bg-neutral-850 rounded-md"
+                  tooltip={t('settings.agent.includeContextFiles')}
+                  tooltipId="agent-selector-tooltip"
+                />
+                <IconButton
+                  icon={<MdOutlineMap className={clsx('w-3.5 h-3.5', activeProfile.includeRepoMap ? 'text-blue-400' : 'text-neutral-500 opacity-50')} />}
+                  onClick={() => handleToggleProfileSetting('includeRepoMap', !activeProfile.includeRepoMap)}
+                  className="p-1.5 hover:bg-neutral-850 rounded-md"
+                  tooltip={t('settings.agent.includeRepoMap')}
+                  tooltipId="agent-selector-tooltip"
+                />
+              </div>
             </div>
           </div>
         </div>
