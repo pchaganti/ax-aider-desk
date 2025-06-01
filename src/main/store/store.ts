@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, WindowState } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { DEFAULT_AGENT_PROFILE, LlmProvider, LlmProviderName } from '@common/agent';
@@ -38,6 +39,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   agentProfiles: [DEFAULT_AGENT_PROFILE],
   mcpServers: {},
   llmProviders: {} as Record<LlmProviderName, LlmProvider>,
+  telemetryEnabled: true,
 };
 
 export const determineMainModel = (settings: SettingsData): string => {
@@ -96,6 +98,7 @@ interface StoreSchema {
   settings: SettingsData;
   settingsVersion: number;
   releaseNotes?: string | null;
+  userId?: string;
 }
 
 const CURRENT_SETTINGS_VERSION = 6;
@@ -118,6 +121,15 @@ export class Store {
     if (settings) {
       this.migrateSettings(settings, openProjects);
     }
+  }
+
+  getUserId(): string {
+    let userId = this.store.get('userId');
+    if (!userId) {
+      userId = uuidv4();
+      this.store.set('userId', userId);
+    }
+    return userId;
   }
 
   getSettings(): SettingsData {

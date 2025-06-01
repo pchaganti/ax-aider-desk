@@ -12,6 +12,7 @@ import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { useVersions } from '@/hooks/useVersions';
 import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
 import { ProjectSettingsProvider } from '@/context/ProjectSettingsContext';
+import { TelemetryInfoDialog } from '@/components/Dialogs/TelemetryInfoDialog';
 
 export const Home = () => {
   const { t } = useTranslation();
@@ -192,6 +193,7 @@ export const Home = () => {
             onClose={handleCloseReleaseNotes}
           />
         )}
+        {!releaseNotesContent && <TelemetryInfoDialog />}
         <div className="flex-grow overflow-hidden relative">
           {openProjects.length > 0 ? renderProjectPanels() : <NoProjectsOpen onOpenProject={() => setIsOpenProjectDialogVisible(true)} />}
         </div>

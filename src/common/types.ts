@@ -208,6 +208,8 @@ export interface SettingsData {
   agentProfiles: AgentProfile[];
   mcpServers: Record<string, McpServerConfig>;
   llmProviders: Record<LlmProviderName, LlmProvider>;
+  telemetryEnabled: boolean;
+  telemetryInformed?: boolean;
 }
 
 export interface UsageReportData {

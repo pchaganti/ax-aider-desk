@@ -1,6 +1,7 @@
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow } from 'electron';
 import { SettingsData } from '@common/types';
+import { TelemetryManager } from 'src/main/telemetry-manager';
 
 import { Agent } from './agent';
 import logger from './logger';
@@ -14,6 +15,7 @@ export class ProjectManager {
     private readonly mainWindow: BrowserWindow,
     private readonly store: Store,
     private readonly agent: Agent,
+    private readonly telemetryManager: TelemetryManager,
   ) {
     this.mainWindow = mainWindow;
     this.store = store;
@@ -26,7 +28,7 @@ export class ProjectManager {
 
   private createProject(baseDir: string) {
     logger.info('Creating new project', { baseDir });
-    const project = new Project(this.mainWindow, baseDir, this.store, this.agent);
+    const project = new Project(this.mainWindow, baseDir, this.store, this.agent, this.telemetryManager);
     this.projects.push(project);
     return project;
   }

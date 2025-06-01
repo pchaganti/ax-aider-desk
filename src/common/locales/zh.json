@@ -30,9 +30,10 @@
     "default": "默认",
     "suffix.billion": "十亿",
     "suffix.million": "百万",
-    "suffix.thousand": "千"
+    "suffix.thousand": "千",
+    "ok": "确定"
   },
-  "search" : {
+  "search": {
     "placeholder": "查找...",
     "previousResult": "上一个结果 (SHIFT + F3)",
     "nextResult": "下一个结果 (F3)"
@@ -530,5 +531,10 @@
     "tokens": "报告当前聊天上下文使用的令牌数量",
     "undo": "撤消 Aider 完成的最后一次 git 提交",
     "web": "抓取网页并存储在上下文中"
+  },
+  "telemetry": {
+    "title": "遥测信息",
+    "message": "为了帮助我们改进 AiderDesk，我们会收集匿名遥测数据。这包括功能使用情况和性能指标等信息。绝不会收集个人数据或代码。",
+    "enabledLabel": "启用匿名遥测"
   }
 }

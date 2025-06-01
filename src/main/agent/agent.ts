@@ -24,6 +24,7 @@ import { jsonSchemaToZod } from '@n8n/json-schema-to-zod';
 import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
 import { ZodSchema } from 'zod';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { TelemetryManager } from 'src/main/telemetry-manager';
 
 import { parseAiderEnv } from '../utils';
 import logger from '../logger';
@@ -48,6 +49,7 @@ export class Agent {
   constructor(
     private readonly store: Store,
     private readonly mcpManager: McpManager,
+    private readonly telemetryManager: TelemetryManager,
   ) {}
 
   private invalidateAiderEnv() {
@@ -399,8 +401,10 @@ export class Agent {
     logger.debug('AgentProfile:', profile);
 
     if (!profile) {
-      throw new Error('No active MCP provider found');
+      throw new Error('No active Agent profile found');
     }
+
+    this.telemetryManager.captureAgentRun(profile);
 
     // Create new abort controller for this run
     this.abortController = new AbortController();

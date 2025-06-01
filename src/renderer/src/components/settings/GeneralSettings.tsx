@@ -66,6 +66,13 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     });
   };
 
+  const handleTelemetryEnabledChange = (checked: boolean) => {
+    setSettings({
+      ...settings,
+      telemetryEnabled: checked,
+    });
+  };
+
   return (
     <div className="space-y-8 min-h-[300px]">
       <Section title={t('settings.gui')}>
@@ -101,6 +108,12 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
       <Section title={t('settings.notifications.title')}>
         <div className="px-4 py-3 space-y-3 mt-2">
           <Checkbox label={t('settings.notificationsEnabled')} checked={settings.notificationsEnabled ?? false} onChange={handleNotificationsEnabledChange} />
+        </div>
+      </Section>
+
+      <Section title={t('settings.telemetry.title')}>
+        <div className="px-4 py-3 space-y-3 mt-2">
+          <Checkbox label={t('telemetry.enabledLabel')} checked={settings.telemetryEnabled ?? false} onChange={handleTelemetryEnabledChange} />
         </div>
       </Section>
     </div>

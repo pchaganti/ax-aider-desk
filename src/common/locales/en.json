@@ -30,7 +30,8 @@
     "default": "Default",
     "suffix.billion": "B",
     "suffix.million": "M",
-    "suffix.thousand": "K"
+    "suffix.thousand": "K",
+    "ok": "OK"
   },
   "search": {
     "placeholder": "Search...",
@@ -239,6 +240,9 @@
       "newAiderDeskVersionReady": "A new version is ready. Restart AiderDesk to apply the update.",
       "downloadAutomatically": "Download update automatically",
       "releaseNotes": "Release notes"
+    },
+    "telemetry": {
+      "title": "Telemetry"
     }
   },
   "messages": {
@@ -525,5 +529,11 @@
     "tokens": "Report on the number of tokens used by the current chat context",
     "undo": "Undo the last git commit if it was done by Aider",
     "web": "Scrape a webpage, and store in the context"
+  },
+  "telemetry": {
+    "title": "Telemetry Information",
+    "message": "To help us improve AiderDesk, anonymous telemetry data is collected. This includes information like mode usage (agent, code, ask...) and some specifics when Agent mode is used. No personal data or prompts are ever collected.",
+    "fullInfo": "Full information about what is collected can be found <a>here</a>.",
+    "enabledLabel": "Enable anonymous telemetry"
   }
 }

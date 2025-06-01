@@ -33,6 +33,7 @@ import { fileExists, getActiveAgentProfile, parseUsageReport } from '@common/uti
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
 import { parse } from '@dotenvx/dotenvx';
+import { TelemetryManager } from 'src/main/telemetry-manager';
 
 import { TaskManager } from './task-manager';
 import { SessionManager } from './session-manager';
@@ -75,6 +76,7 @@ export class Project {
     public readonly baseDir: string,
     private readonly store: Store,
     private readonly agent: Agent,
+    private readonly telemetryManager: TelemetryManager,
   ) {
     this.git = simpleGit(this.baseDir);
     this.tokensInfo = {
@@ -445,6 +447,8 @@ export class Project {
 
     this.addUserMessage(prompt, mode);
     this.addLogMessage('loading');
+
+    this.telemetryManager.captureRunPrompt(mode);
 
     if (mode === 'agent') {
       const agentMessages = await this.agent.runAgent(this, prompt);
@@ -1044,7 +1048,11 @@ export class Project {
   }
 
   public async redoLastUserPrompt(mode: Mode, updatedPrompt?: string) {
-    logger.info('Redoing last user prompt:', { baseDir: this.baseDir, mode, hasUpdatedPrompt: !!updatedPrompt });
+    logger.info('Redoing last user prompt:', {
+      baseDir: this.baseDir,
+      mode,
+      hasUpdatedPrompt: !!updatedPrompt,
+    });
     const originalLastUserMessageContent = this.sessionManager.removeLastUserMessage();
 
     const promptToRun = updatedPrompt ?? originalLastUserMessageContent;

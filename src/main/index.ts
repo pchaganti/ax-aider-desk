@@ -18,6 +18,7 @@ import { performStartUp, UpdateProgressData } from './start-up';
 import { Store } from './store';
 import { VersionsManager } from './versions-manager';
 import logger from './logger';
+import { TelemetryManager } from './telemetry-manager';
 
 const initStore = async (): Promise<Store> => {
   const store = new Store();
@@ -68,15 +69,18 @@ const initWindow = async (store: Store) => {
   mainWindow.on('maximize', saveWindowState);
   mainWindow.on('unmaximize', saveWindowState);
 
+  const telemetryManager = new TelemetryManager(store);
+  await telemetryManager.init();
+
   const mcpManager = new McpManager();
   const activeProject = store.getOpenProjects().find((project) => project.active);
 
   void mcpManager.initMcpConnectors(store.getSettings().mcpServers, activeProject?.baseDir);
 
-  const agent = new Agent(store, mcpManager);
+  const agent = new Agent(store, mcpManager, telemetryManager);
 
   // Initialize project manager
-  const projectManager = new ProjectManager(mainWindow, store, agent);
+  const projectManager = new ProjectManager(mainWindow, store, agent, telemetryManager);
 
   // Create HTTP server
   const httpServer = createServer();
@@ -90,7 +94,7 @@ const initWindow = async (store: Store) => {
   // Initialize Versions Manager (this also sets up listeners)
   const versionsManager = new VersionsManager(mainWindow, store);
 
-  setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager);
+  setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, telemetryManager);
 
   const beforeQuit = async () => {
     await mcpManager.close();
@@ -98,6 +102,7 @@ const initWindow = async (store: Store) => {
     await connectorManager.close();
     await projectManager.close();
     versionsManager.destroy();
+    await telemetryManager.destroy();
   };
 
   app.on('before-quit', beforeQuit);

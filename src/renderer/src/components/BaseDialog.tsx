@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 type Props = {
   title: string;
-  onClose: () => void;
+  onClose?: () => void;
   children: ReactNode;
   footer?: ReactNode;
   width?: number;
@@ -22,7 +22,7 @@ export const BaseDialog = ({ title, onClose, children, footer, width = 384, clos
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        onClose?.();
       }
     };
 

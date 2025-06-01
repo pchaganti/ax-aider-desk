@@ -15,6 +15,7 @@
 - tool messages now correctly copy the full JSON content of the tool
 - rule files for Agent and optionally for Aider
 - auto-approve for Agent flow and tools to remove interaction with user
+- anonymous telemetry data collection
 
 ## [0.15.1]
 

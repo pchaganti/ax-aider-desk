@@ -20,3 +20,5 @@ export const AIDER_DESK_MCP_SERVER_DIR = path.join(AIDER_DESK_DIR, 'mcp-server')
 export const SERVER_PORT = process.env.AIDER_DESK_PORT ? parseInt(process.env.AIDER_DESK_PORT) : 24337;
 export const PID_FILES_DIR = path.join(AIDER_DESK_DIR, 'aider-processes');
 export const AIDER_DESK_PROJECT_RULES_DIR = '.aider-desk/rules';
+export const POSTHOG_PUBLIC_API_KEY = 'phc_AF4zkjrcziXLh8PBFsRSvVr4VZ38p3ezsdX0KDYuElI';
+export const POSTHOG_HOST = 'https://eu.i.posthog.com';

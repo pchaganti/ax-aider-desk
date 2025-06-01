@@ -10,6 +10,7 @@ import { Store, getDefaultProjectSettings } from './store';
 import { scrapeWeb } from './web-scrapper';
 import logger from './logger';
 import { VersionsManager } from './versions-manager';
+import { TelemetryManager } from './telemetry-manager';
 
 export const setupIpcHandlers = (
   mainWindow: BrowserWindow,
@@ -18,6 +19,7 @@ export const setupIpcHandlers = (
   mcpManager: McpManager,
   agent: Agent,
   versionsManager: VersionsManager,
+  telemetryManager: TelemetryManager,
 ) => {
   ipcMain.handle('load-settings', () => {
     return store.getSettings();
@@ -30,6 +32,7 @@ export const setupIpcHandlers = (
     mcpManager.settingsChanged(oldSettings, newSettings);
     agent.settingsChanged(oldSettings, newSettings);
     projectManager.settingsChanged(oldSettings, newSettings);
+    telemetryManager.settingsChanged(oldSettings, newSettings);
 
     return store.getSettings();
   });
@@ -87,6 +90,8 @@ export const setupIpcHandlers = (
       };
       const updatedProjects = [...projects.map((p) => ({ ...p, active: false })), newProject];
       store.setOpenProjects(updatedProjects);
+
+      telemetryManager.captureProjectOpened(store.getOpenProjects().length);
     }
     return store.getOpenProjects();
   });
@@ -103,6 +108,9 @@ export const setupIpcHandlers = (
     }
 
     store.setOpenProjects(updatedProjects);
+
+    telemetryManager.captureProjectClosed(store.getOpenProjects().length);
+
     return updatedProjects;
   });
 
