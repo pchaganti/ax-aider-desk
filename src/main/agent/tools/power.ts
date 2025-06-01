@@ -56,6 +56,28 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       const { filePath, searchTerm, replacementText, isRegex, replaceAll } = args;
       project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_EDIT, args);
 
+      // Sanitize escape characters from searchTerm and replacementText
+      const sanitize = (str: string) => {
+        // Remove leading backslash
+        let s = str.replace(/^\\+/, '');
+        // Remove escaped newlines, quotes, tabs, etc.
+        s = s.replace(/\\[nrt"']/g, (match) => {
+          switch (match) {
+            case '\\n':
+            case '\\r':
+            case '\\t':
+              return '';
+            case '\\"':
+              return '"';
+            case "\\'":
+              return "'";
+            default:
+              return '';
+          }
+        });
+        return s;
+      };
+
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_EDIT}`;
       const questionText = `Approve editing file '${filePath}'?`;
 
@@ -74,10 +96,13 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           const regex = new RegExp(searchTerm, replaceAll ? 'g' : '');
           modifiedContent = fileContent.replace(regex, replacementText);
         } else {
+          const sanitizedSearchTerm = sanitize(searchTerm);
+          const sanitizedReplacementText = sanitize(replacementText);
+
           if (replaceAll) {
-            modifiedContent = fileContent.replaceAll(searchTerm, replacementText);
+            modifiedContent = fileContent.replaceAll(sanitizedSearchTerm, sanitizedReplacementText);
           } else {
-            modifiedContent = fileContent.replace(searchTerm, replacementText);
+            modifiedContent = fileContent.replace(sanitizedSearchTerm, sanitizedReplacementText);
           }
         }
 
