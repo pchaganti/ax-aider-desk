@@ -174,7 +174,7 @@ export class Store {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private migrateSettings(settings: any, openProjects: any): SettingsData {
-    let settingsVersion = this.store.get('settingsVersion') ?? CURRENT_SETTINGS_VERSION;
+    let settingsVersion = this.store.get('settingsVersion') ?? this.findOutCurrentVersion(settings);
 
     if (settingsVersion < CURRENT_SETTINGS_VERSION) {
       logger.info(`Migrating settings from version ${settingsVersion} to ${CURRENT_SETTINGS_VERSION}`);
@@ -212,9 +212,24 @@ export class Store {
 
       this.store.set('settings', settings as SettingsData);
       this.store.set('openProjects', openProjects || []);
-      this.store.set('settingsVersion', CURRENT_SETTINGS_VERSION);
     }
+
+    this.store.set('settingsVersion', CURRENT_SETTINGS_VERSION);
     return settings as SettingsData;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private findOutCurrentVersion(settings: any): number {
+    if (!settings) {
+      return CURRENT_SETTINGS_VERSION;
+    }
+    if (settings.mcpAgent && !settings.agentConfig) {
+      return 2;
+    }
+    if (!settings.agentProfiles || !settings.llmProviders) {
+      return 3;
+    }
+    return CURRENT_SETTINGS_VERSION;
   }
 
   saveSettings(settings: SettingsData): void {
