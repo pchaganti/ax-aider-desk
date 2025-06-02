@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.16.0]
 
 - light mode theme
 - added Requesty provider in Agent
