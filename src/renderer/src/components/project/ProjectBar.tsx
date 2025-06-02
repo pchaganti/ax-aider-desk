@@ -212,9 +212,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
 
     const exportSessionToMarkdown = useCallback(async () => {
       try {
-        const result = await window.api.exportSessionToMarkdown(baseDir);
-        // eslint-disable-next-line no-console
-        console.log(result);
+        await window.api.exportSessionToMarkdown(baseDir);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to export session:', error);

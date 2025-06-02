@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added functionality to reorder open project tabs
+
 ## [0.16.0]
 
 - light mode theme

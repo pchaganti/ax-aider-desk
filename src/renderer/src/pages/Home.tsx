@@ -28,6 +28,16 @@ export const Home = () => {
 
   const activeProject = openProjects.find((project) => project.active) || openProjects[0];
 
+  const handleReorderProjects = async (reorderedProjects: ProjectData[]) => {
+    setOpenProjects(reorderedProjects);
+    try {
+      setOpenProjects(await window.api.updateOpenProjectsOrder(reorderedProjects.map((project) => project.baseDir)));
+    } catch {
+      const currentProjects = await window.api.getOpenProjects();
+      setOpenProjects(currentProjects);
+    }
+  };
+
   const isAiderDeskUpdateAvailable = versions?.aiderDeskAvailableVersion && versions.aiderDeskAvailableVersion !== versions.aiderDeskCurrentVersion;
   const isAiderUpdateAvailable = versions?.aiderAvailableVersion && versions.aiderAvailableVersion !== versions.aiderCurrentVersion;
   const isUpdateAvailable = isAiderDeskUpdateAvailable || isAiderUpdateAvailable;
@@ -64,7 +74,6 @@ export const Home = () => {
     const loadModels = async () => {
       try {
         const info = await window.api.loadModelsInfo();
-        console.log(info);
         setModelsInfo(info);
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -176,6 +185,7 @@ export const Home = () => {
             onAddProject={() => setIsOpenProjectDialogVisible(true)}
             onSetActiveProject={setActiveProject}
             onCloseProject={handleCloseProject}
+            onReorderProjects={handleReorderProjects}
           />
           <div className="flex items-center">
             {showUpdateIcon && (

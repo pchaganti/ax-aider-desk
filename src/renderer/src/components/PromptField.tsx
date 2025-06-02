@@ -179,7 +179,6 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
             const prompt = text.replace(command, '').trim();
             setText(prompt);
             const newMode = command.slice(1) as Mode;
-            console.log('here');
             if (mode === 'agent') {
               openAgentModelSelector?.();
             } else {

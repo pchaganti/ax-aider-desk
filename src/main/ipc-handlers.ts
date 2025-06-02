@@ -7,7 +7,7 @@ import { Agent } from './agent';
 import { getFilePathSuggestions, isProjectPath, isValidPath } from './file-system';
 import { ModelInfoManager } from './model-info-manager';
 import { ProjectManager } from './project-manager';
-import { Store, getDefaultProjectSettings } from './store';
+import { getDefaultProjectSettings, Store } from './store';
 import { scrapeWeb } from './web-scrapper';
 import logger from './logger';
 import { VersionsManager } from './versions-manager';
@@ -128,6 +128,11 @@ export const setupIpcHandlers = (
     void mcpManager.initMcpConnectors(store.getSettings().mcpServers, baseDir);
 
     return updatedProjects;
+  });
+
+  ipcMain.handle('update-open-projects-order', async (_, baseDirs: string[]) => {
+    logger.info('IPC Handler: update-open-projects-order', { baseDirs });
+    return store.updateOpenProjectsOrder(baseDirs);
   });
 
   ipcMain.handle('get-recent-projects', async () => {
