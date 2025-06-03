@@ -631,7 +631,7 @@ export class Project {
     }
 
     // If user input 'd' (don't ask again) or 'a' (always), store the determined answer.
-    if (normalizedAnswer === 'd' || normalizedAnswer === 'a') {
+    if ((normalizedAnswer === 'd' || normalizedAnswer === 'a') && (determinedAnswer == 'y' || determinedAnswer == 'n')) {
       logger.info('Storing answer for question due to "d" or "a" input:', {
         baseDir: this.baseDir,
         questionKey: this.getQuestionKey(this.currentQuestion),
@@ -795,6 +795,16 @@ export class Project {
     }
 
     const storedAnswer = this.questionAnswers.get(this.getQuestionKey(questionData));
+
+    if (questionData.isGroupQuestion && !questionData.answers) {
+      // group questions have a default set of answers
+      questionData.answers = [
+        { text: '(Y)es', shortkey: 'y' },
+        { text: '(N)o', shortkey: 'n' },
+        { text: '(A)ll', shortkey: 'a' },
+        { text: '(S)kip all', shortkey: 's' },
+      ];
+    }
 
     logger.info('Asking question:', {
       baseDir: this.baseDir,

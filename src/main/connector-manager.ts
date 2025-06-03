@@ -143,6 +143,7 @@ export class ConnectorManager {
           text: message.question,
           subject: message.subject,
           defaultAnswer: message.defaultAnswer,
+          isGroupQuestion: message.isGroupQuestion,
         };
         this.projectManager.getProject(connector.baseDir).askQuestion(questionData);
       } else if (isSetModelsMessage(message)) {

@@ -144,6 +144,12 @@ class ConnectorInputOutput(InputOutput):
     group=None,
     allow_never=False,
   ):
+    if group and group.preference == "y":
+      return True
+    elif group and group.preference == "n":
+      self.tool_warning("No preference.")
+      return False
+
     if not self.connector:
       return False
 
@@ -157,6 +163,7 @@ class ConnectorInputOutput(InputOutput):
         'action': 'ask-question',
         'question': question,
         'subject': subject,
+        'isGroupQuestion': group is not None,
         'defaultAnswer': default
       })
       while confirmation_result is None:
@@ -176,7 +183,14 @@ class ConnectorInputOutput(InputOutput):
     if question == "Add command output to the chat?":
       self.reset_state()
 
-    return result == "y"
+    if result == "a" and group is not None:
+      group.preference = "y"
+      self.tool_warning("Always preference.")
+    elif result == "s" and group is not None:
+      group.preference = "n"
+      self.tool_warning("Never preference.")
+
+    return result == "y" or result == "a"
 
   def reset_state(self):
     if (self.current_command):

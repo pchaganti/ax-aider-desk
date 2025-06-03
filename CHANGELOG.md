@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- enhanced group question handling with All and Skip answers for questions like Add file?
+
 ## [0.16.1]
 
 - added functionality to reorder open project tabs

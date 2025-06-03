@@ -123,6 +123,7 @@ export interface AskQuestionMessage extends Message {
   question: string;
   subject?: string;
   defaultAnswer: string;
+  isGroupQuestion?: boolean;
 }
 
 export const isAskQuestionMessage = (message: Message): message is AskQuestionMessage => {

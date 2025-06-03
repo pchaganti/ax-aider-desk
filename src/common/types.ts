@@ -85,6 +85,7 @@ export interface QuestionData {
   baseDir: string;
   text: string;
   subject?: string;
+  isGroupQuestion?: boolean;
   answers?: Answer[];
   defaultAnswer: string;
   internal?: boolean;
