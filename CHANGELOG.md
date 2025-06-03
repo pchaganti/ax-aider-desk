@@ -1,11 +1,14 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.16.1]
 
 - added functionality to reorder open project tabs
+- made the Python exec detection smarter during the installation
+- use python.exe instead of pythonw.exe on Windows
 - MCP server tools set to Always approved now don't require confirmation
 - fixed Gemini model response in Agent
 - added Thinking budget, Include thoughts and Use search grounding settings for Gemini provider
+- improved error handling for syntax highlighting in CodeBlock component
 
 ## [0.16.0]
 
