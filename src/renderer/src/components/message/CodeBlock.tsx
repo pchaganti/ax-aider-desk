@@ -92,8 +92,18 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
     if (displayAsDiff) {
       return <DiffViewer oldValue={diffOldValue} newValue={diffNewValue} language={language} />;
     } else if (codeForSyntaxHighlight) {
+      let html = codeForSyntaxHighlight;
+
       const grammar = Prism.languages[language];
-      const html = grammar ? Prism.highlight(codeForSyntaxHighlight, grammar, language) : codeForSyntaxHighlight;
+      if (grammar) {
+        try {
+          html = Prism.highlight(codeForSyntaxHighlight, grammar, language);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to highlight code:', error);
+        }
+      }
+
       return (
         <pre>
           <code className={`language-${language}`} dangerouslySetInnerHTML={{ __html: html }} />
