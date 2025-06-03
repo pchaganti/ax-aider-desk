@@ -1,6 +1,6 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createGoogleGenerativeAI, type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { createOllama } from 'ollama-ai-provider';
@@ -56,7 +56,9 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
       throw new Error('Gemini API key is required in Agent provider settings or Aider environment variables (GEMINI_API_KEY)');
     }
     const googleProvider = createGoogleGenerativeAI({ apiKey });
-    return googleProvider(model);
+    return googleProvider(model, {
+      useSearchGrounding: provider.useSearchGrounding,
+    });
   } else if (isDeepseekProvider(provider)) {
     const apiKey = provider.apiKey || env['DEEPSEEK_API_KEY'];
     if (!apiKey) {
@@ -228,4 +230,19 @@ export const getCacheControl = (profile: AgentProfile): Record<string, Record<st
   }
 
   return {};
+};
+
+export const getProviderOptions = (llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined => {
+  if (isGeminiProvider(llmProvider)) {
+    return {
+      google: {
+        thinkingConfig: {
+          includeThoughts: llmProvider.includeThoughts,
+          thinkingBudget: llmProvider.thinkingBudget ?? 0,
+        },
+      } satisfies GoogleGenerativeAIProviderOptions,
+    };
+  }
+
+  return undefined;
 };

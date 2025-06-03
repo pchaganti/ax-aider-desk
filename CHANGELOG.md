@@ -4,6 +4,8 @@
 
 - added functionality to reorder open project tabs
 - MCP server tools set to Always approved now don't require confirmation
+- fixed Gemini model response in Agent
+- added Thinking budget, Include thoughts and Use search grounding settings for Gemini provider
 
 ## [0.16.0]
 

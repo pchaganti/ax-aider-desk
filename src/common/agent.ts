@@ -54,6 +54,9 @@ export const isAnthropicProvider = (provider: LlmProviderBase): provider is Anth
 export interface GeminiProvider extends LlmProviderBase {
   name: 'gemini';
   apiKey: string;
+  includeThoughts: boolean;
+  thinkingBudget: number;
+  useSearchGrounding: boolean;
 }
 export const isGeminiProvider = (provider: LlmProviderBase): provider is GeminiProvider => provider.name === 'gemini';
 
@@ -161,54 +164,69 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
 
     switch (providerName) {
       case 'openai':
-        provider = { ...baseConfig, apiKey: '' } as OpenAiProvider;
+        provider = {
+          name: 'openai',
+          apiKey: '',
+        } satisfies OpenAiProvider;
         break;
       case 'anthropic':
-        provider = { ...baseConfig, apiKey: '' } as AnthropicProvider;
+        provider = {
+          name: 'anthropic',
+          apiKey: '',
+        } satisfies AnthropicProvider;
         break;
       case 'gemini':
-        provider = { ...baseConfig, apiKey: '' } as GeminiProvider;
+        provider = {
+          name: 'gemini',
+          apiKey: '',
+          useSearchGrounding: false,
+          includeThoughts: false,
+          thinkingBudget: 0,
+        } satisfies GeminiProvider;
         break;
       case 'deepseek':
-        provider = { ...baseConfig, apiKey: '' } as DeepseekProvider;
+        provider = {
+          name: 'deepseek',
+          apiKey: '',
+        } satisfies DeepseekProvider;
         break;
       case 'bedrock':
         provider = {
-          ...baseConfig,
+          name: 'bedrock',
           accessKeyId: '',
           secretAccessKey: '',
           region: 'us-east-1', // Default region
-        } as BedrockProvider;
+        } satisfies BedrockProvider;
         break;
       case 'openai-compatible':
         provider = {
-          ...baseConfig,
+          name: 'openai-compatible',
           apiKey: '',
           baseUrl: '',
           models: [],
-        } as OpenAiCompatibleProvider;
+        } satisfies OpenAiCompatibleProvider;
         break;
       case 'ollama':
         provider = {
-          ...baseConfig,
+          name: 'ollama',
           baseUrl: 'http://localhost:11434/api',
-        } as OllamaProvider;
+        } satisfies OllamaProvider;
         break;
       case 'openrouter':
         provider = {
-          ...baseConfig,
+          name: 'openrouter',
           apiKey: '',
           models: [],
-        } as OpenRouterProvider;
+        } satisfies OpenRouterProvider;
         break;
       case 'requesty':
         provider = {
-          ...baseConfig,
+          name: 'requesty',
           apiKey: '',
           models: [],
           useAutoCache: true,
           reasoningEffort: ReasoningEffort.None,
-        } as RequestyProvider;
+        } satisfies RequestyProvider;
         break;
       default:
         // For any other provider, create a base structure. This might need more specific handling if new providers are added.

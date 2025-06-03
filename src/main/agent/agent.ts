@@ -36,7 +36,7 @@ import { createPowerToolset } from './tools/power';
 import { getSystemPrompt } from './prompts';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
-import { calculateCost, createLlm, getCacheControl } from './llm-provider';
+import { calculateCost, createLlm, getCacheControl, getProviderOptions } from './llm-provider';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 
@@ -411,7 +411,9 @@ export class Agent {
     // Create new abort controller for this run
     this.abortController = new AbortController();
 
+    const llmProvider = getLlmProviderConfig(profile.provider, settings);
     const cacheControl = getCacheControl(profile);
+    const providerOptions = getProviderOptions(llmProvider);
 
     // Track new messages created during this run
     const agentMessages: CoreMessage[] = [
@@ -444,7 +446,6 @@ export class Agent {
     });
 
     try {
-      const llmProvider = getLlmProviderConfig(profile.provider, settings);
       const model = createLlm(llmProvider, profile.model, await this.getLlmEnv(project));
       const systemPrompt = await getSystemPrompt(project.baseDir, profile);
 
@@ -550,6 +551,7 @@ export class Agent {
       let currentResponseId: null | string = null;
 
       const result = streamText({
+        providerOptions,
         model,
         system: systemPrompt,
         messages,

@@ -106,7 +106,12 @@
     "apiKey": "API Key"
   },
   "gemini": {
-    "apiKey": "API Key"
+    "apiKey": "API Key",
+    "thinkingBudget": "Thinking budget (tokens)",
+    "includeThoughts": "Include thoughts",
+    "includeThoughtsTooltip": "When enabled, the model's internal thought process will be included in the conversation.",
+    "useSearchGrounding": "Use Search grounding",
+    "useSearchGroundingTooltip": "When enabled, the model will use search results to ground its responses, improving accuracy and relevance."
   },
   "deepseek": {
     "apiKey": "API Key"
