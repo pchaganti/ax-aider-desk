@@ -15,7 +15,8 @@ export class ApprovalManager {
       return [true, undefined]; // Auto-approve
     }
 
-    const isApprovedFromSet = this.alwaysApproveForRunKeys.has(key) || this.profile.toolApprovals[key] === ToolApprovalState.Always;
+    const isApprovedFromSet =
+      this.alwaysApproveForRunKeys.has(key) || (this.profile.toolApprovals[key] || ToolApprovalState.Always) === ToolApprovalState.Always;
     if (isApprovedFromSet) {
       return [true, undefined]; // Pre-approved
     }

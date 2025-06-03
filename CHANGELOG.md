@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added functionality to reorder open project tabs
+- MCP server tools set to Always approved now don't require confirmation
 
 ## [0.16.0]
 
