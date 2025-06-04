@@ -63,7 +63,7 @@
   },
   "noProjectsOpen": {
     "welcome": "Welcome to",
-    "description": "To get started, open a project directory. This will allow Aider you know and love to work with your code."
+    "description": "To begin, open a project directory. This will enable Aider to work with your code."
   },
   "home": {
     "title": "Home",

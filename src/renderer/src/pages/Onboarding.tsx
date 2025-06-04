@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useSettings } from '@/context/SettingsContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
+import { Button } from '@/components/common/Button';
 
 export const Onboarding = () => {
   const { t } = useTranslation();
@@ -72,7 +73,7 @@ export const Onboarding = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen p-[4px] bg-gradient-to-b from-neutral-950 to-neutral-900 overflow-y-auto scrollbar-thin scrollbar-track-neutral-850 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600">
+    <div className="flex flex-col h-screen p-[4px] bg-neutral-850 overflow-y-auto scrollbar-thin scrollbar-track-neutral-850 scrollbar-thumb-neutral-700 hover:scrollbar-thumb-neutral-600">
       <div className="flex flex-col flex-1 border-2 border-neutral-600 relative">
         {step === 1 && (
           <div className="absolute top-5 right-5 w-[200px]">
@@ -83,10 +84,10 @@ export const Onboarding = () => {
           <div className="max-w-2xl w-full">
             {renderStep()}
             <div className="mt-10 flex justify-center">
-              <button onClick={handleNext} className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 flex items-center gap-2">
+              <Button onClick={handleNext} className="gap-2">
                 {step === 2 ? t('onboarding.finish') : t('common.next')}
                 <HiArrowRight className="w-4 h-4" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
