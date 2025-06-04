@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - enhanced group question handling with All and Skip answers for questions like Add file?
+- handling outdated Python venv directory by reinitializing it
 
 ## [0.16.1]
 

@@ -180,6 +180,14 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
         logger.warn(`Package ${pkg} installation warnings`, { stderr: stderr.trim() });
       }
     } catch (error) {
+      if (error instanceof Error && error.message.trim().endsWith('No module named pip') && !cleanInstall) {
+        logger.warn('Failed to install package. pip is not installed. Trying full clean venv reinstallation...');
+        fs.rmSync(PYTHON_VENV_DIR, { recursive: true, force: true });
+        await createVirtualEnv();
+        await installAiderConnectorRequirements(true, updateProgress);
+        return;
+      }
+
       logger.error(`Failed to install package: ${pkg}`, {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
@@ -253,7 +261,7 @@ export type UpdateProgressFunction = (data: UpdateProgressData) => void;
 export const performStartUp = async (updateProgress: UpdateProgressFunction): Promise<boolean> => {
   logger.info('Starting AiderDesk setup process');
 
-  if (fs.existsSync(SETUP_COMPLETE_FILENAME)) {
+  if (fs.existsSync(SETUP_COMPLETE_FILENAME) && fs.existsSync(PYTHON_VENV_DIR)) {
     logger.info('Setup previously completed, performing update check');
     await performUpdateCheck(updateProgress);
     return true;
