@@ -44,7 +44,7 @@ export class ConnectorManager {
         origin: '*',
         methods: ['GET', 'POST'],
       },
-      pingTimeout: 120000,
+      pingTimeout: 600_000, // 10 minutes
       maxHttpBufferSize: 1e8, // Increase payload size to 100 MB
     });
 
