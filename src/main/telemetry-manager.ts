@@ -7,9 +7,9 @@ import { Store } from './store';
 import logger from './logger';
 
 export class TelemetryManager {
+  private readonly store: Store;
+  private readonly distinctId: string;
   private client?: PostHog;
-  private store: Store;
-  private distinctId: string;
 
   constructor(store: Store) {
     this.store = store;
@@ -18,24 +18,21 @@ export class TelemetryManager {
 
   settingsChanged(oldSettings: SettingsData, newSettings: SettingsData) {
     if (oldSettings.telemetryEnabled !== newSettings.telemetryEnabled) {
-      if (newSettings.telemetryEnabled && !this.client) {
-        void this.init();
+      if (newSettings.telemetryEnabled && this.client) {
+        this.client.capture({
+          distinctId: this.distinctId,
+          event: 'telemetry-enabled',
+        });
       } else if (!newSettings.telemetryEnabled && this.client) {
         this.client.capture({
           distinctId: this.distinctId,
           event: 'telemetry-disabled',
         });
-        void this.destroy();
       }
     }
   }
 
   async init(): Promise<void> {
-    if (!this.store.getSettings().telemetryEnabled) {
-      logger.info('Telemetry is disabled or PostHog settings are not configured.');
-      return;
-    }
-
     this.client = new PostHog(POSTHOG_PUBLIC_API_KEY, {
       host: POSTHOG_HOST,
     });
@@ -57,6 +54,9 @@ export class TelemetryManager {
   }
 
   captureProjectOpened(openedProjectsCount: number) {
+    if (!this.store.getSettings().telemetryEnabled) {
+      return;
+    }
     this.client?.capture({
       distinctId: this.distinctId,
       event: 'project-opened',
@@ -67,6 +67,9 @@ export class TelemetryManager {
   }
 
   captureProjectClosed(closedProjectsCount: number) {
+    if (!this.store.getSettings().telemetryEnabled) {
+      return;
+    }
     this.client?.capture({
       distinctId: this.distinctId,
       event: 'project-closed',
@@ -77,6 +80,9 @@ export class TelemetryManager {
   }
 
   captureRunPrompt(mode?: Mode) {
+    if (!this.store.getSettings().telemetryEnabled) {
+      return;
+    }
     this.client?.capture({
       distinctId: this.distinctId,
       event: 'run-prompt',
@@ -87,6 +93,9 @@ export class TelemetryManager {
   }
 
   captureAgentRun(profile: AgentProfile) {
+    if (!this.store.getSettings().telemetryEnabled) {
+      return;
+    }
     this.client?.capture({
       distinctId: this.distinctId,
       event: 'agent-run',
