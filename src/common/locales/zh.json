@@ -552,6 +552,6 @@
     "addCommand": "/add",
     "readOnlyCommand": "/read-only",
     "modelCommand": "/model",
-    "modeSwitchingCommands": "模式切换命令 (/code, /context, /agent, /ask, /architect)"
+    "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)"
   }
 }
