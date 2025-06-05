@@ -6,6 +6,7 @@
 - handling outdated Python venv directory by reinitializing it
 - added prompt behavior settings for command confirmation and auto suggestions
 - updated Aider context management tools to handle multiple files at once
+- gemini-2.5-pro-preview-05-06 -> gemini-2.5-pro-preview-06-05
 
 ## [0.16.1]
 
