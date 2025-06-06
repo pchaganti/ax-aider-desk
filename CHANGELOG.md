@@ -9,6 +9,7 @@
 - gemini-2.5-pro-preview-05-06 -> gemini-2.5-pro-preview-06-05
 - added log message when max iterations are reached in Agent mode
 - added drop file(s) support to Add File dialog
+- properly passing reasoningEffort to Requesty provider
 
 ## [0.16.1]
 
