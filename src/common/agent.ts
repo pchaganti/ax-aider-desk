@@ -154,6 +154,24 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   autoApprove: false,
 };
 
+export const INIT_PROJECT_RULES_AGENT_PROFILE: AgentProfile = {
+  ...DEFAULT_AGENT_PROFILE,
+  id: 'init',
+  maxIterations: 50,
+  maxTokens: 5000,
+  includeRepoMap: true,
+  includeContextFiles: false,
+  usePowerTools: true,
+  useAiderTools: false,
+  autoApprove: true,
+  toolApprovals: {
+    ...DEFAULT_AGENT_PROFILE.toolApprovals,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Always,
+    [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Never,
+  },
+};
+
 export const getLlmProviderConfig = (providerName: LlmProviderName, settings: SettingsData | null): LlmProvider => {
   let provider = settings?.llmProviders[providerName] || null;
 

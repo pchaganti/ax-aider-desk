@@ -513,6 +513,15 @@
     "toggleMarkdown": "Markdown 渲染",
     "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。"
   },
+  "reasoningEffort": {
+    "label": "推理",
+    "tooltip": "推理工作量决定模型在采取行动前的思考程度。高推理工作量意味着模型会在采取行动前思考更多，但响应时间也会更长。",
+    "none": "无",
+    "low": "低",
+    "medium": "中",
+    "high": "高",
+    "max": "最大"
+  },
   "commands": {
     "add": "将文件添加到上下文。",
     "agent": "切换到代理模式。如果已在代理模式下，则打开代理模型选择器。命令后的任何文本都将用作提示。",
@@ -525,6 +534,8 @@
     "copy-context": "将当前聊天上下文复制为 Markdown 格式，适合粘贴到 Web UI 中。",
     "drop": "从上下文中删除文件以释放上下文空间。",
     "edit-last": "编辑最后一条用户消息",
+    "init": "使用项目信息初始化 PROJECT.md 规则文件",
+    "agentModeOnly": "仅在代理模式下可用",
     "map": "打印当前仓库地图",
     "map-refresh": "强制刷新仓库地图",
     "model": "打开模型选择器",

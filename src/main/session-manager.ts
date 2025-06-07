@@ -107,22 +107,33 @@ export class SessionManager {
     return file;
   }
 
-  setContextFiles(contextFiles: ContextFile[]) {
+  setContextFiles(contextFiles: ContextFile[], save = true) {
     this.contextFiles = contextFiles;
-    this.saveAsAutosaved();
+    if (save) {
+      this.saveAsAutosaved();
+    }
   }
 
   getContextFiles(): ContextFile[] {
     return [...this.contextFiles];
   }
 
+  setContextMessages(contextMessages: ContextMessage[], save = true) {
+    this.contextMessages = contextMessages;
+    if (save) {
+      this.saveAsAutosaved();
+    }
+  }
+
   getContextMessages(): ContextMessage[] {
     return [...this.contextMessages];
   }
 
-  clearMessages() {
+  clearMessages(save = true) {
     this.contextMessages = [];
-    this.saveAsAutosaved();
+    if (save) {
+      this.saveAsAutosaved();
+    }
   }
 
   removeLastMessage(): void {

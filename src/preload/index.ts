@@ -76,6 +76,7 @@ const api: ApplicationAPI = {
   dropFile: (baseDir, path) => ipcRenderer.send('drop-file', baseDir, path),
   runCommand: (baseDir, command) => ipcRenderer.send('run-command', baseDir, command),
   scrapeWeb: (baseDir, url) => ipcRenderer.invoke('scrape-web', baseDir, url),
+  initProjectRulesFile: (baseDir) => ipcRenderer.invoke('init-project-rules-file', baseDir),
 
   loadMcpServerTools: (serverName, config?: McpServerConfig) => ipcRenderer.invoke('load-mcp-server-tools', serverName, config),
   reloadMcpServers: (mcpServers, force = false) => ipcRenderer.invoke('reload-mcp-servers', mcpServers, force),

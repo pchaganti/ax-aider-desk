@@ -11,6 +11,7 @@
 - added drop file(s) support to Add File dialog
 - properly passing reasoningEffort to Requesty provider
 - improved caching for various providers and enhanced token and cost usage tracking
+- added /init command to initialize PROJECT.md rules file with project information
 
 ## [0.16.1]
 

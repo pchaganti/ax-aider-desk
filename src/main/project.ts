@@ -6,7 +6,9 @@ import path from 'path';
 
 import { simpleGit } from 'simple-git';
 import { BrowserWindow, dialog, Notification } from 'electron';
+import YAML from 'yaml';
 import {
+  AgentProfile,
   ContextFile,
   EditFormat,
   FileEdit,
@@ -30,10 +32,12 @@ import {
   UserMessageData,
 } from '@common/types';
 import { fileExists, getActiveAgentProfile, parseUsageReport } from '@common/utils';
+import { INIT_PROJECT_RULES_AGENT_PROFILE } from '@common/agent';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
 import { parse } from '@dotenvx/dotenvx';
 import { TelemetryManager } from 'src/main/telemetry-manager';
+import { getInitProjectPrompt } from 'src/main/agent/prompts';
 
 import { TaskManager } from './task-manager';
 import { SessionManager } from './session-manager';
@@ -451,19 +455,14 @@ export class Project {
     this.telemetryManager.captureRunPrompt(mode);
 
     if (mode === 'agent') {
-      const agentMessages = await this.agent.runAgent(this, prompt);
-      if (agentMessages.length > 0) {
-        agentMessages.forEach((message) => this.sessionManager.addContextMessage(message));
+      const profile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.baseDir));
+      logger.debug('AgentProfile:', profile);
 
-        // send messages to connectors (aider)
-        this.sessionManager.toConnectorMessages(agentMessages).forEach((message) => {
-          this.sendAddMessage(message.role, message.content, false);
-        });
+      if (!profile) {
+        throw new Error('No active Agent profile found');
       }
 
-      this.notifyIfEnabled('Prompt finished', 'Your Agent task has finished.');
-
-      return [];
+      return this.runAgent(profile, prompt);
     } else {
       const responses = await this.sendPrompt(prompt, mode);
 
@@ -482,6 +481,21 @@ export class Project {
 
       return responses;
     }
+  }
+
+  public async runAgent(profile: AgentProfile, prompt: string): Promise<ResponseCompletedData[]> {
+    const agentMessages = await this.agent.runAgent(this, profile, prompt);
+    if (agentMessages.length > 0) {
+      agentMessages.forEach((message) => this.sessionManager.addContextMessage(message));
+
+      // send messages to connectors (aider)
+      this.sessionManager.toConnectorMessages(agentMessages).forEach((message) => {
+        this.sendAddMessage(message.role, message.content, false);
+      });
+    }
+
+    this.notifyIfEnabled('Prompt finished', 'Your Agent task has finished.');
+    return [];
   }
 
   public sendPrompt(prompt: string, mode?: Mode, clearContext = false): Promise<ResponseCompletedData[]> {
@@ -1213,5 +1227,106 @@ export class Project {
       return tasks;
     }
     return tasks.filter((task) => task.completed === completed);
+  }
+
+  async initProjectRulesFile(): Promise<void> {
+    logger.info('Initializing PROJECT.md rules file', { baseDir: this.baseDir });
+
+    this.addLogMessage('loading', 'Analyzing project to create PROJECT.md rules file...');
+
+    const messages = this.sessionManager.getContextMessages();
+    const files = this.sessionManager.getContextFiles();
+    // clear context before execution
+    this.sessionManager.clearMessages(false);
+    this.sessionManager.setContextFiles([], false);
+
+    try {
+      // Get the active agent profile
+      const activeProfile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.baseDir));
+      if (!activeProfile) {
+        throw new Error('No active agent profile found');
+      }
+
+      // Create a modified INIT_PROJECT_RULES_AGENT_PROFILE with active profile's provider and model
+      const initProjectRulesAgentProfile: AgentProfile = {
+        ...INIT_PROJECT_RULES_AGENT_PROFILE,
+        provider: activeProfile.provider,
+        model: activeProfile.model,
+      };
+
+      // Run the agent with the modified profile
+      await this.runAgent(initProjectRulesAgentProfile, getInitProjectPrompt());
+
+      // Check if the PROJECT.md file was created
+      const projectRulesPath = path.join(this.baseDir, '.aider-desk', 'rules', 'PROJECT.md');
+      const projectRulesExists = await fileExists(projectRulesPath);
+
+      if (projectRulesExists) {
+        logger.info('PROJECT.md file created successfully', { path: projectRulesPath });
+        this.addLogMessage('info', 'PROJECT.md has been successfully initialized.');
+
+        // Ask the user if they want to add this file to .aider.conf.yml
+        const [answer] = await this.askQuestion({
+          baseDir: this.baseDir,
+          text: 'Do you want to add this file as read-only file for Aider (in .aider.conf.yml)?',
+          defaultAnswer: 'y',
+          internal: false,
+        });
+
+        if (answer === 'y') {
+          await this.addProjectRulesToAiderConfig();
+        }
+      } else {
+        logger.warn('PROJECT.md file was not created');
+        this.addLogMessage('warning', 'PROJECT.md file was not created.');
+      }
+    } catch (error) {
+      logger.error('Error initializing PROJECT.md rules file:', error);
+      this.addLogMessage('error', `Failed to initialize PROJECT.md rules file: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    } finally {
+      this.sessionManager.setContextFiles(files, false);
+      this.sessionManager.setContextMessages(messages, false);
+    }
+  }
+
+  private async addProjectRulesToAiderConfig(): Promise<void> {
+    const aiderConfigPath = path.join(this.baseDir, '.aider.conf.yml');
+    const projectRulesRelativePath = '.aider-desk/rules/PROJECT.md';
+
+    try {
+      let config: { read?: string | string[] } = {};
+
+      // Read existing config if it exists
+      if (await fileExists(aiderConfigPath)) {
+        const configContent = await fs.readFile(aiderConfigPath, 'utf8');
+        config = (YAML.parse(configContent) as { read?: string | string[] }) || {};
+      }
+
+      // Ensure read section exists and is an array
+      if (!config.read) {
+        config.read = [];
+      } else if (!Array.isArray(config.read)) {
+        config.read = [config.read];
+      }
+
+      // Add PROJECT.md to read section if not already present
+      if (!config.read.includes(projectRulesRelativePath)) {
+        config.read.push(projectRulesRelativePath);
+
+        // Write the updated config
+        const yamlContent = YAML.stringify(config);
+        await fs.writeFile(aiderConfigPath, yamlContent, 'utf8');
+
+        logger.info('Added PROJECT.md to .aider.conf.yml', { path: aiderConfigPath });
+        this.addLogMessage('info', `Added ${projectRulesRelativePath} to .aider.conf.yml`);
+      } else {
+        logger.info('PROJECT.md already exists in .aider.conf.yml');
+      }
+    } catch (error) {
+      logger.error('Error updating .aider.conf.yml:', error);
+      this.addLogMessage('error', `Failed to update .aider.conf.yml: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
   }
 }

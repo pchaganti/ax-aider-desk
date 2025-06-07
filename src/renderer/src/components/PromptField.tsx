@@ -39,6 +39,7 @@ const COMMANDS = [
   '/redo',
   '/edit-last',
   '/commit',
+  '/init',
 ];
 
 const ANSWERS = ['y', 'n', 'a', 'd'];
@@ -240,6 +241,15 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
             runTests(args);
             break;
           }
+          case '/init': {
+            if (mode !== 'agent') {
+              showErrorNotification(t('promptField.initCommandAgentModeOnly'));
+              return;
+            }
+            prepareForNextPrompt();
+            window.api.initProjectRulesFile(baseDir);
+            break;
+          }
           default: {
             setText('');
             runCommand(`${command.slice(1)} ${args || ''}`);
@@ -261,6 +271,8 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
         scrapeWeb,
         runTests,
         runCommand,
+        baseDir,
+        t,
       ],
     );
 
@@ -617,6 +629,18 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
       }
     };
 
+    const getCustomCommandDescription = (command: string) => {
+      if (command === 'init' && mode !== 'agent') {
+        return (
+          <div className="flex items-center gap-1">
+            <div className="text-neutral-100 bg-neutral-800 px-2 rounded-sm text-2xs">{t('commands.agentModeOnly')}</div>
+          </div>
+        );
+      }
+
+      return undefined;
+    };
+
     return (
       <div className="w-full relative">
         {question && (
@@ -738,7 +762,11 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
                 className={`px-2 py-1 cursor-pointer ${index === highlightedSuggestionIndex ? 'bg-neutral-700' : 'hover:bg-neutral-850'}`}
                 onClick={() => acceptSuggestion(suggestion)}
               >
-                {suggestion.startsWith('/') ? <CommandSuggestion command={suggestion.slice(1)} /> : <span>{suggestion}</span>}
+                {suggestion.startsWith('/') ? (
+                  <CommandSuggestion command={suggestion.slice(1)} description={getCustomCommandDescription(suggestion.slice(1))} />
+                ) : (
+                  <span>{suggestion}</span>
+                )}
               </div>
             ))}
           </div>

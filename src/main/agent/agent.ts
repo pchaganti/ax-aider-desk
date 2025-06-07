@@ -17,7 +17,7 @@ import {
   type ToolExecutionOptions,
   type ToolSet,
 } from 'ai';
-import { delay, extractServerNameToolName, getActiveAgentProfile } from '@common/utils';
+import { delay, extractServerNameToolName } from '@common/utils';
 import { getLlmProviderConfig, LlmProviderName } from '@common/agent';
 // @ts-expect-error gpt-tokenizer is not typed
 import { countTokens } from 'gpt-tokenizer/model/gpt-4o';
@@ -399,14 +399,8 @@ export class Agent {
     return inputSchema;
   }
 
-  async runAgent(project: Project, prompt: string): Promise<ContextMessage[]> {
+  async runAgent(project: Project, profile: AgentProfile, prompt: string): Promise<ContextMessage[]> {
     const settings = this.store.getSettings();
-    const profile = getActiveAgentProfile(settings, this.store.getProjectSettings(project.baseDir));
-    logger.debug('AgentProfile:', profile);
-
-    if (!profile) {
-      throw new Error('No active Agent profile found');
-    }
 
     this.telemetryManager.captureAgentRun(profile);
 
@@ -571,7 +565,7 @@ export class Agent {
           abortSignal: this.abortController.signal,
           maxTokens: profile.maxTokens,
           maxRetries: 5,
-          temperature: 0, // Keep deterministic for agent behavior
+          temperature: 0.7, // Keep deterministic for agent behavior
           experimental_continueSteps: true,
           onError: ({ error }) => {
             if (this.abortController?.signal.aborted) {

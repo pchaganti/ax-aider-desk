@@ -18,7 +18,7 @@ export const LogMessageBlock = ({ message, onRemove }: Props) => {
 
   const levelConfig = {
     info: {
-      levelClasses: 'bg-neutral-800 border-neutral-700/50 text-neutral-300',
+      levelClasses: 'bg-neutral-850 border-neutral-700/50 text-neutral-100',
       tooltipClass: 'text-neutral-500 hover:text-neutral-400',
       Icon: FaInfoCircle,
     },

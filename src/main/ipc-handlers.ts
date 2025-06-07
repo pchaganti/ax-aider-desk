@@ -345,4 +345,8 @@ export const setupIpcHandlers = (
       return {}; // Return empty object or handle error as appropriate
     }
   });
+
+  ipcMain.handle('init-project-rules-file', async (_, baseDir: string) => {
+    return await projectManager.getProject(baseDir).initProjectRulesFile();
+  });
 };
