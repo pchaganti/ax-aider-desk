@@ -10,6 +10,7 @@
 - added log message when max iterations are reached in Agent mode
 - added drop file(s) support to Add File dialog
 - properly passing reasoningEffort to Requesty provider
+- improved caching for various providers and enhanced token and cost usage tracking
 
 ## [0.16.1]
 

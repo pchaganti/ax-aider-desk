@@ -234,6 +234,8 @@ export interface UsageReportData {
   sentTokens: number;
   receivedTokens: number;
   messageCost: number;
+  cacheWriteTokens?: number;
+  cacheReadTokens?: number;
   aiderTotalCost?: number;
   agentTotalCost?: number;
 }

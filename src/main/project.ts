@@ -280,7 +280,7 @@ export class Project {
       args.push('--thinking-tokens', thinkingTokens);
     }
 
-    if (settings.aider.addRuleFiles) {
+    if (settings.aider.addRuleFiles && (await fileExists(path.join(this.baseDir, AIDER_DESK_PROJECT_RULES_DIR)))) {
       args.push('--read', AIDER_DESK_PROJECT_RULES_DIR);
     }
 
@@ -1025,7 +1025,7 @@ export class Project {
       this.updateTokensInfo({
         agent: {
           cost: usageReport.agentTotalCost,
-          tokens: usageReport.sentTokens + usageReport.receivedTokens,
+          tokens: usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0) + (usageReport.cacheWriteTokens ?? 0),
         },
       });
     }

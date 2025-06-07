@@ -22,3 +22,4 @@ export const PID_FILES_DIR = path.join(AIDER_DESK_DIR, 'aider-processes');
 export const AIDER_DESK_PROJECT_RULES_DIR = '.aider-desk/rules';
 export const POSTHOG_PUBLIC_API_KEY = 'phc_AF4zkjrcziXLh8PBFsRSvVr4VZ38p3ezsdX0KDYuElI';
 export const POSTHOG_HOST = 'https://eu.i.posthog.com';
+export const AIDER_DESK_TMP_DIR_NAME = 'aider-desk';

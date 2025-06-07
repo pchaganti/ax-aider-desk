@@ -27,6 +27,7 @@ import { ZodSchema } from 'zod';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { TelemetryManager } from 'src/main/telemetry-manager';
 import { ModelInfoManager } from 'src/main/model-info-manager';
+import { cloneDeep } from 'lodash';
 
 import { parseAiderEnv } from '../utils';
 import logger from '../logger';
@@ -37,7 +38,7 @@ import { createPowerToolset } from './tools/power';
 import { getSystemPrompt } from './prompts';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
-import { calculateCost, createLlm, getCacheControl, getProviderOptions } from './llm-provider';
+import { CacheControl, calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-provider';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 
@@ -421,9 +422,6 @@ export class Agent {
       {
         role: 'user',
         content: prompt,
-        providerOptions: {
-          ...cacheControl,
-        },
       } satisfies CoreUserMessage,
     ];
 
@@ -548,7 +546,6 @@ export class Agent {
         }
       };
 
-      let currentResponseId: null | string = null;
       let iterationCount = 0;
 
       while (true) {
@@ -563,18 +560,26 @@ export class Agent {
           break;
         }
 
+        let iterationError: unknown | null = null;
+        let currentResponseId: null | string = null;
         const result = streamText({
           providerOptions,
           model,
           system: systemPrompt,
-          messages,
+          messages: await this.optimizeMessages(messages, cacheControl),
           tools: toolSet,
           abortSignal: this.abortController.signal,
           maxTokens: profile.maxTokens,
+          maxRetries: 5,
           temperature: 0, // Keep deterministic for agent behavior
           experimental_continueSteps: true,
           onError: ({ error }) => {
+            if (this.abortController?.signal.aborted) {
+              return;
+            }
+
             logger.error('Error during prompt:', { error });
+            iterationError = error;
             if (typeof error === 'string') {
               project.addLogMessage('error', error);
               // @ts-expect-error checking keys in error
@@ -615,12 +620,23 @@ export class Agent {
           experimental_repairToolCall: repairToolCall,
         });
 
-        await result.consumeStream({
-          onError: (error) => {
-            logger.error('Error during prompt:', { error });
-            project.addLogMessage('error', `Error during prompt: ${error instanceof Error ? error.message : String(error)}`);
-          },
-        });
+        await result.consumeStream();
+
+        if (this.abortController?.signal.aborted) {
+          logger.info('Prompt aborted by user');
+          break;
+        }
+
+        if (iterationError) {
+          logger.error('Error during prompt:', iterationError);
+          if (iterationError instanceof APICallError && iterationError.isRetryable) {
+            // try again
+            continue;
+          } else {
+            // stop
+            break;
+          }
+        }
 
         const { messages: responseMessages } = await result.response;
         const finishReason = await result.finishReason;
@@ -759,7 +775,7 @@ export class Agent {
     }
   }
 
-  public interrupt() {
+  interrupt() {
     logger.info('Interrupting MCP agent run');
     this.abortController?.abort();
   }
@@ -780,12 +796,7 @@ export class Agent {
     });
 
     const messageCost = calculateCost(this.modelInfoManager, profile, usage.promptTokens, usage.completionTokens, providerMetadata);
-    const usageReport: UsageReportData = {
-      sentTokens: usage.promptTokens,
-      receivedTokens: usage.completionTokens,
-      messageCost: messageCost,
-      agentTotalCost: project.agentTotalCost + messageCost,
-    };
+    const usageReport: UsageReportData = getUsageReport(project, profile, messageCost, usage, providerMetadata);
 
     // Process text/reasoning content
     if (reasoning || text) {
@@ -815,5 +826,23 @@ ${text.trim()}`
         project.addToolMessage(toolResult.toolCallId, serverName, toolName, toolResult.args, JSON.stringify(toolResult.result), usageReport);
       }
     }
+  }
+
+  private async optimizeMessages(messages: CoreMessage[], cacheControl: CacheControl) {
+    if (messages.length === 0) {
+      return [];
+    }
+
+    const optimizedMessages = cloneDeep(messages);
+    const lastMessage = optimizedMessages[messages.length - 1];
+
+    if (cacheControl) {
+      lastMessage.providerOptions = {
+        ...lastMessage.providerOptions,
+        ...cacheControl,
+      };
+    }
+
+    return optimizedMessages;
   }
 }

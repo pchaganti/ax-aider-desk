@@ -46,7 +46,6 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(({ models, sele
 
   useImperativeHandle(ref, () => ({
     open: (model) => {
-      console.log('Opening model selector with model:', model);
       setModelSearchTerm(model || '');
       show();
     },

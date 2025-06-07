@@ -1,8 +1,13 @@
-import { EditFormat, FileEdit, McpServerConfig, MessageRole, Mode, OS, ProjectData, ProjectSettings, SettingsData } from '@common/types';
+import path from 'path';
+import fs from 'fs/promises';
+
+import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
-import { McpManager } from 'src/main/agent/mcp-manager';
+import tmp from 'tmp';
+import { AIDER_DESK_TMP_DIR_NAME } from 'src/main/constants';
 
+import { McpManager } from './agent/mcp-manager';
 import { Agent } from './agent';
 import { getFilePathSuggestions, isProjectPath, isValidPath } from './file-system';
 import { ModelInfoManager } from './model-info-manager';
@@ -240,7 +245,25 @@ export const setupIpcHandlers = (
 
   ipcMain.handle('scrape-web', async (_, baseDir: string, url: string) => {
     const content = await scrapeWeb(url);
-    projectManager.getProject(baseDir).addContextMessage(MessageRole.User, `I have scraped the following content from ${url}:\n\n${content}`, true);
+    const project = projectManager.getProject(baseDir);
+
+    try {
+      // Normalize URL for filename
+      let normalizedUrl = url.replace(/^https?:\/\//, '').replace(/[^a-zA-Z0-9_.-]/g, '_');
+      // Truncate if too long
+      if (normalizedUrl.length > 100) {
+        normalizedUrl = normalizedUrl.substring(0, 100);
+      }
+      const tempFilePath = path.join(tmp.tmpdir, AIDER_DESK_TMP_DIR_NAME, `${normalizedUrl}.web`);
+
+      await fs.writeFile(tempFilePath, `Scraped content of ${url}:\n\n${content}`);
+
+      await project.addFile({ path: tempFilePath, readOnly: true });
+      project.addLogMessage('info', `Web content from ${url} saved to ${tempFilePath} and added to context.`);
+    } catch (error) {
+      logger.error(`Error processing scraped web content for ${url}:`, error);
+      project.addLogMessage('error', `Failed to save scraped content from ${url}:\n${error instanceof Error ? error.message : String(error)}`);
+    }
   });
 
   ipcMain.handle('save-session', async (_, baseDir: string, name: string) => {

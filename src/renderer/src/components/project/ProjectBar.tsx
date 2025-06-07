@@ -18,6 +18,7 @@ import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { useSettings } from '@/context/SettingsContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
+import { showSuccessNotification } from '@/utils/notifications';
 
 export type ProjectTopBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -165,12 +166,14 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
         try {
           await window.api.saveSession(baseDir, name);
           await loadSessions();
+          hideSessionPopup();
+          showSuccessNotification(t('sessions.sessionSaved'));
         } catch (error) {
           // eslint-disable-next-line no-console
           console.error('Failed to save session:', error);
         }
       },
-      [baseDir, loadSessions],
+      [baseDir, hideSessionPopup, loadSessions, t],
     );
 
     const loadSessionMessages = useCallback(

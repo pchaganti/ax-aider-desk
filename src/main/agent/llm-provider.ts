@@ -21,10 +21,11 @@ import {
   LlmProvider,
 } from '@common/agent';
 import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from 'src/main/constants';
-import { AgentProfile, ReasoningEffort } from '@common/types';
+import { AgentProfile, ReasoningEffort, UsageReportData } from '@common/types';
 import { ModelInfoManager } from 'src/main/model-info-manager';
+import { Project } from 'src/main/project';
 
-import type { JSONValue, LanguageModel } from 'ai';
+import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
 
 export const createLlm = (provider: LlmProvider, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
   if (!model) {
@@ -142,7 +143,11 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
         },
       },
     });
-    return openRouter.chat(model);
+    return openRouter.chat(model, {
+      usage: {
+        include: true,
+      },
+    });
   } else if (isRequestyProvider(provider)) {
     const apiKey = provider.apiKey || env['REQUESTY_API_KEY'];
     if (!apiKey) {
@@ -176,13 +181,41 @@ type AnthropicMetadata = {
   };
 };
 
+type OpenAiMetadata = {
+  openai: {
+    cachedPromptTokens?: number;
+  };
+};
+
+type OpenRouterMetadata = {
+  openrouter: {
+    usage: {
+      completionTokens: number;
+      completionTokensDetails: {
+        reasoningTokens: number;
+      };
+      cost: number;
+      promptTokens: number;
+      promptTokensDetails?: {
+        cachedTokens: number;
+      };
+      totalTokens: number;
+    };
+  };
+};
+
 export const calculateCost = (
   modelInfoManager: ModelInfoManager,
   profile: AgentProfile,
   sentTokens: number,
   receivedTokens: number,
-  providerMetadata?: AnthropicMetadata | unknown,
+  providerMetadata?: AnthropicMetadata | OpenAiMetadata | OpenRouterMetadata | unknown,
 ) => {
+  if (profile.provider === 'openrouter') {
+    const { openrouter } = providerMetadata as OpenRouterMetadata;
+    return openrouter.usage.cost;
+  }
+
   // Get the model name directly from the provider
   const model = profile.model;
   if (!model) {
@@ -194,41 +227,87 @@ export const calculateCost = (
   }
 
   // Calculate cost in dollars (costs are per million tokens)
-  const inputCost = sentTokens * modelInfo.inputCostPerToken;
+  let inputCost = sentTokens * modelInfo.inputCostPerToken;
   const outputCost = receivedTokens * modelInfo.outputCostPerToken;
   let cacheCost = 0;
 
   if (profile.provider === 'anthropic') {
-    const anthropicMetadata = providerMetadata as AnthropicMetadata;
-    const cacheCreationInputTokens = anthropicMetadata.anthropic?.cacheCreationInputTokens ?? 0;
-    const cacheReadInputTokens = anthropicMetadata?.anthropic?.cacheReadInputTokens ?? 0;
+    const { anthropic } = providerMetadata as AnthropicMetadata;
+    const cacheCreationInputTokens = anthropic.cacheCreationInputTokens ?? 0;
+    const cacheReadInputTokens = anthropic.cacheReadInputTokens ?? 0;
     const cacheCreationCost = cacheCreationInputTokens * (modelInfo.cacheWriteInputTokenCost ?? modelInfo.inputCostPerToken);
     const cacheReadCost = cacheReadInputTokens * (modelInfo.cacheReadInputTokenCost ?? 0);
 
     cacheCost = cacheCreationCost + cacheReadCost;
+  } else if (profile.provider === 'openai') {
+    const { openai } = providerMetadata as OpenAiMetadata;
+    const cachedPromptTokens = openai.cachedPromptTokens ?? 0;
+
+    inputCost = (sentTokens - cachedPromptTokens) * modelInfo.inputCostPerToken;
+    cacheCost = cachedPromptTokens * (modelInfo.cacheReadInputTokenCost ?? modelInfo.inputCostPerToken);
   }
 
   return inputCost + outputCost + cacheCost;
 };
 
-export const getCacheControl = (profile: AgentProfile): Record<string, Record<string, JSONValue>> => {
+export const getUsageReport = (
+  project: Project,
+  profile: AgentProfile,
+  messageCost: number,
+  usage: LanguageModelUsage,
+  providerMetadata?: AnthropicMetadata | OpenAiMetadata | OpenRouterMetadata | unknown,
+): UsageReportData => {
+  const usageReportData: UsageReportData = {
+    sentTokens: usage.promptTokens,
+    receivedTokens: usage.completionTokens,
+    messageCost,
+    agentTotalCost: project.agentTotalCost + messageCost,
+  };
+
+  if (profile.provider === 'anthropic') {
+    const { anthropic } = providerMetadata as AnthropicMetadata;
+    usageReportData.cacheWriteTokens = anthropic.cacheCreationInputTokens;
+    usageReportData.cacheReadTokens = anthropic.cacheReadInputTokens;
+  } else if (profile.provider === 'openai') {
+    const { openai } = providerMetadata as OpenAiMetadata;
+    usageReportData.cacheReadTokens = openai.cachedPromptTokens;
+    usageReportData.sentTokens -= openai.cachedPromptTokens ?? 0;
+  } else if (profile.provider === 'openrouter') {
+    const { openrouter } = providerMetadata as OpenRouterMetadata;
+    usageReportData.cacheReadTokens = openrouter.usage.promptTokensDetails?.cachedTokens;
+    usageReportData.sentTokens -= usageReportData.cacheReadTokens ?? 0;
+  }
+
+  return usageReportData;
+};
+
+export type CacheControl = Record<string, Record<string, JSONValue>> | undefined;
+export const getCacheControl = (profile: AgentProfile): CacheControl => {
   if (profile.provider === 'anthropic') {
     return {
       anthropic: {
         cacheControl: { type: 'ephemeral' },
       },
     };
-  } else if (profile.provider === 'openrouter' || profile.provider === 'requesty') {
+  } else if (profile.provider === 'requesty') {
     if (profile.model.startsWith('anthropic/')) {
       return {
-        anthropic: {
+        requesty: {
+          cacheControl: { type: 'ephemeral' },
+        },
+      };
+    }
+  } else if (profile.provider === 'openrouter') {
+    if (profile.model.startsWith('anthropic/')) {
+      return {
+        openrouter: {
           cacheControl: { type: 'ephemeral' },
         },
       };
     }
   }
 
-  return {};
+  return undefined;
 };
 
 export const getProviderOptions = (llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined => {

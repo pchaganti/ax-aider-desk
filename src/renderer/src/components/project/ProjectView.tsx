@@ -162,10 +162,16 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
           // If no processing message exists, find the last response message
           const responseMessage = prevMessages.find((message) => message.id === messageId) as ResponseMessage | undefined;
           if (responseMessage) {
-            responseMessage.content = content;
-            responseMessage.processing = false;
-            responseMessage.usageReport = usageReport;
-            return prevMessages.map((message) => (message.id === messageId ? responseMessage : message));
+            return prevMessages.map((message) =>
+              message.id === messageId
+                ? {
+                    ...responseMessage,
+                    content,
+                    processing: false,
+                    usageReport,
+                  }
+                : message,
+            );
           } else {
             if (reflectedMessage) {
               const reflected: ReflectedMessage = {

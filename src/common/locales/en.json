@@ -410,7 +410,8 @@
     "deleteWarning": "This action cannot be undone.",
     "save": "Save session",
     "add": "Add new session",
-    "newSessionPlaceholder": "Enter session name"
+    "newSessionPlaceholder": "Enter session name",
+    "sessionSaved": "Session saved."
   },
   "commandOutput": {
     "command": "Command"
@@ -420,7 +421,9 @@
   },
   "responseMessage": {
     "inputTokens": "Input Tokens",
-    "outputTokens": "Output Tokens"
+    "outputTokens": "Output Tokens",
+    "cacheWriteTokens": "Cache Write Tokens",
+    "cacheReadTokens": "Cache Read Tokens"
   },
   "thinkingAnswer": {
     "thinking": "THINKING",
