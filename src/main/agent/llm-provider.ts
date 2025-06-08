@@ -56,7 +56,12 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     if (!apiKey) {
       throw new Error('Gemini API key is required in Agent provider settings or Aider environment variables (GEMINI_API_KEY)');
     }
-    const googleProvider = createGoogleGenerativeAI({ apiKey });
+    const baseUrl = provider.customBaseUrl || env['GEMINI_API_BASE_URL'];
+
+    const googleProvider = createGoogleGenerativeAI({
+      apiKey,
+      baseURL: baseUrl,
+    });
     return googleProvider(model, {
       useSearchGrounding: provider.useSearchGrounding,
     });

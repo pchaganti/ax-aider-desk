@@ -106,6 +106,7 @@
   },
   "gemini": {
     "apiKey": "API 密钥",
+    "customBaseUrl": "自定义基础 URL",
     "thinkingBudget": "思考预算 (令牌)",
     "includeThoughts": "包含思考过程",
     "includeThoughtsTooltip": "启用后，代理的内部思考过程将包含在对话历史中，这有助于调试或理解其决策。",

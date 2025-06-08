@@ -54,6 +54,7 @@ export const isAnthropicProvider = (provider: LlmProviderBase): provider is Anth
 export interface GeminiProvider extends LlmProviderBase {
   name: 'gemini';
   apiKey: string;
+  customBaseUrl?: string;
   includeThoughts: boolean;
   thinkingBudget: number;
   useSearchGrounding: boolean;
@@ -201,6 +202,7 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
           useSearchGrounding: false,
           includeThoughts: false,
           thinkingBudget: 0,
+          customBaseUrl: '',
         } satisfies GeminiProvider;
         break;
       case 'deepseek':

@@ -107,6 +107,7 @@
   },
   "gemini": {
     "apiKey": "API Key",
+    "customBaseUrl": "Custom Base URL",
     "thinkingBudget": "Thinking budget (tokens)",
     "includeThoughts": "Include thoughts",
     "includeThoughtsTooltip": "When enabled, the model's internal thought process will be included in the conversation.",

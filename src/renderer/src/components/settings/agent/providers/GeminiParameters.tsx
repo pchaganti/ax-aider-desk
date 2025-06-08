@@ -15,10 +15,14 @@ type Props = {
 export const GeminiParameters = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
 
-  const { apiKey, thinkingBudget, includeThoughts, useSearchGrounding } = provider;
+  const { apiKey, customBaseUrl, thinkingBudget, includeThoughts, useSearchGrounding } = provider;
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
+  };
+
+  const handleCustomBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) => {
+    onChange({ ...provider, customBaseUrl: e.target.value });
   };
 
   const handleThinkingBudgetChange = (value: number) => {
@@ -45,6 +49,14 @@ export const GeminiParameters = ({ provider, onChange }: Props) => {
         onChange={handleApiKeyChange}
         placeholder={t('settings.agent.envVarPlaceholder', {
           envVar: 'GEMINI_API_KEY',
+        })}
+      />
+      <Input
+        label={t('gemini.customBaseUrl')}
+        value={customBaseUrl || ''}
+        onChange={handleCustomBaseUrlChange}
+        placeholder={t('settings.agent.envVarPlaceholder', {
+          envVar: 'GEMINI_API_BASE_URL',
         })}
       />
       <Slider label={t('gemini.thinkingBudget')} value={thinkingBudget ?? 0} min={0} max={24576} onChange={handleThinkingBudgetChange} />
