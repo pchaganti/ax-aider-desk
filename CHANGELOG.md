@@ -12,6 +12,7 @@
 - properly passing reasoningEffort to Requesty provider
 - improved caching for various providers and enhanced token and cost usage tracking
 - added /init command to initialize PROJECT.md rules file with project information
+- added configurable temperature setting for Agent profile
 
 ## [0.16.1]
 

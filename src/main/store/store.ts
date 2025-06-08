@@ -8,6 +8,7 @@ import { migrateSettingsV5toV6 } from 'src/main/store/migrations/v5-to-v6';
 import logger from '../logger';
 
 import { migrateV6ToV7 } from './migrations/v6-to-v7';
+import { migrateV7ToV8 } from './migrations/v7-to-v8';
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
 import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
 import { migrateSettingsV2toV3 } from './migrations/v2-to-v3';
@@ -112,7 +113,7 @@ interface StoreSchema {
   userId?: string;
 }
 
-const CURRENT_SETTINGS_VERSION = 7;
+const CURRENT_SETTINGS_VERSION = 8;
 
 interface CustomStore<T> {
   get<K extends keyof T>(key: K): T[K] | undefined;
@@ -232,6 +233,11 @@ export class Store {
       if (settingsVersion === 6) {
         settings = migrateV6ToV7(settings);
         settingsVersion = 7;
+      }
+
+      if (settingsVersion === 7) {
+        settings = migrateV7ToV8(settings);
+        settingsVersion = 8;
       }
 
       this.store.set('settings', settings as SettingsData);

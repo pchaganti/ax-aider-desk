@@ -130,6 +130,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   maxIterations: 20,
   maxTokens: 2000,
   minTimeBetweenToolCalls: 0,
+  temperature: 0.1,
   toolApprovals: {
     // aider tools
     [`${AIDER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_GET_CONTEXT_FILES}`]: ToolApprovalState.Always,

@@ -195,6 +195,7 @@ export interface AgentProfile {
   maxIterations: number;
   maxTokens: number;
   minTimeBetweenToolCalls: number; // in milliseconds
+  temperature: number; // 0-1 for controlling randomness/creativity
   enabledServers: string[];
   toolApprovals: Record<string, ToolApprovalState>;
   includeContextFiles: boolean;

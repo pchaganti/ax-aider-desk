@@ -399,6 +399,19 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId, initial
                 <Slider
                   label={
                     <div className="flex items-center text-xs">
+                      <span>{t('settings.agent.temperature')}</span>
+                      <InfoIcon className="ml-1" tooltip={t('settings.agent.temperatureTooltip')} />
+                    </div>
+                  }
+                  min={0}
+                  max={1}
+                  step={0.1}
+                  value={selectedProfile.temperature}
+                  onChange={(value) => handleProfileSettingChange('temperature', value)}
+                />
+                <Slider
+                  label={
+                    <div className="flex items-center text-xs">
                       <span>{t('settings.agent.maxIterations')}</span>
                       <InfoIcon className="ml-1" tooltip={t('settings.agent.computationalResources')} />
                     </div>

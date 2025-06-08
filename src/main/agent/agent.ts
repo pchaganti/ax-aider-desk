@@ -565,7 +565,7 @@ export class Agent {
           abortSignal: this.abortController.signal,
           maxTokens: profile.maxTokens,
           maxRetries: 5,
-          temperature: 0.7, // Keep deterministic for agent behavior
+          temperature: profile.temperature,
           experimental_continueSteps: true,
           onError: ({ error }) => {
             if (this.abortController?.signal.aborted) {
