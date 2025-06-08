@@ -14,6 +14,7 @@
 - added /init command to initialize PROJECT.md rules file with project information
 - added configurable temperature setting for Agent profile
 - added custom base URL config for Gemini provider
+- added Clear chat button to project top bar
 
 ## [0.16.1]
 

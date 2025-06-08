@@ -631,20 +631,19 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
         </div>
       )}
       <div className="flex flex-col flex-grow overflow-hidden">
-        <div className="px-4 py-2 border-b border-neutral-800 bg-neutral-900">
-          <ProjectBar
-            ref={projectTopBarRef}
-            baseDir={project.baseDir}
-            modelsData={aiderModelsData}
-            allModels={availableModels}
-            mode={projectSettings.currentMode}
-            renderMarkdown={projectSettings.renderMarkdown}
-            onModelChange={handleModelChange}
-            onRenderMarkdownChanged={handleRenderMarkdownChanged}
-            onExportSessionToImage={exportMessagesToImage}
-            runCommand={runCommand}
-          />
-        </div>
+        <ProjectBar
+          ref={projectTopBarRef}
+          baseDir={project.baseDir}
+          modelsData={aiderModelsData}
+          allModels={availableModels}
+          mode={projectSettings.currentMode}
+          renderMarkdown={projectSettings.renderMarkdown}
+          onModelChange={handleModelChange}
+          onRenderMarkdownChanged={handleRenderMarkdownChanged}
+          onExportSessionToImage={exportMessagesToImage}
+          runCommand={runCommand}
+          onClearMessages={clearMessages}
+        />
         <div className="flex-grow overflow-y-auto relative">
           {renderSearchInput()}
           <Messages
@@ -665,7 +664,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             <div className="flex items-center justify-between px-2 py-1 text-xs text-neutral-400 border-b border-neutral-700 mb-2">
               <span>{t('messages.editingLastMessage')}</span>
               <Button
-                size="sm"
+                size="xs"
                 variant="text"
                 onClick={() => {
                   setEditingMessageIndex(null);

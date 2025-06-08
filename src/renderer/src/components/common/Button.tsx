@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 type ButtonVariant = 'contained' | 'text' | 'outline';
 type ButtonColor = 'primary' | 'secondary' | 'danger';
-type ButtonSize = 'sm' | 'md';
+type ButtonSize = 'sm' | 'md' | 'xs';
 
 type Props = {
   children: ReactNode;
@@ -36,6 +36,7 @@ const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
 const sizeClasses: Record<ButtonSize, string> = {
   md: 'px-4 py-2 text-base',
   sm: 'px-2.5 py-1.5 text-sm',
+  xs: 'px-2 py-1 text-xs',
 };
 
 export const Button = ({

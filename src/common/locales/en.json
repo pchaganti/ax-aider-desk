@@ -517,6 +517,7 @@
   },
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",
+    "clearChat": "Clear chat",
     "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected."
   },
   "reasoningEffort": {

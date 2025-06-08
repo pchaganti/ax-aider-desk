@@ -4,6 +4,7 @@ import { BsCodeSlash, BsFilter } from 'react-icons/bs';
 import { CgSpinner, CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
 import { IoMdClose } from 'react-icons/io';
+import { VscClearAll } from 'react-icons/vsc';
 import { MdHistory } from 'react-icons/md';
 import { IoLogoMarkdown } from 'react-icons/io5';
 import { RiRobot2Line } from 'react-icons/ri';
@@ -19,6 +20,7 @@ import { useSettings } from '@/context/SettingsContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showSuccessNotification } from '@/utils/notifications';
+import { Button } from '@/components/common/Button';
 
 export type ProjectTopBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -34,11 +36,15 @@ type Props = {
   onModelChange?: () => void;
   onRenderMarkdownChanged: (value: boolean) => void;
   onExportSessionToImage: () => void;
+  onClearMessages: () => void;
   runCommand: (command: string) => void;
 };
 
 export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
-  ({ baseDir, allModels = [], modelsData, mode, renderMarkdown, onModelChange, onRenderMarkdownChanged, onExportSessionToImage, runCommand }, ref) => {
+  (
+    { baseDir, allModels = [], modelsData, mode, renderMarkdown, onModelChange, onRenderMarkdownChanged, onExportSessionToImage, onClearMessages, runCommand },
+    ref,
+  ) => {
     const { t } = useTranslation();
     const { settings, saveSettings } = useSettings();
     const agentModelSelectorRef = useRef<ModelSelectorRef>(null);
@@ -243,7 +249,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     };
 
     return (
-      <div className="relative group h-[24px]">
+      <div className="relative group h-[40px] px-4 py-2 pr-1 border-b border-neutral-800 bg-neutral-900">
         {!modelsData ? (
           <div className="text-xs h-full flex items-center">
             <CgSpinner className="w-4 h-4 text-neutral-100 mr-2 animate-spin" />
@@ -370,6 +376,15 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
                   />
                 )}
               </div>
+              <Button
+                variant="text"
+                onClick={onClearMessages}
+                className="hover:bg-neutral-800 border-neutral-200 text-neutral-200 !ml-4 hover:text-neutral-100"
+                size="xs"
+              >
+                <VscClearAll className="w-4 h-4 mr-2" />
+                {t('projectBar.clearChat')}
+              </Button>
             </div>
           </div>
         )}
