@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.17.0]
 
 - enhanced group question handling with All and Skip answers for questions like Add file?
 - handling outdated Python venv directory by reinitializing it
