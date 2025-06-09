@@ -1,0 +1,14 @@
+name: Auto Assign PR
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  auto-assign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign PR to wladimiiir
+        uses: kentaro-m/auto-assign-action@v1.2.0
+        with:
+          assignees: wladimiiir
