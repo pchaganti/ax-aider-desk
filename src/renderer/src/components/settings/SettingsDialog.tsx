@@ -118,7 +118,6 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
       onConfirm={handleSave}
       confirmButtonText={t('common.save')}
       width={1000}
-      closeOnEscape
       disabled={!hasChanges}
     >
       {localSettings && (

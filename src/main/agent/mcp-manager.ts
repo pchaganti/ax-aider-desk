@@ -23,6 +23,28 @@ export class McpManager {
     projectDir: string | null = this.currentProjectDir,
     forceReload = false,
   ): Promise<McpConnector[]> {
+    const activeServerNames = new Set(Object.keys(mcpServers));
+    const connectorsToClose: Promise<McpConnector>[] = [];
+
+    for (const serverName of Object.keys(this.mcpConnectors)) {
+      if (!activeServerNames.has(serverName)) {
+        connectorsToClose.push(this.mcpConnectors[serverName]);
+        delete this.mcpConnectors[serverName];
+      }
+    }
+
+    await Promise.all(
+      connectorsToClose.map(async (connectorPromise) => {
+        try {
+          const connector = await connectorPromise;
+          await connector.client.close();
+          logger.info(`Closed extraneous MCP connector for server: ${connector.serverName}`);
+        } catch (error) {
+          logger.error('Error closing extraneous MCP connector:', error);
+        }
+      }),
+    );
+
     for (const [serverName, serverConfig] of Object.entries(mcpServers)) {
       this.mcpConnectors[serverName] = this.initMcpConnector(
         projectDir,
