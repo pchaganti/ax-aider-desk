@@ -49,6 +49,11 @@ const MAX_SUGGESTIONS = 10;
 
 const HISTORY_MENU_CHUNK_SIZE = 20;
 
+const isPathLike = (input: string): boolean => {
+  const firstWord = input.split(' ')[0];
+  return (firstWord.match(/\//g) || []).length >= 2;
+};
+
 export interface PromptFieldRef {
   focus: () => void;
   setText: (text: string) => void;
@@ -487,7 +492,7 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
 
     const handleSubmit = () => {
       if (text) {
-        if (text.startsWith('/') && !COMMANDS.some((cmd) => text.startsWith(cmd))) {
+        if (text.startsWith('/') && !isPathLike(text) && !COMMANDS.some((cmd) => text.startsWith(cmd))) {
           showErrorNotification(t('promptField.invalidCommand'));
           return;
         }
