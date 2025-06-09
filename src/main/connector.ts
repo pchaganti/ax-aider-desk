@@ -16,6 +16,7 @@ import {
   PromptMessage,
   RunCommandMessage,
   SetModelsMessage,
+  CompactConversationMessage,
 } from './messages';
 
 export class Connector {
@@ -49,6 +50,7 @@ export class Connector {
     architectModel: string | null = null,
     promptId: string | null = null,
     clearContext = false,
+    clearFiles = false,
   ): void {
     const message: PromptMessage = {
       action: 'prompt',
@@ -57,6 +59,7 @@ export class Connector {
       architectModel,
       promptId,
       clearContext,
+      clearFiles,
     };
     this.sendMessage(message);
   }
@@ -129,6 +132,14 @@ export class Connector {
     const message: ApplyEditsMessage = {
       action: 'apply-edits',
       edits,
+    };
+    this.sendMessage(message);
+  }
+
+  public sendCompactConversationMessage(customInstructions?: string) {
+    const message: CompactConversationMessage = {
+      action: 'compact-conversation',
+      customInstructions,
     };
     this.sendMessage(message);
   }

@@ -38,6 +38,7 @@ const COMMANDS = [
   '/drop',
   '/redo',
   '/edit-last',
+  '/compact',
   '/commit',
   '/init',
 ];
@@ -236,6 +237,10 @@ export const PromptField = React.forwardRef<PromptFieldRef, Props>(
           case '/edit-last':
             prepareForNextPrompt();
             editLastUserMessage();
+            break;
+          case '/compact':
+            prepareForNextPrompt();
+            window.api.compactConversation(baseDir, mode, args);
             break;
           case '/test': {
             runTests(args);

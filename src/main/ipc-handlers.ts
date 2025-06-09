@@ -243,6 +243,13 @@ export const setupIpcHandlers = (
     void projectManager.getProject(baseDir).redoLastUserPrompt(mode, updatedPrompt);
   });
 
+  ipcMain.handle('compact-conversation', async (_event, baseDir, mode: Mode, customInstructions?: string) => {
+    const project = projectManager.getProject(baseDir);
+    if (project) {
+      await project.compactConversation(mode, customInstructions);
+    }
+  });
+
   ipcMain.handle('scrape-web', async (_, baseDir: string, url: string) => {
     const content = await scrapeWeb(url);
     const project = projectManager.getProject(baseDir);

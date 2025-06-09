@@ -538,6 +538,7 @@
     "code": "Switch to code mode. Ask for changes to your code",
     "commit": "Commit unstaged changes to the repo",
     "context": "Switch to context mode. Ask for changes and Aider will add relevant files to the context",
+    "compact": "Summarize the conversation",
     "copy-context": "Copy the current chat context as markdown, suitable to paste into a web UI",
     "drop": "Remove files from the context to free up context space",
     "edit-last": "Edits the last user message",

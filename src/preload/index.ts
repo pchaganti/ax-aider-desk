@@ -94,6 +94,7 @@ const api: ApplicationAPI = {
   applyEdits: (baseDir, edits: FileEdit[]) => ipcRenderer.send('apply-edits', baseDir, edits),
   clearContext: (baseDir) => ipcRenderer.send('clear-context', baseDir),
   removeLastMessage: (baseDir) => ipcRenderer.send('remove-last-message', baseDir),
+  compactConversation: (baseDir, mode, customInstructions) => ipcRenderer.invoke('compact-conversation', baseDir, mode, customInstructions),
   setZoomLevel: (level) => ipcRenderer.invoke('set-zoom-level', level),
   getVersions: (forceRefresh = false) => ipcRenderer.invoke('get-versions', forceRefresh),
   downloadLatestAiderDesk: () => ipcRenderer.invoke('download-latest-aiderdesk'),

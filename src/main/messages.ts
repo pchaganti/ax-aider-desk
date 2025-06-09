@@ -29,6 +29,7 @@ export type MessageAction =
   | 'add-message'
   | 'interrupt-response'
   | 'apply-edits'
+  | 'compact-conversation'
   | 'update-repo-map';
 
 export interface Message {
@@ -60,6 +61,7 @@ export interface PromptMessage extends Message {
   architectModel: string | null;
   promptId?: string | null;
   clearContext?: boolean;
+  clearFiles?: boolean;
 }
 
 export interface ResponseMessage extends Message {
@@ -204,6 +206,11 @@ export const isPromptFinishedMessage = (message: Message): message is PromptFini
 export interface ApplyEditsMessage extends Message {
   action: 'apply-edits';
   edits: FileEdit[];
+}
+
+export interface CompactConversationMessage extends Message {
+  action: 'compact-conversation';
+  customInstructions?: string;
 }
 
 export interface UpdateRepoMapMessage extends Message {

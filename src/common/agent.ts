@@ -174,6 +174,18 @@ export const INIT_PROJECT_RULES_AGENT_PROFILE: AgentProfile = {
   },
 };
 
+export const COMPACT_CONVERSATION_AGENT_PROFILE: AgentProfile = {
+  ...DEFAULT_AGENT_PROFILE,
+  id: 'compact',
+  maxIterations: 5,
+  maxTokens: 8192,
+  includeRepoMap: false,
+  includeContextFiles: false,
+  usePowerTools: false,
+  useAiderTools: false,
+  autoApprove: true,
+};
+
 export const getLlmProviderConfig = (providerName: LlmProviderName, settings: SettingsData | null): LlmProvider => {
   let provider = settings?.llmProviders[providerName] || null;
 

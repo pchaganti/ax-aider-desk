@@ -31,13 +31,13 @@ import {
   UsageReportData,
   UserMessageData,
 } from '@common/types';
-import { fileExists, getActiveAgentProfile, parseUsageReport } from '@common/utils';
-import { INIT_PROJECT_RULES_AGENT_PROFILE } from '@common/agent';
+import { extractTextContent, fileExists, getActiveAgentProfile, parseUsageReport } from '@common/utils';
+import { INIT_PROJECT_RULES_AGENT_PROFILE, COMPACT_CONVERSATION_AGENT_PROFILE } from '@common/agent';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
 import { parse } from '@dotenvx/dotenvx';
 import { TelemetryManager } from 'src/main/telemetry-manager';
-import { getInitProjectPrompt } from 'src/main/agent/prompts';
+import { getInitProjectPrompt, getCompactConversationPrompt } from 'src/main/agent/prompts';
 
 import { TaskManager } from './task-manager';
 import { SessionManager } from './session-manager';
@@ -498,13 +498,13 @@ export class Project {
     return [];
   }
 
-  public sendPrompt(prompt: string, mode?: Mode, clearContext = false): Promise<ResponseCompletedData[]> {
+  public sendPrompt(prompt: string, mode?: Mode, clearContext = false, clearFiles = false): Promise<ResponseCompletedData[]> {
     this.currentPromptResponses = [];
     this.currentResponseMessageId = null;
     this.currentPromptId = uuidv4();
 
     this.findMessageConnectors('prompt').forEach((connector) =>
-      connector.sendPromptMessage(prompt, mode, this.getArchitectModel(), this.currentPromptId, clearContext),
+      connector.sendPromptMessage(prompt, mode, this.getArchitectModel(), this.currentPromptId, clearContext, clearFiles),
     );
 
     // Wait for prompt to finish and return collected responses
@@ -1110,6 +1110,67 @@ export class Project {
     this.sessionManager.addContextMessage(role, content);
     this.sendAddMessage(role, content, acknowledge);
     void this.updateAgentEstimatedTokens();
+  }
+
+  public async compactConversation(mode: Mode, customInstructions?: string) {
+    const userMessage = this.sessionManager.getContextMessages()[0];
+
+    if (!userMessage) {
+      this.addLogMessage('warning', 'No conversation to compact.');
+      return;
+    }
+
+    this.addLogMessage('loading', 'Compacting conversation...');
+
+    const extractSummary = (content: string): string => {
+      const lines = content.split('\n');
+      const summaryMarker = '### **Conversation Summary**';
+      const markerIndex = lines.findIndex((line) => line.trim() === summaryMarker);
+      if (markerIndex !== -1) {
+        return lines.slice(markerIndex).join('\n');
+      }
+      return content;
+    };
+
+    if (mode === 'agent') {
+      // Agent mode logic
+      const profile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.baseDir));
+
+      if (!profile) {
+        throw new Error('No active Agent profile found');
+      }
+
+      const agentMessages = await this.agent.runAgent(this, COMPACT_CONVERSATION_AGENT_PROFILE, getCompactConversationPrompt(customInstructions));
+
+      if (agentMessages.length > 0) {
+        // Clear existing context and add the summary
+        const summaryMessage = agentMessages[agentMessages.length - 1];
+        summaryMessage.content = extractSummary(extractTextContent(summaryMessage.content));
+
+        this.sessionManager.setContextMessages([userMessage, summaryMessage]);
+        this.sessionManager.toConnectorMessages([userMessage, summaryMessage]).forEach((message) => {
+          this.sendAddMessage(message.role, message.content, false);
+        });
+
+        await this.sessionManager.loadMessages(this.sessionManager.getContextMessages());
+      }
+
+      // After compaction, update estimated tokens
+      await this.updateAgentEstimatedTokens();
+    } else {
+      const responses = await this.sendPrompt(getCompactConversationPrompt(customInstructions), 'ask', false, true);
+
+      // add messages to session
+      this.sessionManager.setContextMessages([userMessage], false);
+      for (const response of responses) {
+        if (response.content) {
+          this.sessionManager.addContextMessage(MessageRole.Assistant, extractSummary(response.content));
+        }
+      }
+      await this.sessionManager.loadMessages(this.sessionManager.getContextMessages());
+    }
+
+    this.addLogMessage('info', 'Conversation compacted.');
   }
 
   public async exportSessionToMarkdown(): Promise<void> {

@@ -458,12 +458,13 @@ class Connector:
         architect_model = message.get('architectModel')
         prompt_id = message.get('promptId')
         clear_context = message.get('clearContext')
+        clear_files = message.get('clearFiles')
 
         if not prompt:
           return json.dumps({"success": True})
 
         try:
-            await self.run_prompt(prompt, mode, architect_model, prompt_id, clear_context)
+            await self.run_prompt(prompt, mode, architect_model, prompt_id, clear_context, clear_files)
         finally:
             if prompt_id:
                 await self.send_action({
@@ -577,12 +578,12 @@ class Connector:
     self.coder.io.reset_state()
     self.interrupted = False
 
-  async def run_prompt(self, prompt, mode=None, architect_model=None, prompt_id=None, clear_context=False):
+  async def run_prompt(self, prompt, mode=None, architect_model=None, prompt_id=None, clear_context=False, clear_files=False):
     self.coder.io.add_to_input_history(prompt)
 
     coder_model = self.coder.main_model
 
-    if (mode and mode != "code") or clear_context:
+    if (mode and mode != "code") or clear_context or clear_files:
       running_model = self.coder.main_model
       if mode == "architect" and architect_model:
         running_model = models.Model(architect_model, weak_model=coder_model.weak_model.name, editor_model=coder_model.name)
@@ -599,6 +600,10 @@ class Connector:
       if clear_context:
         self.running_coder.cur_messages = []
         self.running_coder.done_messages = []
+
+      if clear_files:
+        self.running_coder.abs_fnames = []
+        self.running_coder.abs_read_only_fnames = []
 
       # we need to disable auto accept as this does not work properly with AiderDesk
       self.running_coder.auto_accept_architect=False

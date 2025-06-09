@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added /compact command to compact conversation history
+
 ## [0.17.0]
 
 - enhanced group question handling with All and Skip answers for questions like Add file?

@@ -75,6 +75,7 @@ export interface ApplicationAPI {
   applyEdits: (baseDir: string, edits: FileEdit[]) => void;
   clearContext: (baseDir: string) => void;
   removeLastMessage: (baseDir: string) => void;
+  compactConversation: (baseDir: string, mode: Mode, customInstructions?: string) => void;
   setZoomLevel: (level: number) => Promise<void>;
 
   getVersions: (forceRefresh?: boolean) => Promise<VersionsInfo | null>;
