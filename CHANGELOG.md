@@ -5,6 +5,7 @@
 - added /compact command to compact conversation history
 - prompts starting with '/' are checked if they are path like before checking them as commands
 - properly closing deleted MCP servers
+- adding HOME environment to MCP server connection
 
 ## [0.17.0]
 
