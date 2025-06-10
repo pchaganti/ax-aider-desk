@@ -6,6 +6,7 @@
 - prompts starting with '/' are checked if they are path like before checking them as commands
 - properly closing deleted MCP servers
 - adding HOME environment to MCP server connection
+- read file power tool now denies to read binary files
 
 ## [0.17.0]
 

@@ -28,6 +28,7 @@ import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { TelemetryManager } from 'src/main/telemetry-manager';
 import { ModelInfoManager } from 'src/main/model-info-manager';
 import { cloneDeep } from 'lodash';
+import { BINARY_EXTENSIONS } from 'src/main/constants';
 
 import { parseAiderEnv } from '../utils';
 import logger from '../logger';
@@ -70,37 +71,6 @@ export class Agent {
   }
 
   private async getFileContentForPrompt(files: ContextFile[], project: Project): Promise<string> {
-    // Common binary file extensions to exclude
-    const BINARY_EXTENSIONS = new Set([
-      '.png',
-      '.jpg',
-      '.jpeg',
-      '.gif',
-      '.bmp',
-      '.tiff',
-      '.ico', // Images
-      '.mp3',
-      '.wav',
-      '.ogg',
-      '.flac', // Audio
-      '.mp4',
-      '.mov',
-      '.avi',
-      '.mkv', // Video
-      '.zip',
-      '.tar',
-      '.gz',
-      '.7z', // Archives
-      '.pdf',
-      '.doc',
-      '.docx',
-      '.xls',
-      '.xlsx', // Documents
-      '.exe',
-      '.dll',
-      '.so', // Binaries
-    ]);
-
     const fileSections = await Promise.all(
       files.map(async (file) => {
         try {
