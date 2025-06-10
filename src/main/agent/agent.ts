@@ -511,6 +511,7 @@ export class Agent {
       };
 
       let iterationCount = 0;
+      let unknownRetries = 0;
 
       while (true) {
         logger.info(`Starting iteration ${iterationCount}`);
@@ -607,6 +608,13 @@ export class Agent {
 
         messages.push(...responseMessages);
         resultMessages.push(...responseMessages);
+
+        if (finishReason === 'unknown' && unknownRetries < 3) {
+          logger.warn('Unknown finish reason. Retrying.');
+          unknownRetries++;
+          continue;
+        }
+        unknownRetries = 0;
 
         if (finishReason !== 'tool-calls') {
           logger.info(`Prompt finished. Reason: ${finishReason}`);

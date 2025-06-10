@@ -7,6 +7,7 @@
 - properly closing deleted MCP servers
 - adding HOME environment to MCP server connection
 - read file power tool now denies to read binary files
+- retrying 'unknown' responses from Gemini models
 
 ## [0.17.0]
 
