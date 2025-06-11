@@ -124,7 +124,15 @@ const setupAiderConnector = async (cleanInstall: boolean, updateProgress?: Updat
 
 const installAiderConnectorRequirements = async (cleanInstall: boolean, updateProgress?: UpdateProgressFunction): Promise<void> => {
   const pythonBinPath = getPythonVenvBinPath();
-  const packages = ['pip', 'aider-chat', 'python-socketio==5.12.1', 'websocket-client==1.8.0', 'nest-asyncio==1.6.0', 'boto3==1.38.25'];
+  let aiderVersionSpecifier = 'aider-chat';
+  if (process.env.AIDER_DESK_AIDER_VERSION) {
+    if (process.env.AIDER_DESK_AIDER_VERSION.startsWith('git+')) {
+      aiderVersionSpecifier = process.env.AIDER_DESK_AIDER_VERSION;
+    } else {
+      aiderVersionSpecifier = `aider-chat==${process.env.AIDER_DESK_AIDER_VERSION}`;
+    }
+  }
+  const packages = ['pip', aiderVersionSpecifier, 'python-socketio==5.12.1', 'websocket-client==1.8.0', 'nest-asyncio==1.6.0', 'boto3==1.38.25'];
 
   logger.info('Starting Aider connector requirements installation', { packages });
 
@@ -141,7 +149,7 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
 
       if (!cleanInstall) {
         const packageName = pkg.split('==')[0];
-        const currentVersion = await getCurrentPythonLibVersion(packageName);
+        const currentVersion = pkg.startsWith('git+') ? null : await getCurrentPythonLibVersion(packageName);
 
         if (currentVersion) {
           if (pkg.includes('==')) {

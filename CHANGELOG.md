@@ -13,6 +13,7 @@
 - tool result containing image data is passed as image message to models
 - added duplicate tool call prevention in Agent
 - normalizing tool IDs before sending them to LLM
+- added AIDER_DESK_AIDER_VERSION environment variable to use custom version of Aider
 
 ## [0.17.0]
 
