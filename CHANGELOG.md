@@ -8,6 +8,7 @@
 - adding HOME environment to MCP server connection
 - read file power tool now denies to read binary files
 - retrying 'unknown' responses from Gemini models
+- improved prompt field with autocompletion
 
 ## [0.17.0]
 
