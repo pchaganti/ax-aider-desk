@@ -748,7 +748,7 @@ export class Agent {
   }
 
   interrupt() {
-    logger.info('Interrupting MCP agent run');
+    logger.info('Interrupting Agent run');
     this.abortController?.abort();
   }
 

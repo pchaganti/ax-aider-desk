@@ -9,6 +9,7 @@
 - read file power tool now denies to read binary files
 - retrying 'unknown' responses from Gemini models
 - improved prompt field with autocompletion
+- calculating cost including cached tokens for Gemini models
 
 ## [0.17.0]
 

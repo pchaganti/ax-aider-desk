@@ -209,6 +209,12 @@ type OpenRouterMetadata = {
   };
 };
 
+type GoogleMetadata = {
+  google: {
+    cachedContentTokenCount?: number;
+  };
+};
+
 export const calculateCost = (
   modelInfoManager: ModelInfoManager,
   profile: AgentProfile,
@@ -250,6 +256,12 @@ export const calculateCost = (
 
     inputCost = (sentTokens - cachedPromptTokens) * modelInfo.inputCostPerToken;
     cacheCost = cachedPromptTokens * (modelInfo.cacheReadInputTokenCost ?? modelInfo.inputCostPerToken);
+  } else if (profile.provider === 'gemini') {
+    const { google } = providerMetadata as GoogleMetadata;
+    const cachedPromptTokens = google.cachedContentTokenCount ?? 0;
+
+    inputCost = (sentTokens - cachedPromptTokens) * modelInfo.inputCostPerToken;
+    cacheCost = cachedPromptTokens * (modelInfo.cacheReadInputTokenCost ?? modelInfo.inputCostPerToken * 0.25);
   }
 
   return inputCost + outputCost + cacheCost;
@@ -280,6 +292,10 @@ export const getUsageReport = (
   } else if (profile.provider === 'openrouter') {
     const { openrouter } = providerMetadata as OpenRouterMetadata;
     usageReportData.cacheReadTokens = openrouter.usage.promptTokensDetails?.cachedTokens;
+    usageReportData.sentTokens -= usageReportData.cacheReadTokens ?? 0;
+  } else if (profile.provider === 'gemini') {
+    const { google } = providerMetadata as GoogleMetadata;
+    usageReportData.cacheReadTokens = google.cachedContentTokenCount;
     usageReportData.sentTokens -= usageReportData.cacheReadTokens ?? 0;
   }
 
