@@ -83,8 +83,7 @@ const convertImageToolResults = (messages: CoreMessage[]): CoreMessage[] => {
             } else {
               updatedToolContent.push(toolResultPart);
             }
-          } catch (error) {
-            logger.error('Failed to parse tool result as JSON:', { error });
+          } catch {
             // If result is not valid JSON, or doesn't match the image format,
             // just keep the original toolResultPart as is.
             updatedToolContent.push(toolResultPart);

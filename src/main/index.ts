@@ -70,17 +70,21 @@ const initWindow = async (store: Store) => {
   mainWindow.on('maximize', saveWindowState);
   mainWindow.on('unmaximize', saveWindowState);
 
+  // Initialize telemetry manager
   const telemetryManager = new TelemetryManager(store);
   await telemetryManager.init();
 
+  // Initialize MCP manager
   const mcpManager = new McpManager();
   const activeProject = store.getOpenProjects().find((project) => project.active);
 
   void mcpManager.initMcpConnectors(store.getSettings().mcpServers, activeProject?.baseDir);
 
+  // Initialize model info manager
   const modelInfoManager = new ModelInfoManager();
   void modelInfoManager.init();
 
+  // Initialize agent
   const agent = new Agent(store, mcpManager, modelInfoManager, telemetryManager);
 
   // Initialize project manager
@@ -98,6 +102,7 @@ const initWindow = async (store: Store) => {
   // Initialize Versions Manager (this also sets up listeners)
   const versionsManager = new VersionsManager(mainWindow, store);
 
+  // Initialize IPC handlers
   setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, modelInfoManager, telemetryManager);
 
   const beforeQuit = async () => {
