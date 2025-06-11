@@ -12,6 +12,7 @@
 - calculating cost including cached tokens for Gemini models
 - tool result containing image data is passed as image message to models
 - added duplicate tool call prevention in Agent
+- normalizing tool IDs before sending them to LLM
 
 ## [0.17.0]
 

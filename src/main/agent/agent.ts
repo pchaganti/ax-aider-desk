@@ -199,6 +199,7 @@ export class Agent {
       // Process tools for this enabled server
       mcpConnector.tools.forEach((tool) => {
         const toolId = `${mcpConnector.serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`;
+        const normalizedToolId = toolId.toLowerCase().replaceAll(/\s+/g, '_');
 
         // Check approval state first from the profile
         const approvalState = profile.toolApprovals[toolId];
@@ -209,7 +210,15 @@ export class Agent {
           return; // Do not add the tool if it's never approved
         }
 
-        acc[toolId] = this.convertMpcToolToAiSdkTool(profile.provider, mcpConnector.serverName, project, profile, mcpConnector.client, tool, approvalManager);
+        acc[normalizedToolId] = this.convertMpcToolToAiSdkTool(
+          profile.provider,
+          mcpConnector.serverName,
+          project,
+          profile,
+          mcpConnector.client,
+          tool,
+          approvalManager,
+        );
       });
 
       return acc;
