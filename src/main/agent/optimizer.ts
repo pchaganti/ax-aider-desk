@@ -4,6 +4,9 @@ import { type CoreUserMessage, type CoreMessage, type ToolContent, type ToolResu
 
 import logger from '../logger';
 
+/**
+ * Optimizes the messages before sending them to the LLM. This should reduce the token count and improve the performance.
+ */
 export const optimizeMessages = (messages: CoreMessage[], cacheControl: CacheControl) => {
   if (messages.length === 0) {
     return [];
@@ -12,6 +15,7 @@ export const optimizeMessages = (messages: CoreMessage[], cacheControl: CacheCon
   let optimizedMessages = cloneDeep(messages);
 
   optimizedMessages = convertImageToolResults(optimizedMessages);
+  optimizedMessages = removeDoubleToolCalls(optimizedMessages);
 
   logger.info('Optimized messages:', {
     before: {
@@ -36,6 +40,9 @@ export const optimizeMessages = (messages: CoreMessage[], cacheControl: CacheCon
   return optimizedMessages;
 };
 
+/**
+ * Converts tool results containing images into a separate user message containing the image.
+ */
 const convertImageToolResults = (messages: CoreMessage[]): CoreMessage[] => {
   const newMessages: CoreMessage[] = [];
 
@@ -103,6 +110,72 @@ const convertImageToolResults = (messages: CoreMessage[]): CoreMessage[] => {
     } else {
       // For non-tool messages, just push them as is
       newMessages.push(message);
+    }
+  }
+
+  return newMessages;
+};
+
+/**
+ * Some models (Gemini Flash) are trying to call the same tool multiple times in a row.
+ * This function detects this pattern (assistant tool call -> tool result -> same assistant tool call)
+ * and modifies the result of the second tool call to return an error, preventing a loop.
+ */
+const removeDoubleToolCalls = (messages: CoreMessage[]): CoreMessage[] => {
+  // Need at least 4 messages for the pattern: assistant, tool, assistant, tool
+  if (messages.length < 4) {
+    return messages;
+  }
+
+  const newMessages = [...messages]; // Create a mutable copy
+
+  // Iterate up to the point where the pattern can start
+  for (let i = 0; i <= newMessages.length - 4; i++) {
+    const firstMsg = newMessages[i];
+    const secondMsg = newMessages[i + 1];
+    const thirdMsg = newMessages[i + 2];
+    const fourthMsg = newMessages[i + 3];
+
+    // Check for the pattern: assistant(call) -> tool(result) -> assistant(call) -> tool(result)
+    if (firstMsg.role === 'assistant' && secondMsg.role === 'tool' && thirdMsg.role === 'assistant' && fourthMsg.role === 'tool') {
+      const firstToolCallPart = Array.isArray(firstMsg.content) ? firstMsg.content.find((p) => p.type === 'tool-call') : null;
+      const thirdToolCallPart = Array.isArray(thirdMsg.content) ? thirdMsg.content.find((p) => p.type === 'tool-call') : null;
+
+      // Ensure both assistant messages contain tool calls
+      if (firstToolCallPart && thirdToolCallPart) {
+        // Compare the tool calls
+        if (firstToolCallPart.toolName === thirdToolCallPart.toolName && JSON.stringify(firstToolCallPart.args) === JSON.stringify(thirdToolCallPart.args)) {
+          logger.info('Found duplicate sequential tool call. Modifying subsequent tool result.', {
+            toolName: thirdToolCallPart.toolName,
+            args: thirdToolCallPart.args,
+          });
+
+          // This is a duplicate call. Modify the fourth message (the result of the duplicate call).
+          const originalToolContent = fourthMsg.content as ToolContent;
+
+          const modifiedContent: ToolContent = originalToolContent.map((part) => {
+            // Match the tool result part to the duplicate tool call id
+            if (part.toolCallId === thirdToolCallPart.toolCallId) {
+              return {
+                ...part,
+                result:
+                  'Error: Duplicate tool call detected. Do not call the same tool with the same arguments twice in a row. The previous result is still valid.',
+              };
+            }
+            return part;
+          });
+
+          // Replace the old tool message with the modified one
+          newMessages[i + 3] = {
+            ...fourthMsg,
+            content: modifiedContent,
+          };
+
+          // To prevent overlapping checks and unnecessary work, we can advance the index.
+          // Since we've processed a block of 4, we can safely jump ahead.
+          i += 3;
+        }
+      }
     }
   }
 
