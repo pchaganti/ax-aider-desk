@@ -135,6 +135,7 @@ code {
 
 .cm-tooltip-autocomplete > ul {
   max-height: 200px !important;
+  max-width: 100% !important;
   scrollbar-width: thin;
   scrollbar-color: #2a2c3f #191a22;
 }

@@ -52,8 +52,6 @@ const COMMANDS = [
 
 const ANSWERS = ['y', 'n', 'a', 'd'];
 
-const MAX_SUGGESTIONS = 10;
-
 const HISTORY_MENU_CHUNK_SIZE = 20;
 
 const isPathLike = (input: string): boolean => {
@@ -647,11 +645,9 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                   override: question ? [] : [completionSource],
                   activateOnTyping: promptBehavior.suggestionMode === SuggestionMode.Automatically,
                   activateOnTypingDelay: promptBehavior.suggestionDelay,
-                  closeOnBlur: false,
                   aboveCursor: true,
                   icons: false,
                   selectOnOpen: false,
-                  maxRenderedOptions: MAX_SUGGESTIONS,
                   addToOptions: [
                     {
                       render: (completion) => {
