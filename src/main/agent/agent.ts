@@ -27,8 +27,8 @@ import { ZodSchema } from 'zod';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { TelemetryManager } from 'src/main/telemetry-manager';
 import { ModelInfoManager } from 'src/main/model-info-manager';
-import { cloneDeep } from 'lodash';
 import { BINARY_EXTENSIONS } from 'src/main/constants';
+import { optimizeMessages } from 'src/main/agent/optimizer';
 
 import { parseAiderEnv } from '../utils';
 import logger from '../logger';
@@ -39,7 +39,7 @@ import { createPowerToolset } from './tools/power';
 import { getSystemPrompt } from './prompts';
 import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
-import { CacheControl, calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-provider';
+import { calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-provider';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 
@@ -531,7 +531,7 @@ export class Agent {
           providerOptions,
           model,
           system: systemPrompt,
-          messages: await this.optimizeMessages(messages, cacheControl),
+          messages: optimizeMessages(messages, cacheControl),
           tools: toolSet,
           abortSignal: this.abortController.signal,
           maxTokens: profile.maxTokens,
@@ -798,23 +798,5 @@ ${text.trim()}`
         project.addToolMessage(toolResult.toolCallId, serverName, toolName, toolResult.args, JSON.stringify(toolResult.result), usageReport);
       }
     }
-  }
-
-  private async optimizeMessages(messages: CoreMessage[], cacheControl: CacheControl) {
-    if (messages.length === 0) {
-      return [];
-    }
-
-    const optimizedMessages = cloneDeep(messages);
-    const lastMessage = optimizedMessages[messages.length - 1];
-
-    if (cacheControl) {
-      lastMessage.providerOptions = {
-        ...lastMessage.providerOptions,
-        ...cacheControl,
-      };
-    }
-
-    return optimizedMessages;
   }
 }

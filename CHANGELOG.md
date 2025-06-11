@@ -10,6 +10,7 @@
 - retrying 'unknown' responses from Gemini models
 - improved prompt field with autocompletion
 - calculating cost including cached tokens for Gemini models
+- tool result containing image data is passed as image message to models
 
 ## [0.17.0]
 
