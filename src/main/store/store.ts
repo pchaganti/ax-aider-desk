@@ -15,7 +15,7 @@ import { migrateSettingsV2toV3 } from './migrations/v2-to-v3';
 import { migrateOpenProjectsV3toV4, migrateSettingsV3toV4 } from './migrations/v3-to-v4';
 import { migrateSettingsV4toV5 } from './migrations/v4-to-v5';
 
-const SONNET_MODEL = 'claude-sonnet-4-20250514';
+const SONNET_MODEL = 'anthropic/claude-sonnet-4-20250514';
 const GEMINI_MODEL = 'gemini/gemini-2.5-pro-preview-06-05';
 const OPEN_AI_DEFAULT_MODEL = 'gpt-4.1';
 const DEEPSEEK_MODEL = 'deepseek/deepseek-chat';
