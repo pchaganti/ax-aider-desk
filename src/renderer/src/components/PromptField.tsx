@@ -459,6 +459,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         },
       },
       {
+        key: 'Space',
+        run: acceptCompletion,
+      },
+      {
         key: 'Escape',
         run: () => {
           if (historyMenuVisible) {
