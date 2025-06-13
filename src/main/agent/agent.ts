@@ -541,6 +541,7 @@ export class Agent {
           model,
           system: systemPrompt,
           messages: optimizeMessages(messages, cacheControl),
+          toolCallStreaming: true,
           tools: toolSet,
           abortSignal: this.abortController.signal,
           maxTokens: profile.maxTokens,
@@ -572,6 +573,15 @@ export class Agent {
                 content: chunk.textDelta,
                 finished: false,
               });
+            } else if (chunk.type === 'tool-call-streaming-start') {
+              project.addLogMessage('loading', 'Preparing tool...');
+            } else if (chunk.type === 'tool-call') {
+              project.addLogMessage('loading', 'Executing tool...');
+            } else {
+              // @ts-expect-error key exists
+              if (chunk.type === 'tool-result') {
+                project.addLogMessage('loading');
+              }
             }
           },
           onStepFinish: (stepResult) => {
