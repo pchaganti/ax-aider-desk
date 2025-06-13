@@ -14,97 +14,38 @@ import {
   PYTHON_VENV_DIR,
   AIDER_DESK_CONNECTOR_DIR,
   RESOURCES_DIR,
-  PYTHON_COMMAND,
   AIDER_DESK_MCP_SERVER_DIR,
+  UV_EXECUTABLE,
 } from './constants';
 
 const execAsync = promisify(exec);
 
-const SUPPORTED_PYTHON_VERSIONS = ['3.12', '3.11', '3.10', '3.9'];
-
 /**
- * Smartly finds the best Python executable on the system, preferring the newest supported version.
- * Respects the AIDER_DESK_PYTHON environment variable if set.
- * Returns the name of the executable/command to use.
+ * Checks if uv is available and accessible.
  */
-export const getOSPythonExecutable = async (): Promise<string> => {
-  const envPython = process.env.AIDER_DESK_PYTHON;
-  if (envPython) {
-    return envPython;
-  }
-
-  for (const version of SUPPORTED_PYTHON_VERSIONS) {
-    const candidates = [
-      `python${version}`,
-      `python${version[0]}`, // python3
-    ];
-    if (process.platform === 'win32') {
-      candidates.push(`py -${version}`);
-    }
-    candidates.push('python3', 'python'); // Fallbacks
-
-    for (const candidate of candidates) {
-      try {
-        const { stdout, stderr } = await execAsync(`${candidate} --version`, {
-          windowsHide: true,
-        });
-        const output = (stdout || '') + (stderr || '');
-        const match = output.match(/Python (\d+)\.(\d+)/);
-        if (match) {
-          const [major, minor] = [parseInt(match[1]), parseInt(match[2])];
-          if (major === 3 && SUPPORTED_PYTHON_VERSIONS.includes(`3.${minor}`)) {
-            return candidate;
-          }
-        }
-      } catch {
-        // Try next candidate
-        logger.debug(`Failed to execute ${candidate}. It may not be installed or not in PATH.`);
-      }
-    }
-  }
-
-  throw new Error('No supported Python 3.9-3.12 executable found. Please install Python or set the AIDER_DESK_PYTHON environment variable.');
-};
-
-const checkPythonVersion = async (): Promise<void> => {
-  const pythonExecutable = await getOSPythonExecutable();
+const checkUvAvailable = async (): Promise<void> => {
   try {
-    const command = `${pythonExecutable} --version`;
-    const { stdout, stderr } = await execAsync(command, {
+    const { stdout, stderr } = await execAsync(`"${UV_EXECUTABLE}" --version`, {
       windowsHide: true,
     });
 
-    // Extract version number from output like "Python 3.10.12"
     const output = (stdout || '') + (stderr || '');
-    const versionMatch = output.match(/Python (\d+)\.(\d+)\.\d+/);
-    if (!versionMatch) {
-      throw new Error(
-        `Could not determine Python version (output: '${output}'). You can specify a specific Python executable by setting the AIDER_DESK_PYTHON environment variable.`,
-      );
+    if (!output.includes('uv')) {
+      throw new Error('uv version check failed');
     }
 
-    const major = parseInt(versionMatch[1], 10);
-    const minor = parseInt(versionMatch[2], 10);
-
-    // Check if version is between 3.9 and 3.12
-    if (major !== 3 || minor < 9 || minor > 12) {
-      throw new Error(
-        `Python version ${major}.${minor} is not supported. Please install Python 3.9-3.12. You can specify a specific Python executable by setting the AIDER_DESK_PYTHON environment variable.`,
-      );
-    }
+    logger.info(`uv is available: ${output.trim()}`);
   } catch (error) {
-    if (error instanceof Error && error.message.includes('version')) {
-      throw error;
-    }
-    throw new Error(
-      `Python is not installed or an error occurred. Please install Python 3.9-3.12 or set the AIDER_DESK_PYTHON environment variable. Original error: ${error}`,
-    );
+    logger.error('uv is not available or not working', { error });
+    throw new Error(`uv is not available. Please ensure uv is properly installed. Error: ${error}`);
   }
 };
 
 const createVirtualEnv = async (): Promise<void> => {
-  const command = await getOSPythonExecutable();
-  await execAsync(`${command} -m venv "${PYTHON_VENV_DIR}"`, {
+  const command = `"${UV_EXECUTABLE}" venv "${PYTHON_VENV_DIR}" --python 3.12`;
+  logger.info(`Creating virtual environment with uv: ${command}`);
+
+  await execAsync(command, {
     windowsHide: true,
   });
 };
@@ -145,7 +86,7 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
       });
     }
     try {
-      const installCommand = `"${PYTHON_COMMAND}" -m pip install --upgrade --no-cache-dir ${pkg}`;
+      const installCommand = `"${UV_EXECUTABLE}" pip install --upgrade --no-progress --no-cache-dir --link-mode=copy ${pkg}`;
 
       if (!cleanInstall) {
         const packageName = pkg.split('==')[0];
@@ -289,19 +230,19 @@ export const performStartUp = async (updateProgress: UpdateProgressFunction): Pr
 
   try {
     updateProgress({
-      step: 'Checking Python Installation',
-      message: 'Verifying Python installation...',
+      step: 'Checking uv Installation',
+      message: 'Verifying uv installation...',
     });
 
-    logger.info('Checking Python version compatibility');
-    await checkPythonVersion();
+    logger.info('Checking uv availability');
+    await checkUvAvailable();
 
     updateProgress({
       step: 'Creating Virtual Environment',
-      message: 'Setting up Python virtual environment...',
+      message: 'Setting up Python virtual environment with uv...',
     });
 
-    logger.info(`Creating Python virtual environment in: ${PYTHON_VENV_DIR}`);
+    logger.info(`Creating Python virtual environment with in: ${PYTHON_VENV_DIR}`);
     await createVirtualEnv();
 
     updateProgress({

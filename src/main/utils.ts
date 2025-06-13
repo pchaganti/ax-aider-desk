@@ -9,7 +9,7 @@ import { parse } from '@dotenvx/dotenvx';
 import ignore from 'ignore';
 import { fileExists } from '@common/utils';
 
-import { PYTHON_COMMAND, PYTHON_VENV_DIR } from './constants';
+import { PYTHON_COMMAND, PYTHON_VENV_DIR, UV_EXECUTABLE } from './constants';
 import logger from './logger';
 
 const execAsync = promisify(exec);
@@ -26,7 +26,7 @@ export const getPythonVenvBinPath = (): string => {
 export const getCurrentPythonLibVersion = async (library: string): Promise<string | null> => {
   try {
     const pythonBinPath = getPythonVenvBinPath();
-    const command = `"${PYTHON_COMMAND}" -m pip show ${library}`;
+    const command = `"${UV_EXECUTABLE}" pip show ${library}`;
     const { stdout } = await execAsync(command, {
       env: {
         ...process.env,

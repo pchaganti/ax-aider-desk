@@ -17,6 +17,7 @@
 - fixed claude-4-sonnet-20250514 default model
 - added caching info for Requesty provider
 - setting to use Vim bindings in Prompt field
+- using uv for Python package management
 
 ## [0.17.0]
 
