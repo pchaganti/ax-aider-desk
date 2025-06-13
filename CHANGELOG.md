@@ -15,6 +15,7 @@
 - normalizing tool IDs before sending them to LLM
 - added AIDER_DESK_AIDER_VERSION environment variable to use custom version of Aider
 - fixed claude-4-sonnet-20250514 default model
+- added caching info for Requesty provider
 
 ## [0.17.0]
 

@@ -7,7 +7,7 @@ import { createOllama } from 'ollama-ai-provider';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { createRequesty } from '@requesty/ai-sdk';
+import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
 import {
   isAnthropicProvider,
   isBedrockProvider,
@@ -220,7 +220,7 @@ export const calculateCost = (
   profile: AgentProfile,
   sentTokens: number,
   receivedTokens: number,
-  providerMetadata?: AnthropicMetadata | OpenAiMetadata | OpenRouterMetadata | unknown,
+  providerMetadata?: AnthropicMetadata | OpenAiMetadata | OpenRouterMetadata | RequestyProviderMetadata | unknown,
 ) => {
   if (profile.provider === 'openrouter') {
     const { openrouter } = providerMetadata as OpenRouterMetadata;
@@ -262,6 +262,16 @@ export const calculateCost = (
 
     inputCost = (sentTokens - cachedPromptTokens) * modelInfo.inputCostPerToken;
     cacheCost = cachedPromptTokens * (modelInfo.cacheReadInputTokenCost ?? modelInfo.inputCostPerToken * 0.25);
+  } else if (profile.provider === 'requesty') {
+    const { requesty } = providerMetadata as RequestyProviderMetadata;
+    const cachingTokens = requesty.usage?.cachingTokens ?? 0;
+    const cachedTokens = requesty.usage?.cachedTokens ?? 0;
+
+    const cacheCreationCost = cachingTokens * (modelInfo.cacheWriteInputTokenCost ?? modelInfo.inputCostPerToken);
+    const cacheReadCost = cachedTokens * (modelInfo.cacheReadInputTokenCost ?? 0);
+
+    inputCost = (sentTokens - cachedTokens) * modelInfo.inputCostPerToken;
+    cacheCost = cacheCreationCost + cacheReadCost;
   }
 
   return inputCost + outputCost + cacheCost;
@@ -272,7 +282,7 @@ export const getUsageReport = (
   profile: AgentProfile,
   messageCost: number,
   usage: LanguageModelUsage,
-  providerMetadata?: AnthropicMetadata | OpenAiMetadata | OpenRouterMetadata | unknown,
+  providerMetadata?: AnthropicMetadata | OpenAiMetadata | OpenRouterMetadata | RequestyProviderMetadata | unknown,
 ): UsageReportData => {
   const usageReportData: UsageReportData = {
     sentTokens: usage.promptTokens,
@@ -296,6 +306,11 @@ export const getUsageReport = (
   } else if (profile.provider === 'gemini') {
     const { google } = providerMetadata as GoogleMetadata;
     usageReportData.cacheReadTokens = google.cachedContentTokenCount;
+    usageReportData.sentTokens -= usageReportData.cacheReadTokens ?? 0;
+  } else if (profile.provider === 'requesty') {
+    const { requesty } = providerMetadata as RequestyProviderMetadata;
+    usageReportData.cacheWriteTokens = requesty.usage?.cachingTokens;
+    usageReportData.cacheReadTokens = requesty.usage?.cachedTokens;
     usageReportData.sentTokens -= usageReportData.cacheReadTokens ?? 0;
   }
 
