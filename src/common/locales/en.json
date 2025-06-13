@@ -262,7 +262,10 @@
       "addCommand": "/add",
       "readOnlyCommand": "/read-only",
       "modelCommand": "/model",
-      "modeSwitchingCommands": "Mode commands (/code, /agent, ...)"
+      "modeSwitchingCommands": "Mode commands (/code, /agent, ...)",
+      "keyBindings": "Key bindings",
+      "useVimBindings": "Use Vim bindings",
+      "useVimBindingsTooltip": "Enable Vim key bindings for navigating and editing text in the prompt field."
     }
   },
   "messages": {

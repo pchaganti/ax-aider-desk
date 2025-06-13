@@ -8,6 +8,7 @@ import {
   startCompletion,
 } from '@codemirror/autocomplete';
 import { EditorView, keymap } from '@codemirror/view';
+import { vim } from '@replit/codemirror-vim';
 import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
@@ -630,6 +631,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               }}
               indentWithTab={false}
               extensions={[
+                promptBehavior.useVimBindings ? vim() : keymap.of([]),
                 EditorView.lineWrapping,
                 EditorView.domEventHandlers({
                   paste(event) {
@@ -644,7 +646,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                     }
                   },
                 }),
-                // vim(),
                 autocompletion({
                   override: question ? [] : [completionSource],
                   activateOnTyping: promptBehavior.suggestionMode === SuggestionMode.Automatically,

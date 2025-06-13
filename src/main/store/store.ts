@@ -51,6 +51,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
       model: false,
       modeSwitching: false,
     },
+    useVimBindings: false,
   },
 };
 
