@@ -18,6 +18,7 @@
 - added caching info for Requesty provider
 - setting to use Vim bindings in Prompt field
 - using uv for Python package management
+- respecting model and weak-model set in .aider.conf.yaml (project dir and $HOME) when opening project
 
 ## [0.17.0]
 

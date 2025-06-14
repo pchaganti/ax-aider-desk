@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, WindowState } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { DEFAULT_AGENT_PROFILE, LlmProvider, LlmProviderName } from '@common/agent';
-import { parseAiderEnv } from 'src/main/utils';
+import { parseAiderEnv, readAiderConfProperty } from 'src/main/utils';
 import { migrateSettingsV5toV6 } from 'src/main/store/migrations/v5-to-v6';
 
 import logger from '../logger';
@@ -55,7 +55,11 @@ export const DEFAULT_SETTINGS: SettingsData = {
   },
 };
 
-export const determineMainModel = (settings: SettingsData): string => {
+export const determineWeakModel = (baseDir: string): string | undefined => {
+  return readAiderConfProperty(baseDir, 'weak-model');
+};
+
+export const determineMainModel = (settings: SettingsData, baseDir: string): string => {
   // Check for --model in aider options
   const modelOptionIndex = settings.aider.options.indexOf('--model ');
   if (modelOptionIndex !== -1) {
@@ -68,6 +72,11 @@ export const determineMainModel = (settings: SettingsData): string => {
     if (modelName) {
       return modelName;
     }
+  }
+
+  const projectModel = readAiderConfProperty(baseDir, 'model');
+  if (projectModel) {
+    return projectModel;
   }
 
   const env = {
@@ -91,9 +100,10 @@ export const determineMainModel = (settings: SettingsData): string => {
   return DEFAULT_MAIN_MODEL;
 };
 
-export const getDefaultProjectSettings = (store: Store): ProjectSettings => {
+export const getDefaultProjectSettings = (store: Store, baseDir: string): ProjectSettings => {
   return {
-    mainModel: determineMainModel(store.getSettings()),
+    mainModel: determineMainModel(store.getSettings(), baseDir),
+    weakModel: determineWeakModel(baseDir),
     currentMode: 'code',
     renderMarkdown: true,
     agentProfileId: DEFAULT_AGENT_PROFILE.id,
@@ -323,7 +333,7 @@ export class Store {
     const projects = this.getOpenProjects();
     const project = projects.find((p) => compareBaseDirs(p.baseDir, baseDir));
     return {
-      ...getDefaultProjectSettings(this),
+      ...getDefaultProjectSettings(this, baseDir),
       ...project?.settings,
     };
   }
