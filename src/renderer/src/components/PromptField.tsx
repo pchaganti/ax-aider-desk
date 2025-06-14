@@ -16,11 +16,13 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdStop } from 'react-icons/md';
+import { VscClearAll } from 'react-icons/vsc';
 
 import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/InputHistoryMenu';
 import { ModeSelector } from '@/components/ModeSelector';
 import { showErrorNotification } from '@/utils/notifications';
+import { Button } from '@/components/common/Button';
 
 const COMMANDS = [
   '/code',
@@ -700,6 +702,16 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           <div className="relative w-full flex items-center gap-1.5">
             <ModeSelector mode={mode} onModeChange={onModeChanged} />
             {mode === 'agent' && <AgentSelector />}
+            <div className="flex-grow" />
+            <Button
+              variant="text"
+              onClick={() => clearMessages()}
+              className="hover:bg-neutral-800 border-neutral-200 text-neutral-200 hover:text-neutral-100"
+              size="xs"
+            >
+              <VscClearAll className="w-4 h-4 mr-2" />
+              {t('promptField.clearChat')}
+            </Button>
           </div>
         </div>
         {historyMenuVisible && historyItems.length > 0 && (

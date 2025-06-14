@@ -500,7 +500,8 @@
     },
     "invalidCommand": "无效命令",
     "stopResponse": "停止响应",
-    "sendMessage": "发送消息(Enter)"
+    "sendMessage": "发送消息(Enter)",
+    "clearChat": "清除聊天"
   },
   "agentProfiles": {
     "title": "代理配置",
@@ -514,7 +515,6 @@
   },
   "projectBar": {
     "toggleMarkdown": "Markdown 渲染",
-    "clearChat": "清除聊天",
     "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。"
   },
   "reasoningEffort": {

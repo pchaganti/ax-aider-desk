@@ -506,7 +506,8 @@
     },
     "invalidCommand": "Invalid command",
     "stopResponse": "Stop response",
-    "sendMessage": "Send message (Enter)"
+    "sendMessage": "Send message (Enter)",
+    "clearChat": "Clear chat"
   },
   "agentProfiles": {
     "title": "Agent Profiles",
@@ -520,7 +521,6 @@
   },
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",
-    "clearChat": "Clear chat",
     "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected."
   },
   "reasoningEffort": {
