@@ -449,14 +449,14 @@
       "runPrompt": "Running prompt in Aider: "
     },
     "power": {
-      "fileRead": "Reading file: {{filePath}}",
+      "fileRead": "Reading",
       "fileWrite": {
-        "overwrite": "Rewriting file: {{filePath}}",
-        "append": "Appending to file: {{filePath}}",
-        "createOnly": "Creating file: {{filePath}}"
+        "overwrite": "Rewriting",
+        "append": "Appending to",
+        "createOnly": "Creating"
       },
       "fileEdit": {
-        "title": "Editing file: {{filePath}}",
+        "title": "Editing",
         "searchTerm": "Search Term",
         "regex": "Regex",
         "replacementText": "Replacement Text",
@@ -464,7 +464,7 @@
       },
       "glob": "Finding files matching pattern: {{pattern}}",
       "grep": "Searching files matching '{{filePattern}}' for '{{searchTerm}}'",
-      "bash": "Executing bash command: '{{command}}'",
+      "bash": "Running",
       "semanticSearch": "Performing semantic search: '{{query}}' in path: '{{path}}'"
     },
     "errors": {
