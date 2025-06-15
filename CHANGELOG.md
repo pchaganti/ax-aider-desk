@@ -19,6 +19,7 @@
 - setting to use Vim bindings in Prompt field
 - using uv for Python package management
 - respecting model and weak-model set in .aider.conf.yaml (project dir and $HOME) when opening project
+- added support for extra Python packages to be installed on start via AIDER_DESK_EXTRA_PYTHON_PACKAGES environment variable
 
 ## [0.17.0]
 

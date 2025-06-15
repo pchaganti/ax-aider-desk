@@ -73,7 +73,20 @@ const installAiderConnectorRequirements = async (cleanInstall: boolean, updatePr
       aiderVersionSpecifier = `aider-chat==${process.env.AIDER_DESK_AIDER_VERSION}`;
     }
   }
-  const packages = ['pip', aiderVersionSpecifier, 'python-socketio==5.12.1', 'websocket-client==1.8.0', 'nest-asyncio==1.6.0', 'boto3==1.38.25'];
+  const extraPackages = (process.env.AIDER_DESK_EXTRA_PYTHON_PACKAGES || '').split(',').filter(Boolean);
+  if (extraPackages.length > 0) {
+    logger.info(`Extra Python packages specified: ${extraPackages.join(', ')}`);
+  }
+
+  const packages = [
+    'pip',
+    aiderVersionSpecifier,
+    'python-socketio==5.12.1',
+    'websocket-client==1.8.0',
+    'nest-asyncio==1.6.0',
+    'boto3==1.38.25',
+    ...extraPackages,
+  ];
 
   logger.info('Starting Aider connector requirements installation', { packages });
 
