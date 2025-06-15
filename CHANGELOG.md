@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.18.0]
 
 - added /compact command to compact conversation history
 - prompts starting with '/' are checked if they are path like before checking them as commands
