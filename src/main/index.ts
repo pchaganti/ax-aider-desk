@@ -144,6 +144,7 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window);
   });
 
+  logger.info('------------ Starting AiderDesk... ------------');
   logger.info('Initializing fix-path...');
   (await import('fix-path')).default();
 
