@@ -322,19 +322,11 @@ The built-in server exposes these tools to MCP clients:
 
 ## 📥 Installation
 
-### Requirements
-- Python 3.9-3.12 installed.
-
 ### Quick Start
 1. Download the latest release for your OS from [Releases](https://github.com/hotovo/aider-desk/releases).
 2. Run the executable.
 
 ### Troubleshooting
-
-#### Python Version Issues
-If AiderDesk struggles to find your Python installation, specify the path via the `AIDER_DESK_PYTHON` environment variable (usually only needed on first run):
-- **macOS/Linux:** `export AIDER_DESK_PYTHON=/path/to/your/python3.x`
-- **Windows:** `$env:AIDER_DESK_PYTHON = "C:\Path\To\Python\python.exe"`
 
 #### Disabling Auto Updates
 To prevent automatic updates, set the `AIDER_DESK_NO_AUTO_UPDATE` environment variable:
