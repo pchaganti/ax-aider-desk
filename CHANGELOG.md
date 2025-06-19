@@ -6,6 +6,7 @@
 - added /clear-logs command to clear log messages from chat
 - added user-friendly aider options configuration
 - added TODO tasks list functionality to Agent
+- do not add the same message in a row to input history
 
 ## [0.18.0]
 

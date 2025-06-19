@@ -790,6 +790,11 @@ export class Project {
 
   public async addToInputHistory(message: string) {
     try {
+      const history = await this.loadInputHistory();
+      if (history.length > 0 && history[0] === message) {
+        return;
+      }
+
       const historyPath = path.isAbsolute(this.inputHistoryFile) ? this.inputHistoryFile : path.join(this.baseDir, this.inputHistoryFile);
 
       const timestamp = new Date().toISOString();
