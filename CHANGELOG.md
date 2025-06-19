@@ -7,6 +7,7 @@
 - added user-friendly aider options configuration
 - added TODO tasks list functionality to Agent
 - do not add the same message in a row to input history
+- removed Aider run_prompt tool responses to reduce token usage
 
 ## [0.18.0]
 

@@ -2,7 +2,7 @@ import { type AgentProfile } from '@common/types';
 import { CacheControl } from 'src/main/agent/llm-provider';
 import { cloneDeep } from 'lodash';
 import { type CoreUserMessage, type CoreMessage, type ToolContent, type ToolResultPart } from 'ai';
-import { TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import logger from '../logger';
 
@@ -19,6 +19,7 @@ export const optimizeMessages = (profile: AgentProfile, userRequestMessageIndex:
   optimizedMessages = addImportantReminders(profile, userRequestMessageIndex, optimizedMessages);
   optimizedMessages = convertImageToolResults(optimizedMessages);
   optimizedMessages = removeDoubleToolCalls(optimizedMessages);
+  optimizedMessages = optimizeAiderMessages(optimizedMessages);
 
   logger.info('Optimized messages:', {
     before: {
@@ -71,6 +72,40 @@ const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: n
   const newMessages = [...messages];
   newMessages[userRequestMessageIndex] = updatedFirstUserMessage;
 
+  return newMessages;
+};
+
+/**
+ * For run_prompt tool, which returns `responses` array, we should replace this array with empty array.
+ */
+const optimizeAiderMessages = (messages: CoreMessage[]): CoreMessage[] => {
+  const newMessages = cloneDeep(messages);
+
+  for (const message of newMessages) {
+    if (message.role === 'tool') {
+      const toolContent = message.content as ToolContent;
+
+      logger.info('Optimizing aider messages', {
+        toolContent,
+      });
+
+      for (const toolResultPart of toolContent) {
+        if (toolResultPart.toolName === `${AIDER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_RUN_PROMPT}` && toolResultPart.result) {
+          try {
+            const result = toolResultPart.result as Record<string, unknown>;
+            if (result.responses) {
+              toolResultPart.result = {
+                ...result,
+                responses: undefined,
+              };
+            }
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+  }
   return newMessages;
 };
 
