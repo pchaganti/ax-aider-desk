@@ -85,10 +85,6 @@ const optimizeAiderMessages = (messages: CoreMessage[]): CoreMessage[] => {
     if (message.role === 'tool') {
       const toolContent = message.content as ToolContent;
 
-      logger.info('Optimizing aider messages', {
-        toolContent,
-      });
-
       for (const toolResultPart of toolContent) {
         if (toolResultPart.toolName === `${AIDER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${AIDER_TOOL_RUN_PROMPT}` && toolResultPart.result) {
           try {
