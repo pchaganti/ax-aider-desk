@@ -4,6 +4,7 @@
 
 - revamped starting progress bar
 - added /clear-logs command to clear log messages from chat
+- added TODO tasks list functionality to Agent
 
 ## [0.18.0]
 

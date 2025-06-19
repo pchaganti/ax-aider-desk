@@ -203,6 +203,7 @@ export interface AgentProfile {
   includeRepoMap: boolean;
   usePowerTools: boolean;
   useAiderTools: boolean;
+  useTodoTools: boolean;
   customInstructions: string;
   autoApprove: boolean;
 }
@@ -322,5 +323,10 @@ export interface ModelInfo {
 export interface Task {
   id: string;
   title: string;
+  completed: boolean;
+}
+
+export interface TodoItem {
+  name: string;
   completed: boolean;
 }
