@@ -1,6 +1,3 @@
-import fs from 'fs/promises';
-import path from 'path';
-
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
 import {
@@ -12,37 +9,11 @@ import {
   TODO_TOOL_UPDATE_ITEM_COMPLETION,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, ToolApprovalState, TodoItem } from '@common/types';
+import { AgentProfile, ToolApprovalState } from '@common/types';
 
 import { Project } from '../../project';
 
 import { ApprovalManager } from './approval-manager';
-
-const TODO_FILE_PATH = '.aider-desk/todos.json';
-
-type TodoData = {
-  initialUserPrompt: string;
-  items: TodoItem[];
-};
-
-const readTodoFile = async (baseDir: string): Promise<TodoData | null> => {
-  const absolutePath = path.resolve(baseDir, TODO_FILE_PATH);
-  try {
-    const content = await fs.readFile(absolutePath, 'utf8');
-    return JSON.parse(content);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
-      return null;
-    }
-    throw error;
-  }
-};
-
-const writeTodoFile = async (baseDir: string, data: TodoData) => {
-  const absolutePath = path.resolve(baseDir, TODO_FILE_PATH);
-  await fs.mkdir(path.dirname(absolutePath), { recursive: true });
-  await fs.writeFile(absolutePath, JSON.stringify(data, null, 2), 'utf8');
-};
 
 export const createTodoToolset = (project: Project, profile: AgentProfile): ToolSet => {
   const approvalManager = new ApprovalManager(project, profile);
@@ -75,7 +46,7 @@ Items: ${JSON.stringify(args.items)}`;
       }
 
       try {
-        await writeTodoFile(project.baseDir, { initialUserPrompt: args.initialUserPrompt, items: args.items });
+        await project.setTodos(args.items, args.initialUserPrompt);
         return 'Todo items set successfully.';
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -100,7 +71,7 @@ Items: ${JSON.stringify(args.items)}`;
       }
 
       try {
-        const data = await readTodoFile(project.baseDir);
+        const data = await project.readTodoFile();
         if (!data) {
           return 'No todo items found.';
         }
@@ -131,19 +102,12 @@ Items: ${JSON.stringify(args.items)}`;
       }
 
       try {
-        const data = await readTodoFile(project.baseDir);
+        await project.updateTodo(args.name, { completed: args.completed });
+        const data = await project.readTodoFile();
         if (!data) {
-          return 'No todo items found to update.';
+          return 'No todo items found.';
         }
-
-        const itemIndex = data.items.findIndex((item) => item.name === args.name);
-        if (itemIndex === -1) {
-          return `Todo item with name "${args.name}" not found.`;
-        }
-
-        data.items[itemIndex].completed = args.completed;
-        await writeTodoFile(project.baseDir, data);
-        return `Todo item "${args.name}" updated successfully to completed: ${args.completed}.`;
+        return data.items;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         return `Error updating todo item: ${errorMessage}`;
@@ -167,7 +131,7 @@ Items: ${JSON.stringify(args.items)}`;
       }
 
       try {
-        await writeTodoFile(project.baseDir, { initialUserPrompt: '', items: [] });
+        await project.setTodos([], '');
         return 'All todo items cleared successfully.';
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);

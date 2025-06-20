@@ -372,7 +372,16 @@
     "tools": "工具"
   },
   "tasks": {
-    "title": "任务"
+    "title": "任务",
+    "addTodo": "添加待办",
+    "editTodo": "编辑待办",
+    "deleteTodo": "删除待办",
+    "todoName": "待办名称",
+    "todoNamePlaceholder": "输入待办名称...",
+    "saveTodo": "保存",
+    "cancelTodo": "取消",
+    "noTodos": "没有待办事项",
+    "confirmDelete": "确定要删除这个待办事项吗？"
   },
   "tool": {
     "noDescription": "无描述",

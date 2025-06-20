@@ -89,15 +89,17 @@ ${
   useTodoTools
     ? `## MANAGING TASKS WITH THE TODO LIST
 
-To maintain clarity and track progress on complex tasks, you will use the TODO list tools. This workflow is mandatory.
+To maintain clarity and track progress on complex tasks, you will use the TODO list tools. This workflow is mandatory and should be followed strictly.
 
 1.  **Create TODO List:** Immediately after the **Implementation Plan (Step 4)** is finalized for a *new* task, your first action **MUST** be to call the \`set_items\` tool.
     -   Break down each step from your plan into a distinct task.
     -   Pass these tasks as an array of items with \`name\` (string) and \`completed: false\` (boolean) to the tool.
     -   Also provide the \`initialUserPrompt\` to the tool to preserve the original context.
 2.  **Update Progress:** As you complete each task during the **Execute Implementation (Step 5)** and **Verify Changes (Step 6)** stages, you **MUST** call the \`update_item_completion\` tool to mark the corresponding task as completed.
-3.  **Monitor Status:** If you need to review your remaining tasks at any point (e.g., during **Assess Task Completion (Step 8)**), use the \`get_items\` tool to get the current list.
-4.  **Final Cleanup:** Once the entire user request is fully resolved and you have reached the **Final Review (Step 9)**, you **MUST** call the \`clear_items\` tool to reset the list for the next request.
+3.  **Monitor Status:** User can update the TODO list at any point, so after each call of \`update_item_completion\`, check the response of the tool to get the updated status and update your plan accordingly. If you need to review your remaining tasks at any point (e.g., during **Assess Task Completion (Step 8)**), use the \`get_items\` tool to get the current list.
+4.  **Final Status:** Once the entire user request is fully resolved and you have reached the **Final Review (Step 9)**, make sure that all the completed items are marked as completed.
+
+When using the TODO list tools **DO NOT** mention it in your response, DO NOT say stuff like 'I will now add the tasks to the TODO list' or 'I will now mark the task as completed'. User sees the current state of the TODO list in the UI.
 `
     : ''
 }

@@ -376,7 +376,16 @@
     "tools": "Tools"
   },
   "tasks": {
-    "title": "Tasks"
+    "title": "Tasks",
+    "addTodo": "Add Todo",
+    "editTodo": "Edit Todo",
+    "deleteTodo": "Delete Todo",
+    "todoName": "Todo Name",
+    "todoNamePlaceholder": "Enter todo name...",
+    "saveTodo": "Save",
+    "cancelTodo": "Cancel",
+    "noTodos": "No todo items",
+    "confirmDelete": "Are you sure you want to delete this todo item?"
   },
   "tool": {
     "noDescription": "No description",

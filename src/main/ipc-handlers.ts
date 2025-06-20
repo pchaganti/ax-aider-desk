@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs/promises';
 
-import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData } from '@common/types';
+import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, TodoItem } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import tmp from 'tmp';
@@ -355,5 +355,21 @@ export const setupIpcHandlers = (
 
   ipcMain.handle('init-project-rules-file', async (_, baseDir: string) => {
     return await projectManager.getProject(baseDir).initProjectRulesFile();
+  });
+
+  ipcMain.handle('get-todos', async (_, baseDir: string) => {
+    return await projectManager.getProject(baseDir).getTodos();
+  });
+
+  ipcMain.handle('add-todo', async (_, baseDir: string, name: string) => {
+    return await projectManager.getProject(baseDir).addTodo(name);
+  });
+
+  ipcMain.handle('update-todo', async (_, baseDir: string, name: string, updates: Partial<TodoItem>) => {
+    return await projectManager.getProject(baseDir).updateTodo(name, updates);
+  });
+
+  ipcMain.handle('delete-todo', async (_, baseDir: string, name: string) => {
+    return await projectManager.getProject(baseDir).deleteTodo(name);
   });
 };

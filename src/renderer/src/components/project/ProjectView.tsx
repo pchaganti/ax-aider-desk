@@ -23,7 +23,7 @@ import { ResizableBox } from 'react-resizable';
 import { v4 as uuidv4 } from 'uuid';
 import clsx from 'clsx';
 import { getActiveAgentProfile } from '@common/utils';
-import { TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION } from '@common/tools';
+import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION } from '@common/tools';
 
 import {
   CommandOutputMessage,
@@ -113,6 +113,19 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
 
   useEffect(() => {
     window.api.startProject(project.baseDir);
+
+    // Load existing todos
+    const loadTodos = async () => {
+      try {
+        const todos = await window.api.getTodos(project.baseDir);
+        setTodoItems(todos);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error loading todos:', error);
+      }
+    };
+
+    void loadTodos();
 
     return () => {
       window.api.stopProject(project.baseDir);
@@ -268,6 +281,10 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             if (args?.name && typeof args.completed === 'boolean') {
               setTodoItems((prev) => prev.map((item) => (item.name === args.name ? { ...item, completed: args.completed as boolean } : item)));
             }
+            break;
+          }
+          case TODO_TOOL_CLEAR_ITEMS: {
+            setTodoItems([]);
             break;
           }
         }
@@ -486,7 +503,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     setMessages([]);
     setProcessing(false);
     processingMessageRef.current = null;
-    setTodoItems([]);
 
     if (clearContext) {
       window.api.clearContext(project.baseDir);
@@ -670,6 +686,46 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     setMessages((prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
   };
 
+  const handleAddTodo = async (name: string) => {
+    try {
+      const updatedTodos = await window.api.addTodo(project.baseDir, name);
+      setTodoItems(updatedTodos);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error adding todo:', error);
+    }
+  };
+
+  const handleToggleTodo = async (name: string, completed: boolean) => {
+    try {
+      const updatedTodos = await window.api.updateTodo(project.baseDir, name, { completed });
+      setTodoItems(updatedTodos);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error toggling todo:', error);
+    }
+  };
+
+  const handleUpdateTodo = async (name: string, updates: Partial<TodoItem>) => {
+    try {
+      const updatedTodos = await window.api.updateTodo(project.baseDir, name, updates);
+      setTodoItems(updatedTodos);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error updating todo:', error);
+    }
+  };
+
+  const handleDeleteTodo = async (name: string) => {
+    try {
+      const updatedTodos = await window.api.deleteTodo(project.baseDir, name);
+      setTodoItems(updatedTodos);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error deleting todo:', error);
+    }
+  };
+
   if (!projectSettings || !settings) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 z-10">
@@ -712,7 +768,15 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             redoLastUserPrompt={handleRedoLastUserPrompt}
             editLastUserMessage={handleEditLastUserMessage}
           />
-          {!loading && todoItems.length > 0 && <TodoWindow todos={todoItems} />}
+          {!loading && todoItems.length > 0 && (
+            <TodoWindow
+              todos={todoItems}
+              onToggleTodo={handleToggleTodo}
+              onAddTodo={handleAddTodo}
+              onUpdateTodo={handleUpdateTodo}
+              onDeleteTodo={handleDeleteTodo}
+            />
+          )}
         </div>
         <div
           className={clsx('relative bottom-0 w-full p-4 pb-2 flex-shrink-0 flex flex-col border-t border-neutral-800', editingMessageIndex !== null && 'pt-1')}

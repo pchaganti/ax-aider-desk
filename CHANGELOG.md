@@ -8,6 +8,7 @@
 - added TODO tasks list functionality to Agent
 - do not add the same message in a row to input history
 - removed Aider run_prompt tool responses to reduce token usage
+- added options to manage TODO list items (add, edit, remove)
 
 ## [0.18.0]
 
