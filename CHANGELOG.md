@@ -10,6 +10,7 @@
 - removed Aider run_prompt tool responses to reduce token usage
 - added options to manage TODO list items (add, edit, remove)
 - interrupt action cancels the current question
+- optimized MCP servers reloading when switching between projects
 
 ## [0.18.0]
 
