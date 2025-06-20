@@ -1013,6 +1013,11 @@ export class Project {
 
   public interruptResponse() {
     logger.info('Interrupting response:', { baseDir: this.baseDir });
+
+    if (this.currentQuestion) {
+      this.answerQuestion('n', 'Cancelled');
+    }
+
     this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
     this.agent.interrupt();
   }

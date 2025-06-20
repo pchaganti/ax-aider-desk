@@ -581,8 +581,12 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       content: t('messages.interrupted'),
     };
     setMessages((prevMessages) => [...prevMessages.filter((message) => !isLoadingMessage(message)), interruptMessage]);
+    setQuestion(null);
 
-    if (!frozenTimeoutRef.current) {
+    if (projectSettings?.currentMode === 'agent') {
+      // using interrupt in agent mode will cancel immediately
+      setProcessing(false);
+    } else {
       frozenTimeoutRef.current = setTimeout(() => {
         if (processing) {
           setShowFrozenDialog(true);
