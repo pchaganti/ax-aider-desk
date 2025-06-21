@@ -8,6 +8,8 @@ import { Button } from '../common/Button';
 
 import { TodoListItem } from './TodoListItem';
 
+import { Input } from '@/components/common/Input';
+
 type Props = {
   todos: TodoItem[];
   onToggleTodo?: (name: string, completed: boolean) => void;
@@ -94,13 +96,13 @@ export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDel
               {/* Add Todo Input */}
               {isAddingTodo && (
                 <div className="mb-3 p-2 bg-neutral-800 rounded border border-neutral-600">
-                  <input
+                  <Input
                     type="text"
                     value={newTodoName}
                     onChange={(e) => setNewTodoName(e.target.value)}
                     onKeyDown={handleKeyPress}
                     placeholder={t('tasks.todoNamePlaceholder')}
-                    className="w-full bg-transparent text-sm text-neutral-200 placeholder-neutral-500 border-none outline-none"
+                    className="bg-transparent text-xs text-neutral-200 placeholder-neutral-500 border-none outline-none py-0 px-1"
                     autoFocus
                   />
                   <div className="flex items-center justify-end gap-2 mt-2">

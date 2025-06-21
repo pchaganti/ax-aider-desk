@@ -27,6 +27,7 @@ import {
   AIDER_TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
+  POWER_TOOL_AGENT,
   POWER_TOOL_BASH,
   POWER_TOOL_DESCRIPTIONS,
   POWER_TOOL_FILE_EDIT,
@@ -127,6 +128,11 @@ const tools: Record<string, GenericTool[]> = {
       groupName: POWER_TOOL_GROUP_NAME,
       name: POWER_TOOL_BASH,
       description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_BASH],
+    },
+    {
+      groupName: POWER_TOOL_GROUP_NAME,
+      name: POWER_TOOL_AGENT,
+      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_AGENT],
     },
   ],
   [TODO_TOOL_GROUP_NAME]: [

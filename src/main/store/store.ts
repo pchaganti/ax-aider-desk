@@ -171,6 +171,10 @@ export class Store {
       const mergeDefaultProperties = (agentProfile: AgentProfile) => ({
         ...DEFAULT_AGENT_PROFILE,
         ...agentProfile,
+        toolApprovals: {
+          ...DEFAULT_AGENT_PROFILE.toolApprovals,
+          ...agentProfile.toolApprovals,
+        },
       });
 
       const defaultProfile = settings.agentProfiles?.find((profile) => profile.id === DEFAULT_AGENT_PROFILE.id);

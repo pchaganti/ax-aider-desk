@@ -11,6 +11,7 @@
 - added options to manage TODO list items (add, edit, remove)
 - interrupt action cancels the current question
 - optimized MCP servers reloading when switching between projects
+- added new 'agent' tool for sub-agent executions
 
 ## [0.18.0]
 

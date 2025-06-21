@@ -110,51 +110,48 @@ export class Agent {
       .join('\n\n'); // Join sections into a single string
   }
 
-  private async getContextFilesMessages(project: Project, profile: AgentProfile): Promise<CoreMessage[]> {
+  private async getContextFilesMessages(project: Project, contextFiles: ContextFile[]): Promise<CoreMessage[]> {
     const messages: CoreMessage[] = [];
 
-    if (profile.includeContextFiles) {
-      const contextFiles = project.getContextFiles();
-      if (contextFiles.length > 0) {
-        // Separate readonly and editable files
-        const [readOnlyFiles, editableFiles] = contextFiles.reduce(
-          ([readOnly, editable], file) => (file.readOnly ? [[...readOnly, file], editable] : [readOnly, [...editable, file]]),
-          [[], []] as [ContextFile[], ContextFile[]],
-        );
+    if (contextFiles.length > 0) {
+      // Separate readonly and editable files
+      const [readOnlyFiles, editableFiles] = contextFiles.reduce(
+        ([readOnly, editable], file) => (file.readOnly ? [[...readOnly, file], editable] : [readOnly, [...editable, file]]),
+        [[], []] as [ContextFile[], ContextFile[]],
+      );
 
-        // Process readonly files first
-        if (readOnlyFiles.length > 0) {
-          const fileContent = await this.getFileContentForPrompt(readOnlyFiles, project);
-          if (fileContent) {
-            messages.push({
-              role: 'user',
-              content:
-                'The following files are included in the Aider context for reference purposes only. These files are READ-ONLY, and their content is provided below. Do not attempt to edit these files:\n\n' +
-                fileContent,
-            });
-            messages.push({
-              role: 'assistant',
-              content: 'OK, I will use these files as references and will not try to edit them.',
-            });
-          }
+      // Process readonly files first
+      if (readOnlyFiles.length > 0) {
+        const fileContent = await this.getFileContentForPrompt(readOnlyFiles, project);
+        if (fileContent) {
+          messages.push({
+            role: 'user',
+            content:
+              'The following files are included in the Aider context for reference purposes only. These files are READ-ONLY, and their content is provided below. Do not attempt to edit these files:\n\n' +
+              fileContent,
+          });
+          messages.push({
+            role: 'assistant',
+            content: 'OK, I will use these files as references and will not try to edit them.',
+          });
         }
+      }
 
-        // Process editable files
-        if (editableFiles.length > 0) {
-          const fileContent = await this.getFileContentForPrompt(editableFiles, project);
-          if (fileContent) {
-            messages.push({
-              role: 'user',
-              content:
-                'The following files are currently in the Aider context and are available for editing. Their content, as provided below, is up-to-date:\n\n' +
-                fileContent,
-            });
-            messages.push({
-              role: 'assistant',
-              content:
-                "OK, I understand. These are files already added in the Aider context, so I don't have to re-add them. Their content is up-to-date, so I don't have to read them again, unless I have changed them meanwhile.",
-            });
-          }
+      // Process editable files
+      if (editableFiles.length > 0) {
+        const fileContent = await this.getFileContentForPrompt(editableFiles, project);
+        if (fileContent) {
+          messages.push({
+            role: 'user',
+            content:
+              'The following files are currently in the Aider context and are available for editing. Their content, as provided below, is up-to-date:\n\n' +
+              fileContent,
+          });
+          messages.push({
+            role: 'assistant',
+            content:
+              "OK, I understand. These are files already added in the Aider context, so I don't have to re-add them. Their content is up-to-date, so I don't have to read them again, unless I have changed them meanwhile.",
+          });
         }
       }
     }
@@ -162,9 +159,8 @@ export class Agent {
     return messages;
   }
 
-  private async getWorkingFilesMessages(project: Project): Promise<CoreMessage[]> {
+  private async getWorkingFilesMessages(contextFiles: ContextFile[]): Promise<CoreMessage[]> {
     const messages: CoreMessage[] = [];
-    const contextFiles = project.getContextFiles();
 
     if (contextFiles.length > 0) {
       const fileList = contextFiles
@@ -186,7 +182,7 @@ export class Agent {
     return messages;
   }
 
-  private async getAvailableTools(project: Project, profile: AgentProfile): Promise<ToolSet> {
+  private async getAvailableTools(project: Project, profile: AgentProfile, abortSignal?: AbortSignal): Promise<ToolSet> {
     const mcpConnectors = await this.mcpManager.getConnectors();
     const approvalManager = new ApprovalManager(project, profile);
 
@@ -231,7 +227,7 @@ export class Agent {
     }
 
     if (profile.usePowerTools) {
-      const powerTools = createPowerToolset(project, profile);
+      const powerTools = createPowerToolset(project, profile, abortSignal);
       Object.assign(toolSet, powerTools);
     }
 
@@ -384,13 +380,25 @@ export class Agent {
     return inputSchema;
   }
 
-  async runAgent(project: Project, profile: AgentProfile, prompt: string): Promise<ContextMessage[]> {
+  async runAgent(
+    project: Project,
+    profile: AgentProfile,
+    prompt: string,
+    contextMessages: CoreMessage[] = project.getContextMessages(),
+    contextFiles: ContextFile[] = project.getContextFiles(),
+    systemPrompt?: string,
+    abortSignal?: AbortSignal,
+  ): Promise<ContextMessage[]> {
     const settings = this.store.getSettings();
 
     this.telemetryManager.captureAgentRun(profile);
 
-    // Create new abort controller for this run
-    this.abortController = new AbortController();
+    // Create new abort controller for this run only if abortSignal is not provided
+    const shouldCreateAbortController = !abortSignal;
+    if (shouldCreateAbortController) {
+      this.abortController = new AbortController();
+    }
+    const effectiveAbortSignal = abortSignal || this.abortController?.signal;
 
     const llmProvider = getLlmProviderConfig(profile.provider, settings);
     const cacheControl = getCacheControl(profile);
@@ -400,9 +408,9 @@ export class Agent {
       role: 'user',
       content: prompt,
     };
-    const messages = await this.prepareMessages(project, profile);
+    const messages = await this.prepareMessages(project, profile, contextMessages, contextFiles);
     const resultMessages: CoreMessage[] = [userRequestMessage];
-    const initialUserRequestMessageIndex = messages.length - project.getContextMessages().length;
+    const initialUserRequestMessageIndex = messages.length - contextMessages.length;
 
     // add user message
     messages.push(...resultMessages);
@@ -415,7 +423,7 @@ export class Agent {
       project.addLogMessage('error', `Error reinitializing MCP clients: ${error}`);
     }
 
-    const toolSet = await this.getAvailableTools(project, profile);
+    const toolSet = await this.getAvailableTools(project, profile, effectiveAbortSignal);
 
     logger.info(`Running prompt with ${Object.keys(toolSet).length} tools.`);
     logger.debug('Tools:', {
@@ -424,7 +432,10 @@ export class Agent {
 
     try {
       const model = createLlm(llmProvider, profile.model, await this.getLlmEnv(project));
-      const systemPrompt = await getSystemPrompt(project.baseDir, profile);
+
+      if (!systemPrompt) {
+        systemPrompt = await getSystemPrompt(project.baseDir, profile);
+      }
 
       // repairToolCall function that attempts to repair tool calls
       const repairToolCall = async ({ toolCall, tools, error, messages, system }) => {
@@ -549,13 +560,13 @@ export class Agent {
           messages: optimizeMessages(profile, initialUserRequestMessageIndex, messages, cacheControl),
           toolCallStreaming: true,
           tools: toolSet,
-          abortSignal: this.abortController.signal,
+          abortSignal: effectiveAbortSignal,
           maxTokens: profile.maxTokens,
           maxRetries: 5,
           temperature: profile.temperature,
           experimental_continueSteps: true,
           onError: ({ error }) => {
-            if (this.abortController?.signal.aborted) {
+            if (effectiveAbortSignal?.aborted) {
               return;
             }
 
@@ -598,7 +609,7 @@ export class Agent {
               return;
             }
 
-            if (this.abortController?.signal.aborted) {
+            if (effectiveAbortSignal?.aborted) {
               logger.info('Prompt aborted by user');
               return;
             }
@@ -615,7 +626,7 @@ export class Agent {
 
         await result.consumeStream();
 
-        if (this.abortController?.signal.aborted) {
+        if (effectiveAbortSignal?.aborted) {
           logger.info('Prompt aborted by user');
           break;
         }
@@ -650,7 +661,7 @@ export class Agent {
         }
       }
     } catch (error) {
-      if (this.abortController?.signal.aborted) {
+      if (effectiveAbortSignal?.aborted) {
         logger.info('Prompt aborted by user');
         return resultMessages;
       }
@@ -662,8 +673,10 @@ export class Agent {
         project.addLogMessage('error', `Error running MCP servers: ${error instanceof Error ? error.message : String(error)}`);
       }
     } finally {
-      // Clean up abort controller
-      this.abortController = null;
+      // Clean up abort controller only if we created it
+      if (shouldCreateAbortController) {
+        this.abortController = null;
+      }
 
       // Always send a final "finished" message, regardless of whether there was text or tools
       project.processResponseMessage({
@@ -713,7 +726,7 @@ export class Agent {
     return this.aiderEnv;
   }
 
-  private async prepareMessages(project: Project, profile: AgentProfile): Promise<CoreMessage[]> {
+  private async prepareMessages(project: Project, profile: AgentProfile, contextMessages: CoreMessage[], contextFiles: ContextFile[]): Promise<CoreMessage[]> {
     const messages: CoreMessage[] = [];
 
     // Add repo map if enabled
@@ -733,15 +746,15 @@ export class Agent {
 
     // Add context files with content or just list of working files
     if (profile.includeContextFiles) {
-      const contextFilesMessages = await this.getContextFilesMessages(project, profile);
+      const contextFilesMessages = await this.getContextFilesMessages(project, contextFiles);
       messages.push(...contextFilesMessages);
     } else {
-      const workingFilesMessages = await this.getWorkingFilesMessages(project);
+      const workingFilesMessages = await this.getWorkingFilesMessages(contextFiles);
       messages.push(...workingFilesMessages);
     }
 
     // Add message history
-    messages.push(...project.getContextMessages());
+    messages.push(...contextMessages);
 
     return messages;
   }
@@ -750,7 +763,7 @@ export class Agent {
     try {
       const toolSet = await this.getAvailableTools(project, profile);
       const systemPrompt = await getSystemPrompt(project.baseDir, profile);
-      const messages = await this.prepareMessages(project, profile);
+      const messages = await this.prepareMessages(project, profile, project.getContextMessages(), project.getContextFiles());
 
       // Format tools for the prompt
       const toolDefinitions = Object.entries(toolSet).map(([name, tool]) => ({

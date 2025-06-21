@@ -10,6 +10,7 @@ import YAML from 'yaml';
 import {
   AgentProfile,
   ContextFile,
+  ContextMessage,
   EditFormat,
   FileEdit,
   InputHistoryData,
@@ -509,6 +510,16 @@ export class Project {
 
     this.notifyIfEnabled('Prompt finished', 'Your Agent task has finished.');
     return [];
+  }
+
+  public async runSubAgent(
+    profile: AgentProfile,
+    prompt: string,
+    contextFiles: ContextFile[],
+    systemPrompt?: string,
+    abortSignal?: AbortSignal,
+  ): Promise<ContextMessage[]> {
+    return await this.agent.runAgent(this, profile, prompt, [], contextFiles, systemPrompt, abortSignal);
   }
 
   public sendPrompt(prompt: string, mode?: Mode, clearContext = false, clearFiles = false): Promise<ResponseCompletedData[]> {
