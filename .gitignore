@@ -9,6 +9,7 @@ out
 !.aider-desk
 .aider-desk/sessions
 .aider-desk/todos.json
+.aider-desk/tmp
 .junie*
 .env
 

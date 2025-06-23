@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- removed duplicated cost from assistant message when tool is used
+
 ## [0.19.0]
 
 - revamped starting progress bar

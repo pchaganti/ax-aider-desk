@@ -1134,18 +1134,6 @@ export class Project {
     });
   }
 
-  public addContextMessage(role: MessageRole, content: string, acknowledge = false) {
-    logger.info('Adding context message:', {
-      baseDir: this.baseDir,
-      role,
-      content: content.length > 100 ? `${content.slice()}...` : content,
-    });
-
-    this.sessionManager.addContextMessage(role, content);
-    this.sendAddMessage(role, content, acknowledge);
-    void this.updateAgentEstimatedTokens();
-  }
-
   public async compactConversation(mode: Mode, customInstructions?: string) {
     const userMessage = this.sessionManager.getContextMessages()[0];
 

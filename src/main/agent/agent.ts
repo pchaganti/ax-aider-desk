@@ -827,7 +827,8 @@ ${reasoning.trim()}
 ${text.trim()}`
             : reasoning || text,
         finished: true,
-        usageReport,
+        // only send usage report if there are no tool results
+        usageReport: toolResults?.length ? undefined : usageReport,
       });
       project.addLogMessage('loading');
     }
