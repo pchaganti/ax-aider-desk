@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.19.0]
 
 - revamped starting progress bar
 - added /clear-logs command to clear log messages from chat
