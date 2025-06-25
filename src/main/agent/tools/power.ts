@@ -71,9 +71,11 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         s = s.replace(/\\[nrt"']/g, (match) => {
           switch (match) {
             case '\\n':
+              return '\n';
             case '\\r':
+              return '\r';
             case '\\t':
-              return '';
+              return '\t';
             case '\\"':
               return '"';
             case "\\'":
