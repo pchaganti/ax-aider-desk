@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - removed duplicated cost from assistant message when tool is used
+- usage dashboard with tokens and cost
 
 ## [0.19.0]
 

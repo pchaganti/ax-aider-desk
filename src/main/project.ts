@@ -45,6 +45,7 @@ import { TaskManager } from './task-manager';
 import { SessionManager } from './session-manager';
 import { Agent } from './agent';
 import { Connector } from './connector';
+import { DataManager } from './data-manager';
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from './constants';
 import logger from './logger';
 import { MessageAction, ResponseMessage } from './messages';
@@ -83,6 +84,7 @@ export class Project {
     private readonly store: Store,
     private readonly agent: Agent,
     private readonly telemetryManager: TelemetryManager,
+    private readonly dataManager: DataManager,
   ) {
     this.git = simpleGit(this.baseDir);
     this.tokensInfo = {
@@ -585,12 +587,16 @@ export class Project {
 
       const usageReport = message.usageReport
         ? typeof message.usageReport === 'string'
-          ? parseUsageReport(message.usageReport)
+          ? parseUsageReport(this.aiderModels?.mainModel || 'unknown', message.usageReport)
           : message.usageReport
         : undefined;
 
       if (usageReport) {
-        logger.info(`Usage report: ${JSON.stringify(usageReport)}`);
+        this.dataManager.saveMessage(message.id || this.currentResponseMessageId, 'assistant', this.baseDir, usageReport.model, usageReport, message.content);
+      }
+
+      if (usageReport) {
+        logger.debug(`Usage report: ${JSON.stringify(usageReport)}`);
         this.updateTotalCosts(usageReport);
       }
       const data: ResponseCompletedData = {
@@ -1057,6 +1063,14 @@ export class Project {
       response,
       usageReport,
     };
+
+    if (response) {
+      this.dataManager.saveMessage(id, 'tool', this.baseDir, usageReport?.model || 'unknown', usageReport, {
+        toolName,
+        args,
+        response,
+      });
+    }
 
     // Update total costs when adding the tool message
     if (usageReport) {

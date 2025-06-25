@@ -108,6 +108,7 @@ const api: ApplicationAPI = {
   clearReleaseNotes: () => ipcRenderer.invoke('clear-release-notes'),
   getOS: (): Promise<OS> => ipcRenderer.invoke('get-os'),
   loadModelsInfo: () => ipcRenderer.invoke('load-models-info'),
+  queryUsageData: (from, to) => ipcRenderer.invoke('query-usage-data', from, to),
 
   addResponseChunkListener: (baseDir, callback) => {
     const listenerId = uuidv4();

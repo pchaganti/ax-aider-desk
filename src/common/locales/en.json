@@ -585,5 +585,35 @@
     "message": "To help us improve AiderDesk, anonymous telemetry data is collected. This includes information like mode usage (agent, code, ask...) and some specifics when Agent mode is used. No personal data or prompts are ever collected.",
     "fullInfo": "Full information about what is collected can be found <a>here</a>.",
     "enabledLabel": "Enable anonymous telemetry"
+  },
+  "multiselect": {
+    "noneSelected": "None selected",
+    "allSelected": "All selected",
+    "someSelected": "{{count}} selected",
+    "selectAll": "Select All"
+  },
+  "usageDashboard": {
+    "title": "Usage Dashboard",
+    "refresh": "Refresh",
+    "projects": "Projects",
+    "models": "Models",
+    "dateRange": "Date Range",
+    "total": "Total",
+    "thisMonth": "This month",
+    "today": "Today",
+    "error": {
+      "fetch": "Failed to fetch usage data."
+    },
+    "table": {
+      "date": "Date",
+      "project": "Project",
+      "model": "Model",
+      "input": "Input",
+      "output": "Output",
+      "cacheRead": "Cache Read",
+      "cacheWrite": "Cache Write",
+      "totalTokens": "Total Tokens",
+      "cost": "Cost"
+    }
   }
 }

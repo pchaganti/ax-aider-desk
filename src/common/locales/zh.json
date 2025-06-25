@@ -591,5 +591,35 @@
     "readOnlyCommand": "/read-only",
     "modelCommand": "/model",
     "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)"
+  },
+  "multiselect": {
+    "noneSelected": "未选择",
+    "allSelected": "已全选",
+    "someSelected": "已选择 {{count}} 个",
+    "selectAll": "全选"
+  },
+  "usageDashboard": {
+    "title": "使用情况",
+    "refresh": "刷新",
+    "projects": "项目",
+    "models": "模型",
+    "dateRange": "日期范围",
+    "total": "总计",
+    "thisMonth": "本月",
+    "today": "今天",
+    "error": {
+      "fetch": "获取使用数据失败。"
+    },
+    "table": {
+      "date": "日期",
+      "project": "项目",
+      "model": "模型",
+      "input": "输入",
+      "output": "输出",
+      "cacheRead": "缓存读取",
+      "cacheWrite": "缓存写入",
+      "totalTokens": "总令牌数",
+      "cost": "成本"
+    }
   }
 }

@@ -285,6 +285,7 @@ export const getUsageReport = (
   providerMetadata?: AnthropicMetadata | OpenAiMetadata | OpenRouterMetadata | RequestyProviderMetadata | unknown,
 ): UsageReportData => {
   const usageReportData: UsageReportData = {
+    model: `${profile.provider}/${profile.model}`,
     sentTokens: usage.promptTokens,
     receivedTokens: usage.completionTokens,
     messageCost,

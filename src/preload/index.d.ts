@@ -23,6 +23,7 @@ import type {
   OS,
   ModelInfo,
   TodoItem,
+  UsageDataRow,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -92,6 +93,7 @@ export interface ApplicationAPI {
   clearReleaseNotes: () => Promise<void>;
   getOS: () => Promise<OS>;
   loadModelsInfo: () => Promise<Record<string, ModelInfo>>;
+  queryUsageData: (from: string, to: string) => Promise<UsageDataRow[]>;
 
   addResponseChunkListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void) => string;
   removeResponseChunkListener: (listenerId: string) => void;

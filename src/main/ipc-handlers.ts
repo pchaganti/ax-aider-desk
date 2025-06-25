@@ -16,6 +16,7 @@ import { scrapeWeb } from './web-scrapper';
 import logger from './logger';
 import { VersionsManager } from './versions-manager';
 import { TelemetryManager } from './telemetry-manager';
+import { DataManager } from './data-manager';
 
 export const setupIpcHandlers = (
   mainWindow: BrowserWindow,
@@ -26,6 +27,7 @@ export const setupIpcHandlers = (
   versionsManager: VersionsManager,
   modelInfoManager: ModelInfoManager,
   telemetryManager: TelemetryManager,
+  dataManager: DataManager,
 ) => {
   ipcMain.handle('load-settings', () => {
     return store.getSettings();
@@ -371,5 +373,9 @@ export const setupIpcHandlers = (
 
   ipcMain.handle('delete-todo', async (_, baseDir: string, name: string) => {
     return await projectManager.getProject(baseDir).deleteTodo(name);
+  });
+
+  ipcMain.handle('query-usage-data', async (_, from: string, to: string) => {
+    return dataManager.queryUsageData(new Date(from), new Date(to));
   });
 };

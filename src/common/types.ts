@@ -237,6 +237,7 @@ export interface SettingsData {
 }
 
 export interface UsageReportData {
+  model: string;
   sentTokens: number;
   receivedTokens: number;
   messageCost: number;
@@ -332,4 +333,15 @@ export interface Task {
 export interface TodoItem {
   name: string;
   completed: boolean;
+}
+
+export interface UsageDataRow {
+  timestamp: string;
+  project: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  cost: number;
 }

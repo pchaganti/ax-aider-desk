@@ -4,6 +4,7 @@ import { SettingsData } from '@common/types';
 import { TelemetryManager } from 'src/main/telemetry-manager';
 
 import { Agent } from './agent';
+import { DataManager } from './data-manager';
 import logger from './logger';
 import { Project } from './project';
 import { Store } from './store';
@@ -16,6 +17,7 @@ export class ProjectManager {
     private readonly store: Store,
     private readonly agent: Agent,
     private readonly telemetryManager: TelemetryManager,
+    private readonly dataManager: DataManager,
   ) {
     this.mainWindow = mainWindow;
     this.store = store;
@@ -28,7 +30,7 @@ export class ProjectManager {
 
   private createProject(baseDir: string) {
     logger.info('Creating new project', { baseDir });
-    const project = new Project(this.mainWindow, baseDir, this.store, this.agent, this.telemetryManager);
+    const project = new Project(this.mainWindow, baseDir, this.store, this.agent, this.telemetryManager, this.dataManager);
     this.projects.push(project);
     return project;
   }
