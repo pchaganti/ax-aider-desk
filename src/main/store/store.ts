@@ -16,7 +16,7 @@ import { migrateOpenProjectsV3toV4, migrateSettingsV3toV4 } from './migrations/v
 import { migrateSettingsV4toV5 } from './migrations/v4-to-v5';
 
 const SONNET_MODEL = 'anthropic/claude-sonnet-4-20250514';
-const GEMINI_MODEL = 'gemini/gemini-2.5-pro-preview-06-05';
+const GEMINI_MODEL = 'gemini/gemini-2.5-pro';
 const OPEN_AI_DEFAULT_MODEL = 'gpt-4.1';
 const DEEPSEEK_MODEL = 'deepseek/deepseek-chat';
 
@@ -96,7 +96,7 @@ export const determineMainModel = (settings: SettingsData, baseDir: string): str
   } else if (env.DEEPSEEK_API_KEY) {
     return DEEPSEEK_MODEL;
   } else if (env.OPENROUTER_API_KEY) {
-    return 'openrouter/google/gemini-2.5-pro-preview-06-05';
+    return 'openrouter/google/gemini-2.5-pro';
   }
 
   // Default model if no other condition is met

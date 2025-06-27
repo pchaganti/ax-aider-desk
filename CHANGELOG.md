@@ -4,6 +4,7 @@
 
 - removed duplicated cost from assistant message when tool is used
 - usage dashboard with tokens and cost
+- updated to GA gemini models
 
 ## [0.19.0]
 
