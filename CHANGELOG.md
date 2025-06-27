@@ -5,6 +5,7 @@
 - removed duplicated cost from assistant message when tool is used
 - usage dashboard with tokens and cost
 - updated to GA gemini models
+- omitting error message for failing MCP server that are not enabled
 
 ## [0.19.0]
 

@@ -417,7 +417,7 @@ export class Agent {
 
     try {
       // reinitialize MCP clients for the current project and wait for them to be ready
-      await this.mcpManager.initMcpConnectors(settings.mcpServers, project.baseDir);
+      await this.mcpManager.initMcpConnectors(settings.mcpServers, project.baseDir, false, profile.enabledServers);
     } catch (error) {
       logger.error('Error reinitializing MCP clients:', error);
       project.addLogMessage('error', `Error reinitializing MCP clients: ${error}`);
