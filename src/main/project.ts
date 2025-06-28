@@ -567,8 +567,8 @@ export class Project {
     }
   }
 
-  public processResponseMessage(message: ResponseMessage) {
-    if (!this.currentResponseMessageId) {
+  public processResponseMessage(message: ResponseMessage, forceNewId = false) {
+    if (!this.currentResponseMessageId || forceNewId) {
       this.currentResponseMessageId = uuidv4();
     }
 

@@ -483,7 +483,12 @@
       "glob": "Finding files matching pattern: {{pattern}}",
       "grep": "Searching files matching '{{filePattern}}' for '{{searchTerm}}'",
       "bash": "Running",
-      "semanticSearch": "Performing semantic search: '{{query}}' in path: '{{path}}'"
+      "semanticSearch": "Performing semantic search: '{{query}}' in path: '{{path}}'",
+      "agent": {
+        "running": "Running sub-agent...",
+        "completed": "Sub-agent finished.",
+        "prompt": "Prompt"
+      }
     },
     "errors": {
       "noSuchTool": "Attempted to use unknown tool: {{toolName}}",

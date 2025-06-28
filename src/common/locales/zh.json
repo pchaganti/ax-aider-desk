@@ -214,7 +214,7 @@
       "options": "选项",
       "optionsPlaceholder": "例如 --no-auto-commits --cache-prompts",
       "autoCommits": "启用自动提交",
-      "cachingEnabled": "启用提示缓存", 
+      "cachingEnabled": "启用提示缓存",
       "watchFiles": "监视文件变化",
       "environmentVariables": "环境变量",
       "envVarsPlaceholder": "#################\n# LLM 参数:\n#\n# 包含 xxx_API_KEY 参数和您的 LLM 所需的其他参数。\n# 详情请见 https://aider.chat/docs/llms.html\n\n## OpenAI\n#OPENAI_API_KEY=\n\n## Anthropic\n#ANTHROPIC_API_KEY=",
@@ -478,7 +478,12 @@
       "glob": "查找匹配模式的文件: {{pattern}}",
       "grep": "在匹配 {{filePattern}} 的文件中搜索 {{searchTerm}}",
       "bash": "执行 bash 命令",
-      "semanticSearch": "执行语义搜索: {{query}} {{path}}"
+      "semanticSearch": "执行语义搜索: {{query}} {{path}}",
+      "agent": {
+        "running": "正在运行子代理...",
+        "completed": "子代理执行了以下查询:",
+        "prompt": "提示"
+      }
     },
     "errors": {
       "noSuchTool": "尝试使用未知工具: {{toolName}}",

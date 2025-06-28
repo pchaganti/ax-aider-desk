@@ -585,11 +585,19 @@ export class Agent {
           },
           onChunk: ({ chunk }) => {
             if (chunk.type === 'text-delta') {
-              currentResponseId = project.processResponseMessage({
-                action: 'response',
-                content: chunk.textDelta,
-                finished: false,
-              });
+              const responseId = project.processResponseMessage(
+                {
+                  id: currentResponseId,
+                  action: 'response',
+                  content: chunk.textDelta,
+                  finished: false,
+                },
+                currentResponseId === null,
+              );
+
+              if (!currentResponseId) {
+                currentResponseId = responseId;
+              }
             } else if (chunk.type === 'tool-call-streaming-start') {
               project.addLogMessage('loading', 'Preparing tool...');
             } else if (chunk.type === 'tool-call') {

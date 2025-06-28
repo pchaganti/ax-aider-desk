@@ -6,6 +6,7 @@
 - usage dashboard with tokens and cost
 - updated to GA gemini models
 - omitting error message for failing MCP server that are not enabled
+- sub-agent tool presentation and context persistence improvements
 
 ## [0.19.0]
 
