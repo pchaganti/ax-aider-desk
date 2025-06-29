@@ -3,7 +3,7 @@
 ## [UNRELEASED]
 
 - removed duplicated cost from assistant message when tool is used
-- usage dashboard with tokens and cost
+- usage dashboard with tokens and cost and charts with breakdown data
 - updated to GA gemini models
 - omitting error message for failing MCP server that are not enabled
 - sub-agent tool presentation and context persistence improvements
