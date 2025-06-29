@@ -1,4 +1,4 @@
-import { type AgentProfile, ToolApprovalState } from '@common/types';
+import { type AgentProfile } from '@common/types';
 import { CacheControl } from 'src/main/agent/llm-provider';
 import { cloneDeep } from 'lodash';
 import { type CoreUserMessage, type CoreMessage, type ToolContent, type ToolResultPart } from 'ai';
@@ -65,12 +65,6 @@ const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: n
 
   if (!profile.autoApprove) {
     dontForgets.push('Before making any changes, present the plan and wait for my approval.');
-  }
-
-  if (profile.usePowerTools && profile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`] !== ToolApprovalState.Never) {
-    dontForgets.push(
-      `Prefer using \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}\` tool to delegate analysis and complex tasks to a sub-agent.`,
-    );
   }
 
   if (dontForgets.length === 0) {
