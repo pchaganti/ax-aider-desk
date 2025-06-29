@@ -9,6 +9,7 @@
 - sub-agent tool presentation and context persistence improvements
 - added icon for auto-approve to agent selector for immediate recognition
 - showing streaming of reasoning (thinking) on agent messages
+- determining default agent model based on available API keys in environment
 
 ## [0.19.0]
 

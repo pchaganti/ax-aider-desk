@@ -30,7 +30,7 @@ import { ModelInfoManager } from 'src/main/model-info-manager';
 import { BINARY_EXTENSIONS } from 'src/main/constants';
 import { optimizeMessages } from 'src/main/agent/optimizer';
 
-import { parseAiderEnv } from '../utils';
+import { parseAiderEnv } from '../environment';
 import logger from '../logger';
 import { Store } from '../store';
 import { Project } from '../project';
