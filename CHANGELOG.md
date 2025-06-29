@@ -7,6 +7,7 @@
 - updated to GA gemini models
 - omitting error message for failing MCP server that are not enabled
 - sub-agent tool presentation and context persistence improvements
+- added icon for auto-approve to agent selector for immediate recognition
 
 ## [0.19.0]
 
