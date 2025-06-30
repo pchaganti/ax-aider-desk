@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASES]
+
+- not storing tool messages without the usage report into DB
+
 ## [0.20.0]
 
 - removed duplicated cost from assistant message when tool is used
