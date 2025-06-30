@@ -3,6 +3,7 @@
 ## [UNRELEASES]
 
 - not storing tool messages without the usage report into DB
+- added cached token information for Gemini models
 
 ## [0.20.0]
 
