@@ -44,7 +44,7 @@ jobs:
       - name: Release Windows
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run build && electron-builder --win -p always
+        run: npm run build && npx electron-builder --win -p always
 
   release-macos:
     name: Release macOS packages
