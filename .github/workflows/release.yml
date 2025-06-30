@@ -18,7 +18,7 @@ jobs:
 
       - uses: "actions/setup-node@v4"
         with:
-          node-version: 22
+          node-version: '22.17.0'
 
       - run: npm install
 
@@ -37,14 +37,14 @@ jobs:
 
       - uses: "actions/setup-node@v4"
         with:
-          node-version: 22
+          node-version: '22.17.0'
 
       - run: npm install
 
       - name: Release Windows
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: npm run build:win -- -p always
+        run: npm run build && electron-builder --win -p always
 
   release-macos:
     name: Release macOS packages
@@ -55,7 +55,7 @@ jobs:
 
       - uses: "actions/setup-node@v4"
         with:
-          node-version: 22
+          node-version: '22.17.0'
 
       - run: npm install --arch=x64
 
