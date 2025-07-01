@@ -4,6 +4,7 @@
 
 - not storing tool messages without the usage report into DB
 - added cached token information for Gemini models
+- fixed issue with unfinished stream response text preceding a tool call
 
 ## [0.20.0]
 
