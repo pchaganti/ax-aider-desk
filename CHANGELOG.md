@@ -1,10 +1,11 @@
 # Changelog
 
-## [UNRELEASES]
+## [UNRELEASED]
 
 - not storing tool messages without the usage report into DB
 - added cached token information for Gemini models
 - fixed issue with unfinished stream response text preceding a tool call
+- default agent profile for new users set to Power Tools and added Aider as the second one
 
 ## [0.20.0]
 
