@@ -157,6 +157,7 @@
     "title": "Settings",
     "tabs": {
       "general": "General",
+      "providers": "Providers",
       "aider": "Aider",
       "agent": "Agent",
       "about": "About"
@@ -208,6 +209,7 @@
       "selectOrCreateProfile": "Select or create new agent profile",
       "newProfileName": "New Profile",
       "envVarPlaceholder": "{{envVar}} env var is used if left empty",
+      "envVarFoundPlaceholder": "Found in: {{source}}",
       "createNewProfile": "Create New",
       "genericTools": "Tools",
       "noGenericToolsConfigured": "No tools configured.",
@@ -242,6 +244,14 @@
       "message": "Changes to Aider options or environment variables require a restart of the Aider session to take effect. Would you like to restart now?",
       "restartNow": "Restart now",
       "later": "I'll do it later"
+    },
+    "models": {
+      "title": "Model Providers",
+      "description": "Configure your LLM providers for use with both Aider and Agent modes. Click on a provider card to configure API key and additional settings.",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "agentOnly": "Agent only",
+      "additionalProvidersInfo": "You can configure additional LLM providers for Aider by setting environment variables in the <aiderTab>Aider settings</aiderTab>."
     },
     "about": {
       "version": "Version",

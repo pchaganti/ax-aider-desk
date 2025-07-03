@@ -124,9 +124,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     if (!baseUrl) {
       throw new Error('Base URL is required for Ollama provider. Set it in Agent provider settings or via the OLLAMA_API_BASE environment variable.');
     }
-    // Ensure the baseUrl ends with /api for ollama-ai-provider
-    const finalBaseUrl = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-    const ollamaInstance = createOllama({ baseURL: finalBaseUrl });
+    const ollamaInstance = createOllama({ baseURL: baseUrl });
     return ollamaInstance(model, {
       simulateStreaming: true,
     });

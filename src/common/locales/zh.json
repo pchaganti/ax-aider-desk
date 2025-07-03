@@ -154,6 +154,7 @@
     "title": "设置",
     "tabs": {
       "general": "通用",
+      "providers": "模型提供者",
       "aider": "Aider",
       "agent": "服务器",
       "about": "关于"
@@ -204,6 +205,7 @@
       "selectOrCreateProfile": "选择或创建新的代理配置",
       "newProfileName": "新配置",
       "envVarPlaceholder": "如果留空，则使用 {{envVar}} 环境变量",
+      "envVarFoundPlaceholder": "找到于: {{source}}",
       "createNewProfile": "创建新配置",
       "genericTools": "工具",
       "noGenericToolsConfigured": "未配置工具。",
@@ -237,6 +239,14 @@
       "message": "对 Aider 选项或环境变量的更改需要重新启动 Aider 会话才能生效。您想现在重新启动吗？",
       "restartNow": "立即重启",
       "later": "稍后处理"
+    },
+    "models": {
+      "title": "模型提供商",
+      "description": "配置您的 LLM 提供商以在 Aider 和 Agent 模式中使用。点击提供商卡片来配置其设置。",
+      "configured": "已配置",
+      "notConfigured": "未配置",
+      "agentOnly": "仅代理",
+      "additionalProvidersInfo": "需要更多提供商？您可以在<aiderTab>Aider 设置</aiderTab>中通过设置环境变量来配置更多 LLM 提供商。"
     },
     "about": {
       "version": "版本",
