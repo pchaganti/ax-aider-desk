@@ -20,16 +20,22 @@ import { useTranslation, Trans } from 'react-i18next';
 import { ProviderCard } from './ProviderCard';
 
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+import { Button } from '@/components/common/Button';
 
 type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
   onSwitchToAiderTab?: () => void;
+  showProminentModels?: boolean;
 };
 
-export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderTab }: Props) => {
+export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderTab, showProminentModels }: Props) => {
   const { t } = useTranslation();
   const [expandedProvider, setExpandedProvider] = useState<LlmProviderName | null>(null);
+  const [showAll, setShowAll] = useState(!showProminentModels);
+
+  // Define prominent providers
+  const prominentProviders: LlmProviderName[] = ['anthropic', 'openai', 'gemini'];
 
   // Environment variable hooks for API keys
   const { environmentVariable: openaiApiKey } = useEffectiveEnvironmentVariable('OPENAI_API_KEY');
@@ -81,12 +87,15 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
     }
   };
 
+  // Determine which providers to show
+  const providersToShow = showAll ? AVAILABLE_PROVIDERS : prominentProviders;
+
   return (
     <div className="space-y-4">
       <p className="text-xs text-neutral-100 mb-4">{t('settings.models.description')}</p>
 
       <div className="grid grid-cols-1 gap-2">
-        {AVAILABLE_PROVIDERS.map((providerName) => {
+        {providersToShow.map((providerName) => {
           const provider = getLlmProviderConfig(providerName, settings);
           const isConfigured = isProviderConfigured(providerName);
           const isExpanded = expandedProvider === providerName;
@@ -115,6 +124,14 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
           );
         })}
       </div>
+
+      {showProminentModels && !showAll && (
+        <div className="flex justify-center mt-4">
+          <Button variant="outline" size="sm" color="secondary" onClick={() => setShowAll(true)}>
+            {t('settings.models.showAllProviders')}
+          </Button>
+        </div>
+      )}
 
       <div className="mt-6 p-4 bg-neutral-800/50 rounded-lg border border-neutral-700">
         <p className="text-xs text-neutral-300">
