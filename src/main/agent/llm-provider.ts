@@ -319,14 +319,14 @@ export const getUsageReport = (
 };
 
 export type CacheControl = Record<string, Record<string, JSONValue>> | undefined;
-export const getCacheControl = (profile: AgentProfile): CacheControl => {
-  if (profile.provider === 'anthropic') {
+export const getCacheControl = (profile: AgentProfile, llmProvider: LlmProvider): CacheControl => {
+  if (isAnthropicProvider(llmProvider)) {
     return {
       anthropic: {
         cacheControl: { type: 'ephemeral' },
       },
     };
-  } else if (profile.provider === 'requesty') {
+  } else if (isRequestyProvider(llmProvider) && !llmProvider.useAutoCache) {
     if (profile.model.startsWith('anthropic/')) {
       return {
         requesty: {
@@ -334,7 +334,7 @@ export const getCacheControl = (profile: AgentProfile): CacheControl => {
         },
       };
     }
-  } else if (profile.provider === 'openrouter') {
+  } else if (isOpenRouterProvider(llmProvider)) {
     if (profile.model.startsWith('anthropic/')) {
       return {
         openrouter: {
