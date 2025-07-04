@@ -11,6 +11,7 @@
 - improved onboarding flow with new unified LLM providers
 - added action to open directory with logs into Settings -> Version
 - added file completion with @ mention
+- added option to open project in AiderDesk from command line
 
 ## [0.20.0]
 
