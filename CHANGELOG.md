@@ -10,6 +10,7 @@
 - unified LLM providers settings
 - improved onboarding flow with new unified LLM providers
 - added action to open directory with logs into Settings -> Version
+- added file completion with @ mention
 
 ## [0.20.0]
 

@@ -658,7 +658,9 @@
     "addCommand": "/add",
     "readOnlyCommand": "/read-only",
     "modelCommand": "/model",
-    "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)"
+    "modeSwitchingCommands": "模式切换命令 (/code, /agent, ...)",
+    "modeAtSign": "@ 提及模式"
+
   },
   "multiselect": {
     "noneSelected": "未选择",
