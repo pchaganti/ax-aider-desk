@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [UNRELEASES]
 
 - not storing tool messages without the usage report into DB
 - added cached token information for Gemini models
@@ -12,6 +12,7 @@
 - added action to open directory with logs into Settings -> Version
 - added file completion with @ mention
 - added option to open project in AiderDesk from command line
+- notification when update is ready to be installed
 
 ## [0.20.0]
 
