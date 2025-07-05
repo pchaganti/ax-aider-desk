@@ -25,10 +25,6 @@ import { jsonSchemaToZod } from '@n8n/json-schema-to-zod';
 import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
 import { ZodSchema } from 'zod';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
-import { TelemetryManager } from 'src/main/telemetry-manager';
-import { ModelInfoManager } from 'src/main/model-info-manager';
-import { BINARY_EXTENSIONS } from 'src/main/constants';
-import { optimizeMessages } from 'src/main/agent/optimizer';
 
 import { parseAiderEnv } from '../environment';
 import logger from '../logger';
@@ -45,6 +41,11 @@ import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
+
+import { optimizeMessages } from '@/agent/optimizer';
+import { BINARY_EXTENSIONS } from '@/constants';
+import { ModelInfoManager } from '@/model-info-manager';
+import { TelemetryManager } from '@/telemetry-manager';
 
 export class Agent {
   private abortController: AbortController | null = null;

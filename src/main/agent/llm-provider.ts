@@ -20,12 +20,13 @@ import {
   isRequestyProvider,
   LlmProvider,
 } from '@common/agent';
-import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from 'src/main/constants';
 import { AgentProfile, ReasoningEffort, UsageReportData } from '@common/types';
-import { ModelInfoManager } from 'src/main/model-info-manager';
-import { Project } from 'src/main/project';
 
 import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
+
+import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
+import { ModelInfoManager } from '@/model-info-manager';
+import { Project } from '@/project';
 
 export const createLlm = (provider: LlmProvider, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
   if (!model) {

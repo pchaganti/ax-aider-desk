@@ -13,6 +13,7 @@
 - added file completion with @ mention
 - added option to open project in AiderDesk from command line
 - notification when update is ready to be installed
+- custom commands in Agent mode
 
 ## [0.20.0]
 

@@ -5,8 +5,6 @@ import { existsSync, statSync } from 'fs';
 import { delay } from '@common/utils';
 import { electronApp, is, optimizer } from '@electron-toolkit/utils';
 import { app, BrowserWindow, dialog, shell } from 'electron';
-import { McpManager } from 'src/main/agent/mcp-manager';
-import { DataManager } from 'src/main/data-manager';
 
 import icon from '../../resources/icon.png?asset';
 
@@ -22,6 +20,9 @@ import { VersionsManager } from './versions-manager';
 import logger from './logger';
 import { TelemetryManager } from './telemetry-manager';
 import { ModelInfoManager } from './model-info-manager';
+
+import { DataManager } from '@/data-manager';
+import { McpManager } from '@/agent/mcp-manager';
 
 const initStore = async (): Promise<Store> => {
   const store = new Store();

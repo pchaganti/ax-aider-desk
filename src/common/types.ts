@@ -74,6 +74,11 @@ export interface ContextFilesUpdatedData {
   files: ContextFile[];
 }
 
+export interface CustomCommandsUpdatedData {
+  baseDir: string;
+  commands: CustomCommand[];
+}
+
 export interface AutocompletionData {
   baseDir: string;
   words: string[];
@@ -371,4 +376,16 @@ export interface UsageDataRow {
   cache_read_tokens: number;
   cache_write_tokens: number;
   cost: number;
+}
+
+export interface CustomCommandArgument {
+  description: string;
+  required?: boolean;
+}
+
+export interface CustomCommand {
+  name: string;
+  description: string;
+  arguments: CustomCommandArgument[];
+  template: string;
 }

@@ -3,9 +3,6 @@ import { Server as HttpServer } from 'http';
 import { ModelsData, QuestionData, TokensInfoData } from '@common/types';
 import { BrowserWindow } from 'electron';
 import { Server, Socket } from 'socket.io';
-import { Connector } from 'src/main/connector';
-import { ProjectManager } from 'src/main/project-manager';
-import { SERVER_PORT } from 'src/main/constants';
 
 import logger from './logger';
 import {
@@ -24,6 +21,10 @@ import {
   LogMessage,
   Message,
 } from './messages';
+
+import { Connector } from '@/connector';
+import { ProjectManager } from '@/project-manager';
+import { SERVER_PORT } from '@/constants';
 
 export class ConnectorManager {
   private io: Server | null = null;

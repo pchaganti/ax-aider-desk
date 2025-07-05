@@ -4,11 +4,12 @@ import { promises as fs } from 'fs';
 import debounce from 'lodash/debounce';
 import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, SessionData } from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
-import { isFileIgnored } from 'src/main/utils';
 import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, POWER_TOOL_GROUP_NAME, POWER_TOOL_AGENT } from '@common/tools';
 
 import logger from './logger';
 import { Project } from './project';
+
+import { isFileIgnored } from '@/utils';
 
 const AUTOSAVED_SESSION_NAME = '.autosaved';
 

@@ -4,20 +4,20 @@ import fs from 'fs/promises';
 import { EditFormat, FileEdit, McpServerConfig, Mode, OS, ProjectData, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow, dialog, ipcMain, shell } from 'electron';
-import { AIDER_DESK_PROJECT_TMP_DIR, LOGS_DIR } from 'src/main/constants';
 
-import { McpManager } from './agent/mcp-manager';
-import { Agent } from './agent';
-import { getFilePathSuggestions, isProjectPath, isValidPath } from './file-system';
-import { ModelInfoManager } from './model-info-manager';
-import { ProjectManager } from './project-manager';
-import { getDefaultProjectSettings, Store } from './store';
-import { scrapeWeb } from './web-scrapper';
-import logger from './logger';
-import { VersionsManager } from './versions-manager';
-import { TelemetryManager } from './telemetry-manager';
-import { DataManager } from './data-manager';
-import { getEffectiveEnvironmentVariable } from './environment';
+import { McpManager } from '@/agent/mcp-manager';
+import { Agent } from '@/agent';
+import { getFilePathSuggestions, isProjectPath, isValidPath } from '@/file-system';
+import { ModelInfoManager } from '@/model-info-manager';
+import { ProjectManager } from '@/project-manager';
+import { getDefaultProjectSettings, Store } from '@/store';
+import { scrapeWeb } from '@/web-scrapper';
+import logger from '@/logger';
+import { VersionsManager } from '@/versions-manager';
+import { TelemetryManager } from '@/telemetry-manager';
+import { DataManager } from '@/data-manager';
+import { getEffectiveEnvironmentVariable } from '@/environment';
+import { AIDER_DESK_PROJECT_TMP_DIR, LOGS_DIR } from '@/constants';
 
 export const setupIpcHandlers = (
   mainWindow: BrowserWindow,
@@ -392,5 +392,13 @@ export const setupIpcHandlers = (
       logger.error('Failed to open logs directory:', error);
       return false;
     }
+  });
+
+  ipcMain.handle('get-custom-commands', async (_, baseDir: string) => {
+    return projectManager.getCustomCommands(baseDir);
+  });
+
+  ipcMain.handle('run-custom-command', async (_, baseDir: string, commandName: string, args: string[]) => {
+    await projectManager.getProject(baseDir).runCustomCommand(commandName, args);
   });
 };

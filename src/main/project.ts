@@ -11,6 +11,7 @@ import {
   AgentProfile,
   ContextFile,
   ContextMessage,
+  CustomCommand,
   EditFormat,
   FileEdit,
   InputHistoryData,
@@ -58,21 +59,22 @@ import {
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
 import { parse } from '@dotenvx/dotenvx';
-import { TelemetryManager } from 'src/main/telemetry-manager';
-import { getInitProjectPrompt, getCompactConversationPrompt } from 'src/main/agent/prompts';
-
-import { TaskManager } from './task-manager';
-import { SessionManager } from './session-manager';
-import { Agent } from './agent';
-import { Connector } from './connector';
-import { DataManager } from './data-manager';
-import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from './constants';
-import logger from './logger';
-import { MessageAction, ResponseMessage } from './messages';
-import { Store } from './store';
-import { DEFAULT_MAIN_MODEL } from './environment';
 
 import type { SimpleGit } from 'simple-git';
+
+import { getInitProjectPrompt, getCompactConversationPrompt, getSystemPrompt, CUSTOM_COMMAND_SYSTEM_PROMPT_INSTRUCTIONS } from '@/agent/prompts';
+import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from '@/constants';
+import { TaskManager } from '@/task-manager';
+import { SessionManager } from '@/session-manager';
+import { Agent } from '@/agent';
+import { Connector } from '@/connector';
+import { DataManager } from '@/data-manager';
+import logger from '@/logger';
+import { MessageAction, ResponseMessage } from '@/messages';
+import { Store } from '@/store';
+import { DEFAULT_MAIN_MODEL } from '@/environment';
+import { CustomCommandManager } from '@/custom-command-manager';
+import { TelemetryManager } from '@/telemetry-manager';
 
 export class Project {
   private process: ChildProcessWithoutNullStreams | null = null;
@@ -90,6 +92,7 @@ export class Project {
   private currentPromptResponses: ResponseCompletedData[] = [];
   private runPromptResolves: ((value: ResponseCompletedData[]) => void)[] = [];
   private sessionManager: SessionManager = new SessionManager(this);
+  private customCommandManager: CustomCommandManager;
   private taskManager: TaskManager = new TaskManager();
   private commandOutputs: Map<string, string> = new Map();
   private repoMap: string = '';
@@ -108,6 +111,7 @@ export class Project {
     private readonly dataManager: DataManager,
   ) {
     this.git = simpleGit(this.baseDir);
+    this.customCommandManager = new CustomCommandManager(this);
     this.tokensInfo = {
       baseDir,
       chatHistory: { cost: 0, tokens: 0 },
@@ -423,6 +427,7 @@ export class Project {
       this.mainWindow.webContents.send('clear-project', this.baseDir, true, true);
     }
     await this.killAider();
+    this.customCommandManager.dispose();
   }
 
   public async saveSession(name: string): Promise<void> {
@@ -559,8 +564,8 @@ export class Project {
     }
   }
 
-  public async runAgent(profile: AgentProfile, prompt: string): Promise<ResponseCompletedData[]> {
-    const agentMessages = await this.agent.runAgent(this, profile, prompt);
+  public async runAgent(profile: AgentProfile, prompt: string, systemPrompt?: string): Promise<ResponseCompletedData[]> {
+    const agentMessages = await this.agent.runAgent(this, profile, prompt, undefined, undefined, systemPrompt);
     if (agentMessages.length > 0) {
       agentMessages.forEach((message) => this.sessionManager.addContextMessage(message));
 
@@ -1582,5 +1587,64 @@ export class Project {
       this.addLogMessage('error', `Failed to update .aider.conf.yml: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
+  }
+
+  public getCustomCommands() {
+    return this.customCommandManager.getAllCommands();
+  }
+
+  public sendCustomCommandsUpdated(commands: CustomCommand[]) {
+    this.mainWindow.webContents.send('custom-commands-updated', {
+      baseDir: this.baseDir,
+      commands,
+    });
+  }
+
+  public async runCustomCommand(commandName: string, args: string[]): Promise<void> {
+    const command = this.customCommandManager.getCommand(commandName);
+    if (!command) {
+      this.addLogMessage('error', `Custom command '${commandName}' not found.`);
+      this.mainWindow.webContents.send('custom-command-error', {
+        baseDir: this.baseDir,
+        error: `Invalid command: ${commandName}`,
+      });
+      return;
+    }
+
+    logger.info('Running custom command:', { commandName, args });
+
+    this.telemetryManager.captureCustomCommand(commandName, args.length);
+
+    if (args.length < command.arguments.filter((arg) => arg.required !== false).length) {
+      this.addLogMessage(
+        'error',
+        `Not enough arguments for command '${commandName}'. Expected arguments:\n${command.arguments.map((arg, idx) => `${idx + 1}: ${arg.description}${arg.required === false ? ' (optional)' : ''}`).join('\n')}`,
+      );
+      this.mainWindow.webContents.send('custom-command-error', {
+        baseDir: this.baseDir,
+        error: `Argument mismatch for command: ${commandName}`,
+      });
+      return;
+    }
+    let prompt = command.template;
+    for (let i = 0; i < command.arguments.length; i++) {
+      const value = args[i] !== undefined ? args[i] : '';
+      prompt = prompt.replaceAll(`{{${i + 1}}}`, value);
+    }
+    // Optionally handle @file references here if needed
+    const profile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.baseDir));
+    if (!profile) {
+      this.addLogMessage('error', 'No active Agent profile found');
+      return;
+    }
+    const systemPrompt = await getSystemPrompt(this.baseDir, profile, CUSTOM_COMMAND_SYSTEM_PROMPT_INSTRUCTIONS);
+
+    await this.addToInputHistory(`/${commandName}${args.length > 0 ? ' ' + args.join(' ') : ''}`);
+
+    // for now only in agent mode
+    this.addUserMessage(prompt, 'agent');
+    this.addLogMessage('loading');
+
+    await this.runAgent(profile, prompt, systemPrompt);
   }
 }

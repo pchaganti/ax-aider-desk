@@ -1,13 +1,13 @@
 import { normalizeBaseDir } from '@common/utils';
 import { BrowserWindow } from 'electron';
 import { SettingsData, StartupMode } from '@common/types';
-import { TelemetryManager } from 'src/main/telemetry-manager';
 
-import { Agent } from './agent';
-import { DataManager } from './data-manager';
-import logger from './logger';
-import { Project } from './project';
-import { Store } from './store';
+import { TelemetryManager } from '@/telemetry-manager';
+import { Agent } from '@/agent';
+import { DataManager } from '@/data-manager';
+import logger from '@/logger';
+import { Project } from '@/project';
+import { Store } from '@/store';
 
 export class ProjectManager {
   private projects: Project[] = [];
@@ -78,5 +78,9 @@ export class ProjectManager {
     this.projects.forEach((project) => {
       project.settingsChanged(oldSettings, newSettings);
     });
+  }
+
+  public getCustomCommands(baseDir: string) {
+    return this.getProject(baseDir).getCustomCommands();
   }
 }

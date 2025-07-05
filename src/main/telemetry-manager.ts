@@ -1,10 +1,11 @@
 import { PostHog } from 'posthog-node';
-import { POSTHOG_PUBLIC_API_KEY, POSTHOG_HOST } from 'src/main/constants';
 import { AgentProfile, Mode, SettingsData } from '@common/types';
 import { app } from 'electron';
 
 import { Store } from './store';
 import logger from './logger';
+
+import { POSTHOG_PUBLIC_API_KEY, POSTHOG_HOST } from '@/constants';
 
 export class TelemetryManager {
   private readonly store: Store;
@@ -111,6 +112,20 @@ export class TelemetryManager {
         autoApprove: profile.autoApprove,
         enabledMcpServersCount: profile.enabledServers.length,
         totalMcpServersCount: Object.keys(this.store.getSettings().mcpServers).length,
+      },
+    });
+  }
+
+  captureCustomCommand(commandName: string, argsCount: number) {
+    if (!this.store.getSettings().telemetryEnabled) {
+      return;
+    }
+    this.client?.capture({
+      distinctId: this.distinctId,
+      event: 'custom-command-run',
+      properties: {
+        commandName,
+        argsCount,
       },
     });
   }

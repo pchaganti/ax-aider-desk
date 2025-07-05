@@ -3,12 +3,13 @@ import { Server } from 'http';
 import express, { Response } from 'express';
 import cors from 'cors';
 import { z } from 'zod';
-import { SERVER_PORT } from 'src/main/constants';
-import { Project } from 'src/main/project';
 import { delay } from '@common/utils';
 
 import { ProjectManager } from './project-manager';
 import logger from './logger';
+
+import { Project } from '@/project';
+import { SERVER_PORT } from '@/constants';
 
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 

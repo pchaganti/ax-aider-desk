@@ -34,6 +34,9 @@ When telemetry is enabled, AiderDesk captures the following events:
     *   `autoApprove`: A boolean indicating whether auto-approve was enabled.
     *   `enabledMcpServersCount`: The number of enabled MCP servers.
     *   `totalMcpServersCount`: The total number of configured MCP servers.
+*   **`custom-command-run`**: Sent when a custom command is run.
+    *   `commandName`: The name of the custom command.
+    *   `argsCount`: The number of arguments provided to the command.
 
 ## Source Code Transparency
 

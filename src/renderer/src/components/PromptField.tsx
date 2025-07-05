@@ -23,6 +23,7 @@ import { InputHistoryMenu } from '@/components/InputHistoryMenu';
 import { ModeSelector } from '@/components/ModeSelector';
 import { showErrorNotification } from '@/utils/notifications';
 import { Button } from '@/components/common/Button';
+import { useCustomCommands } from '@/hooks/useCustomCommands';
 
 const COMMANDS = [
   '/code',
@@ -146,6 +147,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       args?: string;
     } | null>(null);
     const editorRef = useRef<ReactCodeMirrorRef>(null);
+    const customCommands = useCustomCommands(baseDir);
 
     const completionSource = async (context: CompletionContext): Promise<CompletionResult | null> => {
       const word = context.matchBefore(/\S*/);
@@ -187,9 +189,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             };
           }
         } else {
+          // Add custom commands to the list
+          const customCmds = customCommands.map((cmd) => `/${cmd.name}`);
           return {
             from: 0,
-            options: COMMANDS.map((cmd) => ({ label: cmd, type: 'keyword' })),
+            options: [...COMMANDS, ...customCmds].map((cmd) => ({ label: cmd, type: 'keyword' })),
             validFor: /^\/\w*$/,
           };
         }
@@ -302,7 +306,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           }
           case '/init': {
             if (mode !== 'agent') {
-              showErrorNotification(t('promptField.initCommandAgentModeOnly'));
+              showErrorNotification(t('promptField.agentModeOnly'));
               return;
             }
             prepareForNextPrompt();
@@ -448,9 +452,26 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         messagesRef.current?.scrollToBottom();
       }, 50);
       if (text) {
-        if (text.startsWith('/') && !isPathLike(text) && !COMMANDS.some((cmd) => text.startsWith(cmd))) {
-          showErrorNotification(t('promptField.invalidCommand'));
-          return;
+        if (text.startsWith('/') && !isPathLike(text)) {
+          // Check if it's a custom command
+          const [cmd, ...args] = text.slice(1).split(' ');
+          const customCommand = customCommands.find((command) => command.name === cmd);
+
+          if (customCommand) {
+            if (mode !== 'agent') {
+              showErrorNotification(t('promptField.agentModeOnly'));
+              return;
+            }
+
+            window.api.runCustomCommand(baseDir, cmd, args);
+            prepareForNextPrompt();
+            return;
+          }
+
+          if (!COMMANDS.includes(`/${cmd}`)) {
+            showErrorNotification(t('promptField.invalidCommand'));
+            return;
+          }
         }
 
         if (pendingCommand) {
@@ -464,16 +485,23 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       }
     };
 
-    const getAutocompleteDetailLabel = (item: string) => {
+    const getAutocompleteDetailLabel = (item: string): [string | null, boolean] => {
       if (item.startsWith('/')) {
-        if (item === '/init' && mode !== 'agent') {
-          return t('commands.agentModeOnly');
+        // Check if it's a custom command
+        const commandName = item.slice(1);
+        const customCommand = customCommands.find((cmd) => cmd.name === commandName);
+        if (customCommand) {
+          return mode === 'agent' ? [customCommand.description, false] : [t('commands.agentModeOnly'), true];
         }
 
-        return t(`commands.${item.slice(1)}`);
+        if (item === '/init' && mode !== 'agent') {
+          return [t('commands.agentModeOnly'), true];
+        }
+
+        return [t(`commands.${item.slice(1)}`), false];
       }
 
-      return null;
+      return [null, false];
     };
 
     const keymapExtension = keymap.of([
@@ -719,14 +747,13 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                   addToOptions: [
                     {
                       render: (completion) => {
-                        const detail = getAutocompleteDetailLabel(completion.label);
+                        const [detail, showInChip] = getAutocompleteDetailLabel(completion.label);
                         if (!detail) {
                           return null;
                         }
 
                         const element = document.createElement('span');
-                        element.className =
-                          mode !== 'agent' && completion.label === '/init' ? 'cm-tooltip-autocomplete-chip' : 'cm-tooltip-autocomplete-detail';
+                        element.className = showInChip ? 'cm-tooltip-autocomplete-chip' : 'cm-tooltip-autocomplete-detail';
                         element.innerText = detail;
                         return element;
                       },
