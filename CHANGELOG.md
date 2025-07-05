@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASES]
+## [UNRELEASED]
 
 - not storing tool messages without the usage report into DB
 - added cached token information for Gemini models
@@ -14,6 +14,7 @@
 - added option to open project in AiderDesk from command line
 - notification when update is ready to be installed
 - custom commands in Agent mode
+- fixed issue with maximizing window on startup
 
 ## [0.20.0]
 

@@ -70,6 +70,9 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show();
+    if (lastWindowState.isMaximized) {
+      mainWindow.maximize();
+    }
   });
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
