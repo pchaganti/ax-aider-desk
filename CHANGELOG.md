@@ -15,6 +15,7 @@
 - notification when update is ready to be installed
 - custom commands in Agent mode
 - fixed issue with maximizing window on startup
+- added description to agent profile
 
 ## [0.20.0]
 

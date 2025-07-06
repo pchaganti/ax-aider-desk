@@ -2,7 +2,15 @@ import { v4 as uuidv4 } from 'uuid';
 import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, ToolApprovalState, WindowState } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProviderName } from '@common/agent';
-import { POWER_TOOL_AGENT, POWER_TOOL_FILE_EDIT, POWER_TOOL_FILE_WRITE, POWER_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import {
+  POWER_TOOL_AGENT,
+  POWER_TOOL_BASH,
+  POWER_TOOL_FILE_EDIT,
+  POWER_TOOL_FILE_READ,
+  POWER_TOOL_FILE_WRITE,
+  POWER_TOOL_GROUP_NAME,
+  TOOL_GROUP_NAME_SEPARATOR,
+} from '@common/tools';
 
 import { migrateSettingsV5toV6 } from './migrations/v5-to-v6';
 import { migrateV6ToV7 } from './migrations/v6-to-v7';
@@ -124,6 +132,8 @@ export class Store {
         ...DEFAULT_AGENT_PROFILE,
         provider,
         model: DEFAULT_AGENT_PROVIDER_MODELS[provider]![0],
+        description:
+          'Direct file manipulation and system operations. Best for codebase analysis, file management, advanced search, data analysis, and tasks requiring precise control over individual files. This agent should be used as the main agent for analysis and coding tasks.',
       },
       // Aider
       {
@@ -135,11 +145,34 @@ export class Store {
         usePowerTools: false,
         useAiderTools: true,
         includeRepoMap: true,
+        description:
+          "AI-powered code generation and refactoring. Best for implementing features, fixing bugs, and structured development workflows using Aider's intelligent code understanding and modification capabilities.",
         toolApprovals: {
           ...DEFAULT_AGENT_PROFILE.toolApprovals,
           [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Never,
           [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
           [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
+        },
+      },
+      // Aider with Power Search
+      {
+        ...DEFAULT_AGENT_PROFILE,
+        provider,
+        model: DEFAULT_AGENT_PROVIDER_MODELS[provider]![0],
+        id: 'aider-power-tools',
+        name: 'Aider with Power Search',
+        usePowerTools: true,
+        useAiderTools: true,
+        includeRepoMap: true,
+        description:
+          "Hybrid approach combining Aider's code generation with advanced search capabilities. Best for complex development tasks requiring both intelligent code modification and comprehensive codebase exploration.",
+        toolApprovals: {
+          ...DEFAULT_AGENT_PROFILE.toolApprovals,
+          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`]: ToolApprovalState.Never,
+          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}`]: ToolApprovalState.Never,
+          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
+          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
+          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Never,
         },
       },
     ];
