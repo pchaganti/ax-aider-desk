@@ -564,8 +564,14 @@ export class Project {
     }
   }
 
-  public async runAgent(profile: AgentProfile, prompt: string, systemPrompt?: string): Promise<ResponseCompletedData[]> {
-    const agentMessages = await this.agent.runAgent(this, profile, prompt, undefined, undefined, systemPrompt);
+  public async runAgent(
+    profile: AgentProfile,
+    prompt: string,
+    contextMessages?: ContextMessage[],
+    contextFiles?: ContextFile[],
+    systemPrompt?: string,
+  ): Promise<ResponseCompletedData[]> {
+    const agentMessages = await this.agent.runAgent(this, profile, prompt, contextMessages, contextFiles, systemPrompt);
     if (agentMessages.length > 0) {
       agentMessages.forEach((message) => this.sessionManager.addContextMessage(message));
 
@@ -1645,6 +1651,8 @@ export class Project {
     this.addUserMessage(prompt, 'agent');
     this.addLogMessage('loading');
 
-    await this.runAgent(profile, prompt, systemPrompt);
+    const messages = command.includeContext === false ? [] : undefined;
+    const contextFiles = command.includeContext === false ? [] : undefined;
+    await this.runAgent(profile, prompt, messages, contextFiles, systemPrompt);
   }
 }

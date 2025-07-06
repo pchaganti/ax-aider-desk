@@ -389,4 +389,5 @@ export interface CustomCommand {
   description: string;
   arguments: CustomCommandArgument[];
   template: string;
+  includeContext?: boolean;
 }

@@ -1,5 +1,6 @@
 ---
 description: Generate a conventional commit message based on the result of git diff.
+includeContext: false
 ---
 Please generate a conventional commit message based on result of git diff. The commit message should adhere to the Conventional Commits specification.
 

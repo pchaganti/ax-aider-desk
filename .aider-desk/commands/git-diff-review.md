@@ -1,5 +1,6 @@
 ---
 description: Review and summarize the output of a git diff for code quality, bugs, and improvements.
+includeContext: false
 arguments:
   - description: The git diff arguments (e.g., HEAD~1, a file path, or a commit range)
     required: false
