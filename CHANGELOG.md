@@ -16,6 +16,7 @@
 - custom commands in Agent mode
 - fixed issue with maximizing window on startup
 - added description to agent profile
+- removed rule files from the context files presented to agent as they are already in system prompt
 
 ## [0.20.0]
 
