@@ -391,3 +391,7 @@ export interface CustomCommand {
   template: string;
   includeContext?: boolean;
 }
+
+export interface Test {
+  propertyA: string;
+}
