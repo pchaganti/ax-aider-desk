@@ -394,4 +394,5 @@ export interface CustomCommand {
 
 export interface Test {
   propertyA: string;
+  propertyB: string;
 }
