@@ -3,6 +3,8 @@
 ## [UNRELEASED]
 
 - added custom commands availability to all modes
+- added info message when agent hits max output tokens
+- improved handling of unknown finsh reason during agent iteration
 
 ## [0.21.0]
 
