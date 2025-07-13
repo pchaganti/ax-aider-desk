@@ -10,6 +10,7 @@
 - added retry for other finish reason in Agent run
 - todo list disappearance outside agent mode or without useTodoTools enabled
 - added optional target file parameter to /web command
+- /web commands are now saved into input history
 
 ## [0.21.0]
 

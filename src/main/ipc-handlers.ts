@@ -290,6 +290,11 @@ export const setupIpcHandlers = (
 
       await fs.writeFile(targetFilePath, `Scraped content of ${url}:\n\n${content}`);
       await project.addFile({ path: targetFilePath, readOnly: true });
+      if (filePath) {
+        await project.addToInputHistory(`/web ${url} ${filePath}`);
+      } else {
+        await project.addToInputHistory(`/web ${url}`);
+      }
       project.addLogMessage('info', `Web content from ${url} saved to '${path.relative(baseDir, targetFilePath)}' and added to context.`);
     } catch (error) {
       logger.error(`Error processing scraped web content for ${url}:`, error);
