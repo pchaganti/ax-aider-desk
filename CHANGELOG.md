@@ -4,9 +4,10 @@
 
 - added custom commands availability to all modes
 - added info message when agent hits max output tokens
-- improved handling of unknown finsh reason during agent iteration
+- improved handling of unknown finish reason during agent iteration
 - fixed UnicodeEncodeError on Windows inside Aider
 - correctly handling stored answer
+- added retry for other finish reason in Agent run
 
 ## [0.21.0]
 
