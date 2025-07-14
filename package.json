@@ -58,7 +58,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@uiw/codemirror-theme-github": "^4.23.12",
-    "@uiw/react-codemirror": "^4.23.12",
+    "@uiw/react-codemirror": "4.23.12",
     "ai": "^4.3.16",
     "babel-plugin-react-compiler": "^19.1.0-rc.2",
     "better-sqlite3": "^12.0.0",

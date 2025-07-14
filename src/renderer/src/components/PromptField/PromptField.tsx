@@ -12,12 +12,11 @@ import { vim } from '@replit/codemirror-vim';
 import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, RefObject } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdPlaylistRemove, MdStop } from 'react-icons/md';
 
-import { MessagesRef } from '@/components/message/Messages';
 import { AgentSelector } from '@/components/AgentSelector';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { ModeSelector } from '@/components/PromptField/ModeSelector';
@@ -100,7 +99,6 @@ type Props = {
   disabled?: boolean;
   promptBehavior: PromptBehavior;
   clearLogMessages: () => void;
-  messagesRef: RefObject<MessagesRef>;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -130,7 +128,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       disabled = false,
       promptBehavior,
       clearLogMessages,
-      messagesRef,
     }: Props,
     ref,
   ) => {
@@ -193,7 +190,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           const customCmds = customCommands.map((cmd) => `/${cmd.name}`);
           return {
             from: 0,
-            options: [...COMMANDS, ...customCmds].map((cmd) => ({ label: cmd, type: 'keyword' })),
+            options: [...COMMANDS, ...customCmds].map((cmd) => ({
+              label: cmd,
+              type: 'keyword',
+            })),
             validFor: /^\/\w*$/,
           };
         }
@@ -461,9 +461,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     };
 
     const handleSubmit = () => {
-      setTimeout(() => {
-        messagesRef.current?.scrollToBottom();
-      }, 50);
       if (text) {
         if (text.startsWith('/') && !isPathLike(text)) {
           // Check if it's a custom command
@@ -488,7 +485,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         } else {
           runPrompt(text);
           prepareForNextPrompt();
-          messagesRef.current?.scrollToBottom();
         }
       }
     };
@@ -527,8 +523,13 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           } else if (historyMenuVisible) {
             setHistoryMenuVisible(false);
             view.dispatch({
-              changes: { from: 0, insert: historyItems[highlightedHistoryItemIndex] },
-              selection: { anchor: historyItems[highlightedHistoryItemIndex].length },
+              changes: {
+                from: 0,
+                insert: historyItems[highlightedHistoryItemIndex],
+              },
+              selection: {
+                anchor: historyItems[highlightedHistoryItemIndex].length,
+              },
             });
           } else if (!processing || question) {
             handleSubmit();

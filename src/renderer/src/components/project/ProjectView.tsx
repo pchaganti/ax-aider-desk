@@ -111,6 +111,10 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     }
   }, [projectSettings, settings, modelsInfo, aiderModelsData?.info?.max_input_tokens]);
 
+  const todoListVisible = useMemo(() => {
+    return projectSettings?.currentMode === 'agent' && getActiveAgentProfile(settings, projectSettings)?.useTodoTools;
+  }, [projectSettings, settings]);
+
   useEffect(() => {
     window.api.startProject(project.baseDir);
 
@@ -781,14 +785,13 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             redoLastUserPrompt={handleRedoLastUserPrompt}
             editLastUserMessage={handleEditLastUserMessage}
           />
-          {!loading && todoItems.length > 0 && (
+          {!loading && todoItems.length > 0 && todoListVisible && (
             <TodoWindow
               todos={todoItems}
               onToggleTodo={handleToggleTodo}
               onAddTodo={handleAddTodo}
               onUpdateTodo={handleUpdateTodo}
               onDeleteTodo={handleDeleteTodo}
-              settings={settings}
             />
           )}
         </div>
@@ -836,7 +839,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
             disabled={!aiderModelsData}
             promptBehavior={settings.promptBehavior}
             clearLogMessages={clearLogMessages}
-            messagesRef={messagesRef}
           />
         </div>
       </div>

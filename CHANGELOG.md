@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- fixed laggy prompt field clearing after submitting message
+
 ## [0.22.0]
 
 - added custom commands availability to all modes
