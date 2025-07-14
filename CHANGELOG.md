@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - fixed laggy prompt field clearing after submitting message
+- added support for streamable remote MCP servers
 
 ## [0.22.0]
 
