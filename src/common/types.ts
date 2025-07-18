@@ -326,9 +326,10 @@ export interface McpTool {
 }
 
 export interface McpServerConfig {
-  command: string;
-  args: string[];
+  command?: string;
+  args?: string[];
   env?: Readonly<Record<string, string>>;
+  url?: string;
 }
 
 export interface VersionsInfo {

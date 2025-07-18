@@ -2,6 +2,23 @@
 
 ## [UNRELEASED]
 
+- fixed laggy prompt field clearing after submitting message
+- added support for streamable remote MCP servers
+
+## [0.22.0]
+
+- added custom commands availability to all modes
+- added info message when agent hits max output tokens
+- improved handling of unknown finish reason during agent iteration
+- fixed UnicodeEncodeError on Windows inside Aider
+- correctly handling stored answer
+- added retry for other finish reason in Agent run
+- todo list disappearance outside agent mode or without useTodoTools enabled
+- added optional target file parameter to /web command
+- /web commands are now saved into input history
+
+## [0.21.0]
+
 - not storing tool messages without the usage report into DB
 - added cached token information for Gemini models
 - fixed issue with unfinished stream response text preceding a tool call
