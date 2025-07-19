@@ -27,7 +27,8 @@ export type LlmProviderName =
   | 'openai-compatible'
   | 'ollama'
   | 'openrouter'
-  | 'requesty';
+  | 'requesty'
+  | 'groq';
 
 export interface LlmProviderBase {
   name: LlmProviderName;
@@ -43,6 +44,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'bedrock',
   'deepseek',
   'gemini',
+  'groq',
   'lmstudio',
   'ollama',
   'openai',
@@ -86,6 +88,13 @@ export interface DeepseekProvider extends LlmProviderBase {
 }
 export const isDeepseekProvider = (provider: LlmProviderBase): provider is DeepseekProvider => provider.name === 'deepseek';
 
+export interface GroqProvider extends LlmProviderBase {
+  name: 'groq';
+  apiKey: string;
+  models: string[];
+}
+export const isGroqProvider = (provider: LlmProviderBase): provider is GroqProvider => provider.name === 'groq';
+
 export interface BedrockProvider extends LlmProviderBase {
   name: 'bedrock';
   accessKeyId: string;
@@ -128,6 +137,7 @@ export type LlmProvider =
   | LmStudioProvider
   | BedrockProvider
   | DeepseekProvider
+  | GroqProvider
   | OpenAiCompatibleProvider
   | OllamaProvider
   | OpenRouterProvider
@@ -137,6 +147,7 @@ export const DEFAULT_AGENT_PROVIDER_MODELS: Partial<Record<LlmProviderName, stri
   openai: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o-mini', 'o4-mini'],
   anthropic: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],
   gemini: ['gemini-2.5-pro', 'gemini-2.5-flash'],
+  groq: ['moonshotai/kimi-k2-instruct'],
   lmstudio: ['qwen/qwen3-8b'],
   deepseek: ['deepseek-chat'],
   bedrock: ['us.anthropic.claude-3-7-sonnet-20250219-v1:0', 'anthropic.claude-3-7-sonnet-20250219-v1:0'],
@@ -249,6 +260,13 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings: Se
           thinkingBudget: 0,
           customBaseUrl: '',
         } satisfies GeminiProvider;
+        break;
+      case 'groq':
+        provider = {
+          name: 'groq',
+          apiKey: '',
+          models: [],
+        } satisfies GroqProvider;
         break;
       case 'deepseek':
         provider = {

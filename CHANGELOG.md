@@ -5,6 +5,7 @@
 - fixed laggy prompt field clearing after submitting message
 - added support for streamable remote MCP servers
 - added direct configuration for LM Studio provider
+- added direct configuration for Groq provider
 
 ## [0.22.0]
 

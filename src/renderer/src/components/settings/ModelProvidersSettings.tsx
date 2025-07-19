@@ -5,6 +5,7 @@ import {
   isBedrockProvider,
   isDeepseekProvider,
   isGeminiProvider,
+  isGroqProvider,
   isLmStudioProvider,
   isOllamaProvider,
   isOpenAiCompatibleProvider,
@@ -43,6 +44,7 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
   const { environmentVariable: anthropicApiKey } = useEffectiveEnvironmentVariable('ANTHROPIC_API_KEY');
   const { environmentVariable: geminiApiKey } = useEffectiveEnvironmentVariable('GEMINI_API_KEY');
   const { environmentVariable: deepseekApiKey } = useEffectiveEnvironmentVariable('DEEPSEEK_API_KEY');
+  const { environmentVariable: groqApiKey } = useEffectiveEnvironmentVariable('GROQ_API_KEY');
   const { environmentVariable: openrouterApiKey } = useEffectiveEnvironmentVariable('OPENROUTER_API_KEY');
   const { environmentVariable: requestyApiKey } = useEffectiveEnvironmentVariable('REQUESTY_API_KEY');
   const { environmentVariable: awsAccessKeyId } = useEffectiveEnvironmentVariable('AWS_ACCESS_KEY_ID');
@@ -71,6 +73,8 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
       return !!provider.apiKey || !!anthropicApiKey?.value;
     } else if (isDeepseekProvider(provider)) {
       return !!provider.apiKey || !!deepseekApiKey?.value;
+    } else if (isGroqProvider(provider)) {
+      return !!provider.apiKey || !!groqApiKey?.value;
     } else if (isGeminiProvider(provider)) {
       return !!provider.apiKey || !!geminiApiKey?.value;
     } else if (isBedrockProvider(provider)) {

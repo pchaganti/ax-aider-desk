@@ -55,6 +55,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef>((_, ref) => {
             models.push(...ollamaModels.map((model) => `ollama/${model}`));
           }
           break;
+        case 'groq':
         case 'openrouter':
         case 'requesty':
         case 'openai-compatible': {
