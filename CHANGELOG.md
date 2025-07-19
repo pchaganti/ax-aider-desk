@@ -6,6 +6,7 @@
 - added support for streamable remote MCP servers
 - added direct configuration for LM Studio provider
 - added direct configuration for Groq provider
+- improved escape character sanitization in file edit tool
 
 ## [0.22.0]
 
