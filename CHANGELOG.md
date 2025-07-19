@@ -7,6 +7,7 @@
 - added direct configuration for LM Studio provider
 - added direct configuration for Groq provider
 - improved escape character sanitization in file edit tool
+- render HTML tags properly in messages
 
 ## [0.22.0]
 

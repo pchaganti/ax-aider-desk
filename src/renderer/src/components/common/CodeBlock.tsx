@@ -91,7 +91,7 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
   const content = useMemo(() => {
     if (displayAsDiff) {
       return <DiffViewer oldValue={diffOldValue} newValue={diffNewValue} language={language} />;
-    } else if (codeForSyntaxHighlight) {
+    } else if (codeForSyntaxHighlight && language) {
       let html = codeForSyntaxHighlight;
 
       const grammar = Prism.languages[language];
@@ -109,8 +109,13 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
           <code className={`language-${language}`} dangerouslySetInnerHTML={{ __html: html }} />
         </pre>
       );
+    } else {
+      return (
+        <pre>
+          <code className="text-2xs">{codeForSyntaxHighlight}</code>
+        </pre>
+      );
     }
-    return null;
   }, [codeForSyntaxHighlight, diffNewValue, diffOldValue, displayAsDiff, language]);
 
   const handleRevertChanges = () => {
