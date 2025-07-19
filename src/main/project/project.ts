@@ -47,6 +47,7 @@ import {
   isDeepseekProvider,
   isOpenRouterProvider,
   isBedrockProvider,
+  isLmStudioProvider,
   OpenAiCompatibleProvider,
   AnthropicProvider,
   BedrockProvider,
@@ -55,6 +56,7 @@ import {
   GeminiProvider,
   OpenAiProvider,
   OllamaProvider,
+  LmStudioProvider,
 } from '@common/agent';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
@@ -393,6 +395,7 @@ export class Project {
     const openAiCompatibleProvider = getLlmProviderConfig('openai-compatible', settings) as OpenAiCompatibleProvider;
     const anthropicProvider = getLlmProviderConfig('anthropic', settings) as AnthropicProvider;
     const geminiProvider = getLlmProviderConfig('gemini', settings) as GeminiProvider;
+    const lmStudioProvider = getLlmProviderConfig('lmstudio', settings) as LmStudioProvider;
     const deepseekProvider = getLlmProviderConfig('deepseek', settings) as DeepseekProvider;
     const openRouterProvider = getLlmProviderConfig('openrouter', settings) as OpenRouterProvider;
     const bedrockProvider = getLlmProviderConfig('bedrock', settings) as BedrockProvider;
@@ -408,6 +411,7 @@ export class Project {
         : {}),
       ANTHROPIC_API_KEY: (isAnthropicProvider(anthropicProvider) && anthropicProvider.apiKey) || undefined,
       GEMINI_API_KEY: (isGeminiProvider(geminiProvider) && geminiProvider.apiKey) || undefined,
+      LM_STUDIO_API_KEY: (isLmStudioProvider(lmStudioProvider) && lmStudioProvider.baseUrl) || undefined,
       DEEPSEEK_API_KEY: (isDeepseekProvider(deepseekProvider) && deepseekProvider.apiKey) || undefined,
       OPENROUTER_API_KEY: (isOpenRouterProvider(openRouterProvider) && openRouterProvider.apiKey) || undefined,
       AWS_REGION: (isBedrockProvider(bedrockProvider) && bedrockProvider.region) || undefined,
