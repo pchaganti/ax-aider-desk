@@ -8,6 +8,7 @@
 - added direct configuration for Groq provider
 - improved escape character sanitization in file edit tool
 - render HTML tags properly in messages
+- basic support for udiff format in diff viewer
 
 ## [0.22.0]
 
