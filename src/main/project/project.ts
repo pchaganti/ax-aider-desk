@@ -341,7 +341,7 @@ export class Project {
       ...process.env,
       ...environmentVariables,
       PYTHONPATH: AIDER_DESK_CONNECTOR_DIR,
-      PYTHONUTF8: '1',
+      PYTHONUTF8: process.env.AIDER_DESK_OMIT_PYTHONUTF8 ? undefined : '1',
       BASE_DIR: this.baseDir,
       CONNECTOR_SERVER_URL: `http://localhost:${SERVER_PORT}`,
     };
