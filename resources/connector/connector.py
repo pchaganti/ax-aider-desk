@@ -1070,25 +1070,45 @@ class Connector:
       await asyncio.sleep(0.01)
 
 def main(argv=None):
-  if argv is None:
-    argv = sys.argv[1:]
+  try:
+    if argv is None:
+      argv = sys.argv[1:]
 
-  parser = argparse.ArgumentParser(description="AiderDesk Connector")
-  parser.add_argument("--watch-files", action="store_true", help="Watch files for changes")
-  parser.add_argument("--reasoning-effort", type=str, default=None, help="Set the reasoning effort for the model")
-  parser.add_argument("--thinking-tokens", type=str, default=None, help="Set the thinking tokens for the model")
-  args, _ = parser.parse_known_args(argv) # Use parse_known_args to ignore unknown args
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="AiderDesk Connector")
+    parser.add_argument("--watch-files", action="store_true", help="Watch files for changes")
+    parser.add_argument("--reasoning-effort", type=str, default=None, help="Set the reasoning effort for the model")
+    parser.add_argument("--thinking-tokens", type=str, default=None, help="Set the thinking tokens for the model")
+    args, _ = parser.parse_known_args(argv) # Use parse_known_args to ignore unknown args
 
-  server_url = os.getenv("CONNECTOR_SERVER_URL", "http://localhost:24337")
-  base_dir = os.getenv("BASE_DIR", os.getcwd())
-  connector = Connector(
-    base_dir,
-    watch_files=args.watch_files,
-    server_url=server_url,
-    reasoning_effort=args.reasoning_effort,
-    thinking_tokens=args.thinking_tokens
-  )
-  asyncio.run(connector.start())
+    # Get environment variables
+    server_url = os.getenv("CONNECTOR_SERVER_URL", "http://localhost:24337")
+    base_dir = os.getenv("BASE_DIR", os.getcwd())
+
+    # Create connector instance
+    connector = Connector(
+      base_dir,
+      watch_files=args.watch_files,
+      server_url=server_url,
+      reasoning_effort=args.reasoning_effort,
+      thinking_tokens=args.thinking_tokens
+    )
+
+    # Start the connector
+    asyncio.run(connector.start())
+
+  except argparse.ArgumentError as e:
+    sys.stderr.write(f"Argument parsing error: {str(e)}\n")
+    sys.exit(1)
+  except ValueError as e:
+    sys.stderr.write(f"Configuration error: {str(e)}\n")
+    sys.exit(2)
+  except ConnectionError as e:
+    sys.stderr.write(f"Connection error: {str(e)}\n")
+    sys.exit(3)
+  except Exception as e:
+    sys.stderr.write(f"Unexpected error: {str(e)}\n")
+    sys.exit(4)
 
 
 if __name__ == "__main__":

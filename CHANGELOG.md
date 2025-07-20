@@ -11,6 +11,7 @@
 - basic support for udiff format in diff viewer
 - excluding information about disabled power tools in the system prompt
 - improved context files messages in Agent
+- improved Aider initial startup error handling
 
 ## [0.22.0]
 
