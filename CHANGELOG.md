@@ -9,6 +9,7 @@
 - improved escape character sanitization in file edit tool
 - render HTML tags properly in messages
 - basic support for udiff format in diff viewer
+- excluding information about disabled power tools in the system prompt
 
 ## [0.22.0]
 

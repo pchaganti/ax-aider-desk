@@ -30,8 +30,29 @@ import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 export const getSystemPrompt = async (projectDir: string, agentProfile: AgentProfile, additionalInstructions?: string) => {
   const { useAiderTools, usePowerTools, useTodoTools, autoApprove } = agentProfile;
   const customInstructions = [getRuleFilesContent(projectDir), agentProfile.customInstructions, additionalInstructions].filter(Boolean).join('\n\n').trim();
+
+  // Check individual power tool permissions
   const agentToolAllowed =
     usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}`] !== ToolApprovalState.Never;
+  const semanticSearchAllowed =
+    usePowerTools &&
+    agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_SEMANTIC_SEARCH}`] !== ToolApprovalState.Never;
+  const fileReadAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}`] !== ToolApprovalState.Never;
+  const fileWriteAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`] !== ToolApprovalState.Never;
+  const fileEditAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`] !== ToolApprovalState.Never;
+  const globAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GLOB}`] !== ToolApprovalState.Never;
+  const grepAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GREP}`] !== ToolApprovalState.Never;
+  const bashAllowed =
+    usePowerTools && agentProfile.toolApprovals[`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`] !== ToolApprovalState.Never;
+
+  // Check if any power tools are allowed
+  const anyPowerToolsAllowed =
+    semanticSearchAllowed || fileReadAllowed || fileWriteAllowed || fileEditAllowed || globAllowed || grepAllowed || bashAllowed || agentToolAllowed;
 
   return `# ROLE AND OBJECTIVE
 
@@ -142,24 +163,49 @@ ${
     : ''
 }
 ${
-  usePowerTools
+  anyPowerToolsAllowed
     ? `
 ## UTILIZING POWER TOOLS
-
-Power tools offer direct file system interaction and command execution. Employ them as follows:
-
-- **To Search for Code or Functionality:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_SEMANTIC_SEARCH}\` to locate relevant code segments or features within the project.
-- **To Inspect File Contents:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}\` to view the content of a file without including it in the primary context.
-- **To Manage Files (Create, Overwrite, Append):** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}\` for creating new files, replacing existing file content, or adding content to the end of a file.
-- **To Perform Targeted File Edits:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}\` to replace specific strings or patterns within files.
-- **To Find Files by Pattern:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GLOB}\` to identify files that match specified patterns.
-- **To Search File Content with Regular Expressions:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GREP}\` to find text within files using regular expressions.
+${
+  semanticSearchAllowed
+    ? `
+- **To Search for Code or Functionality:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_SEMANTIC_SEARCH}\` to locate relevant code segments or features within the project.`
+    : ''
+}${
+        fileReadAllowed
+          ? `
+- **To Inspect File Contents:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}\` to view the content of a file without including it in the primary context.`
+          : ''
+      }${
+        fileWriteAllowed
+          ? `
+- **To Manage Files (Create, Overwrite, Append):** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}\` for creating new files, replacing existing file content, or adding content to the end of a file.`
+          : ''
+      }${
+        fileEditAllowed
+          ? `
+- **To Perform Targeted File Edits:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}\` to replace specific strings or patterns within files.`
+          : ''
+      }${
+        globAllowed
+          ? `
+- **To Find Files by Pattern:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GLOB}\` to identify files that match specified patterns.`
+          : ''
+      }${
+        grepAllowed
+          ? `
+- **To Search File Content with Regular Expressions:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GREP}\` to find text within files using regular expressions.`
+          : ''
+      }${
+        bashAllowed
+          ? `
 - **To Execute Shell Commands:**
     - Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}\` to run shell commands.
-    - **Instruction:** Before execution, verify all \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}\` commands for safety and correctness to prevent unintended system modifications.
-${
-  agentToolAllowed
-    ? `
+    - **Instruction:** Before execution, verify all \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}\` commands for safety and correctness to prevent unintended system modifications.`
+          : ''
+      }${
+        agentToolAllowed
+          ? `
 - **To Delegate Complex, Isolated Tasks or Analysis:** Use \`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_AGENT}\`.
     - **For Analysis:** This is the preferred method for complex initial analysis (See Step 2).
     - **For Execution:** Use this for tasks that are complex enough to require their own reasoning loop but can be completed with a limited set of files (e.g., refactoring a single function, writing a new unit test).
@@ -169,11 +215,10 @@ ${
         3. A precise specification of the final output format you expect the sub-agent to return.
     - **Parameters:** Use the \`files\` parameter to provide all necessary context files for the task.
 `
-    : ''
-}
-${
-  useAiderTools
-    ? `
+          : ''
+      }${
+        useAiderTools && fileEditAllowed && fileWriteAllowed
+          ? `
 - **Comparison to Aider \`${AIDER_TOOL_RUN_PROMPT}\`':**
     - Power tools offer granular control but require more precise instructions.
     - Aider's \`${AIDER_TOOL_RUN_PROMPT}\` is generally preferred for complex coding tasks, refactoring, or when a broader understanding of the code is needed, as it leverages Aider's advanced reasoning.
@@ -181,8 +226,8 @@ ${
 
 - **Context Management:** Unlike Aider tools, Power tools operate directly on the file system and do not inherently use Aider's context file list unless their parameters (like file paths) are derived from it.
 `
-    : ''
-}`
+          : ''
+      }`
     : ''
 }
 # RESPONSE STYLE
