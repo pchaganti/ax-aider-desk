@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - support for headers in streamable MCP servers
+- added search to input history
 
 ## [0.23.0]
 
