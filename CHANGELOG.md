@@ -6,6 +6,7 @@
 - added search to input history
 - added Langfuse OpenTelemetry instrumentation for Agent and Aider
 - added action to clears all todo list tasks
+- fixed architect mode interruption while editing files
 
 ## [0.23.0]
 
