@@ -50,8 +50,8 @@ export class Connector {
     mode: Mode | null = null,
     architectModel: string | null = null,
     promptId: string | null = null,
-    clearContext = false,
-    clearFiles = false,
+    messages: { role: MessageRole; content: string }[] = [],
+    files: ContextFile[] = [],
   ): void {
     const message: PromptMessage = {
       action: 'prompt',
@@ -59,8 +59,8 @@ export class Connector {
       mode,
       architectModel,
       promptId,
-      clearContext,
-      clearFiles,
+      messages,
+      files,
     };
     this.sendMessage(message);
   }

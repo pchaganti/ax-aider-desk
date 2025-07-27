@@ -64,7 +64,7 @@ const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: n
   }
 
   if (!profile.autoApprove) {
-    dontForgets.push('Before making any changes, present the plan and wait for my approval.');
+    dontForgets.push('Before making any complex changes, present the plan and wait for my approval.');
   }
 
   if (dontForgets.length === 0) {

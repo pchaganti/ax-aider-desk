@@ -7,31 +7,338 @@ import asyncio
 import json
 import socketio
 import tempfile
+import threading
+import uuid
+from typing import Dict, Optional, Any, Coroutine
 from aider import models
 from aider.coders import Coder
 from aider.io import InputOutput, AutoCompleter
 from aider.watch import FileWatcher
 from aider.main import main as cli_main
 from aider.utils import is_image_file
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, Future
 import nest_asyncio
 import litellm
 import types
 nest_asyncio.apply()
 
 confirmation_result = None
-whole_content = ""
 
 def wait_for_async(connector, coroutine):
   try:
-    task = connector.loop.create_task(coroutine)
-    result = connector.loop.run_until_complete(task)
+    future = asyncio.run_coroutine_threadsafe(coroutine, connector.loop)
+    result = future.result()
     return result
   except Exception as e:
     connector.coder.io.tool_output(f'EXCEPTION: {e}')
     return None
 
-async def run_editor_coder_stream(architect_coder, connector):
+class PromptExecutor:
+  """Manages prompt execution as concurrent asyncio tasks."""
+
+  def __init__(self, connector):
+    self.connector = connector
+    self.active_prompts: Dict[str, asyncio.Task] = {}
+    self.active_coders: Dict[str, Coder] = {}
+    self.active_futures: Dict[str, Future] = {}
+    self.executor = None
+
+  def get_executor(self):
+    if self.executor is None:
+      # create a new executor with 100 workers for 100 concurrent prompts
+      self.executor = ThreadPoolExecutor(max_workers=100)
+    return self.executor
+
+  async def run_prompt(self, prompt_id: str, prompt: str, mode=None, architect_model=None, messages=None, files=None, coder=None):
+    prompt_coro = self._run_prompt_task(prompt_id, prompt, mode, architect_model, messages, files, coder)
+
+    # Submit the coroutine to the executor, which turns it into a background Task.
+    # If a prompt with the same ID is already running, cancel it first.
+    if prompt_id in self.active_prompts:
+      await self.cancel_prompt(prompt_id)
+
+    # Wrap the coroutine in a task that will handle its own cleanup.
+    task = self.connector.loop.create_task(self._execute_prompt_wrapper(prompt_id, prompt_coro))
+    self.active_prompts[prompt_id] = task
+
+    return prompt_id
+
+  # This new method contains the logic that used to be in _run_prompt_sync and _run_prompt_async
+  async def _run_prompt_task(self, prompt_id: str, prompt: str, mode=None, architect_model=None, messages=None, files=None, coder=None):
+    """The actual prompt execution logic, designed to be run as a task."""
+    try:
+      # The core async logic from your old `_run_prompt_async`
+      # Now you can directly await async functions without any special handling.
+      await self._run_prompt_async(prompt_id, prompt, mode, architect_model, messages, files, coder)
+
+    except asyncio.CancelledError:
+      # This is important! The task must be allowed to handle its own cancellation.
+      self.connector.io.tool_output(f"Prompt logic for {prompt_id} gracefully cancelled.")
+      # Propagate the cancellation to ensure the wrapper knows about it.
+      raise
+    except Exception as e:
+      self.connector.io.tool_error(f"Error in prompt logic {prompt_id}: {str(e)}")
+      raise
+
+  async def _stream_and_send_responses(self, coder, prompt_id, prompt_to_run, log_context, extra_response_data=None):
+    if extra_response_data is None:
+      extra_response_data = {}
+
+    whole_content = ""
+    response_id = str(uuid.uuid4())
+
+    queue = asyncio.Queue()
+    executor = self.get_executor()
+
+    def _sync_worker():
+      try:
+        for chunk in coder.run_stream(prompt_to_run):
+          if self.is_prompt_interrupted(prompt_id):
+            break
+          # Put chunk into queue, handling potential queue full
+          fut = asyncio.run_coroutine_threadsafe(queue.put(chunk), self.connector.loop)
+          fut.result() # Wait for it to be put in queue
+        asyncio.run_coroutine_threadsafe(queue.put(None), self.connector.loop).result() # Sentinel for end
+      except Exception as e:
+        self.connector.io.tool_error(f"Error in run_stream for {log_context}: {str(e)}")
+
+    future = self.connector.loop.run_in_executor(executor, _sync_worker)
+    self.active_futures[prompt_id] = future
+
+    while True:
+      chunk = await queue.get()
+      if chunk is None:
+          break
+      whole_content += chunk
+
+      response_payload = {
+        "id": response_id,
+        "action": "response",
+        "finished": False,
+        "content": chunk,
+      }
+      if extra_response_data:
+        response_payload.update(extra_response_data)
+
+      await self.connector.send_action(response_payload)
+
+    return whole_content, response_id
+
+  async def _run_prompt_async(self, prompt_id: str, prompt: str, mode=None, architect_model=None, messages=None, files=None, coder=None):
+    coder_provided = coder is not None
+
+    if not coder_provided:
+      coder_model = self.connector.coder.main_model
+      running_model = self.connector.coder.main_model
+
+      if mode == "architect" and architect_model:
+        running_model = models.Model(architect_model, weak_model=coder_model.weak_model.name, editor_model=coder_model.name)
+
+      coder = Coder.create(
+        from_coder=self.connector.coder,
+        edit_format=mode,
+        main_model=running_model,
+        summarize_from_coder=False,
+      )
+      self.active_coders[prompt_id] = coder
+      self.connector.monkey_patch_coder_functions(coder)
+
+      create_io(self.connector, coder, prompt_id)
+
+      # models.sanity_check_models(coder.io, running_model)
+
+    if messages is not None:
+      # Set messages from the provided data
+      coder.done_messages = [dict(role=msg['role'], content=msg['content']) for msg in messages]
+      coder.cur_messages = []
+
+    if files is not None:
+      # Set files from the provided data
+      coder.abs_fnames = set()
+      coder.abs_read_only_fnames = set()
+
+      for file in files:
+        file_path = file['path']
+        if not file_path.startswith(self.connector.base_dir):
+          file_path = os.path.join(self.connector.base_dir, file_path)
+
+        if file.get('readOnly', False):
+          coder.abs_read_only_fnames.add(file_path)
+        else:
+          coder.abs_fnames.add(file_path)
+
+    # we need to disable auto accept as this does not work properly with AiderDesk
+    coder.auto_accept_architect=False
+
+    # setting usage report to None to avoid no attribute error
+    coder.usage_report = None
+
+    whole_content, response_id = await self._stream_and_send_responses(coder, prompt_id, prompt, prompt_id)
+
+    if not whole_content and not self.is_prompt_interrupted(prompt_id):
+      # if there was no content, use the partial_response_content value (case for non streaming models)
+      whole_content = coder.partial_response_content
+
+    def get_usage_report():
+      return (coder.usage_report + f" Total cost: ${coder.total_cost:.10f} session") if coder.usage_report else None
+
+    # Send final response with complete data
+    response_data = {
+      "id": response_id,
+      "action": "response",
+      "content": whole_content,
+      "finished": True,
+      "editedFiles": list(coder.aider_edited_files),
+      "usageReport": get_usage_report()
+    }
+
+    # Add commit info if there was one
+    if coder.last_aider_commit_hash:
+      response_data.update({
+        "commitHash": coder.last_aider_commit_hash,
+        "commitMessage": coder.last_aider_commit_message,
+      })
+      # Add diff if there was a commit
+      commits = f"{coder.last_aider_commit_hash}~1"
+      diff = coder.repo.diff_commits(
+        coder.pretty,
+        commits,
+        coder.last_aider_commit_hash,
+      )
+      response_data["diff"] = diff
+
+    if whole_content or not self.is_prompt_interrupted(prompt_id):
+      await self.connector.send_action(response_data)
+
+    # await self.connector.send_update_context_files()
+
+    # Check for reflections
+    if coder.reflected_message:
+      current_reflection = 0
+      while coder.reflected_message and not self.is_prompt_interrupted(prompt_id):
+        if current_reflection >= self.connector.coder.max_reflections:
+          coder.io.tool_warning(f"Only {str(self.connector.coder.max_reflections)} reflections allowed, stopping.")
+          break
+
+        reflection_prompt = coder.reflected_message
+        await self.connector.send_log_message("loading", "Reflecting message...")
+
+        whole_content, response_id = await self._stream_and_send_responses(
+          coder, prompt_id, reflection_prompt,
+          f"reflection in {prompt_id}",
+          {"reflectedMessage": reflection_prompt}
+        )
+
+        response_data = {
+          "id": response_id,
+          "action": "response",
+          "content": whole_content,
+          "reflected_message": reflection_prompt,
+          "finished": True,
+          "editedFiles": list(coder.aider_edited_files),
+          "usageReport": get_usage_report()
+        }
+
+        if whole_content or not self.is_prompt_interrupted(prompt_id):
+          await self.connector.send_action(response_data)
+
+        # await self.connector.send_update_context_files()
+        current_reflection += 1
+
+    if not coder_provided:
+      self.connector.coder.total_cost = coder.total_cost
+      self.connector.coder.aider_commit_hashes = coder.aider_commit_hashes
+
+    await self.connector.send_tokens_info()
+    await self.connector.send_repo_map()
+    await self.connector.send_autocompletion()
+
+    # Send prompt-finished message
+    await self.connector.send_action({
+      "action": "prompt-finished",
+      "promptId": prompt_id
+    })
+
+  async def _execute_prompt_wrapper(self, prompt_id: str, prompt_coro: Coroutine[Any, Any, Any]):
+    """
+    Wrapper that executes the prompt coroutine and handles completion or cancellation.
+    """
+    try:
+      # The main logic is now simply awaiting the coroutine
+      await prompt_coro
+    except asyncio.CancelledError:
+      # This is the clean way to handle cancellation.
+      self.connector.coder.io.tool_output(f"Prompt {prompt_id} was cancelled.")
+      # You could add more specific cleanup logic here if needed.
+    except Exception as e:
+      self.connector.coder.io.tool_error(f"Error in prompt task {prompt_id}: {str(e)}")
+      # Potentially re-raise or handle as needed
+      raise
+    finally:
+      # Always clean up the task from the active prompts dict.
+      self._cleanup_prompt(prompt_id)
+
+  def _cleanup_prompt(self, prompt_id: str):
+    """Clean up completed or cancelled prompt."""
+    self.active_prompts.pop(prompt_id, None)
+    self.active_coders.pop(prompt_id, None)
+    self.active_futures.pop(prompt_id, None)
+
+  def get_coder(self, prompt_id: str) -> Optional[Coder]:
+    """Retrieve the coder instance for a given prompt ID."""
+    return self.active_coders.get(prompt_id)
+
+  async def cancel_prompt(self, prompt_id: str) -> bool:
+    """Cancel a specific prompt task."""
+
+    # Cancel the executor future if it exists
+    if prompt_id in self.active_futures:
+      future = self.active_futures[prompt_id]
+      future.cancel()
+
+    # Set the coder's IO to cancelled if it exists
+    if prompt_id in self.active_coders:
+      coder = self.active_coders[prompt_id]
+      if hasattr(coder.io, 'cancelled'):
+        coder.io.cancelled = True
+
+    if prompt_id in self.active_prompts:
+      task = self.active_prompts[prompt_id]
+
+      # The cancel() method schedules the task to be cancelled.
+      # It will raise CancelledError at the next `await`.
+      task.cancel()
+
+      # You can optionally wait for it to be fully cancelled.
+      try:
+        await task
+      except asyncio.CancelledError:
+        pass # Expected
+
+      self.connector.coder.io.tool_output(f"Cancellation request sent to prompt {prompt_id}.")
+      return True
+    return False
+
+  async def interrupt_all_prompts(self):
+    """Interrupt all active prompts."""
+    # Create a copy of keys to avoid issues with modifying the dict while iterating
+    prompt_ids = list(self.active_prompts.keys())
+    if prompt_ids:
+      self.connector.coder.io.tool_output("Interrupting all active prompts...")
+      await asyncio.gather(*(self.cancel_prompt(pid) for pid in prompt_ids))
+
+  def is_prompt_interrupted(self, prompt_id: str) -> bool:
+    """Check if a prompt task has been cancelled."""
+    if prompt_id in self.active_prompts:
+      return self.active_prompts[prompt_id].done() and self.active_prompts[prompt_id].cancelled()
+    # If it's not in active_prompts, it's finished or was cancelled.
+    return True
+
+  async def shutdown(self):
+    """Shutdown the executor by cancelling all active tasks."""
+    await self.interrupt_all_prompts()
+
+async def run_editor_coder_stream(architect_coder, connector, prompt_id: str):
   # Use the editor_model from the main_model if it exists, otherwise use the main_model itself
   editor_model = architect_coder.main_model.editor_model or architect_coder.main_model
 
@@ -51,50 +358,46 @@ async def run_editor_coder_stream(architect_coder, connector):
   editor_coder = Coder.create(**new_kwargs)
   editor_coder.cur_messages = []
   editor_coder.done_messages = []
-  connector.monkey_patch_coder_functions(editor_coder)
 
-  global whole_content
-  if not whole_content:
-    whole_content = architect_coder.partial_response_content
+  # Generate a unique prompt ID for the editor coder
+  editor_prompt_id = str(uuid.uuid4())
 
-  await connector.sio.emit('message', {
-    "action": "response",
-    "finished": True,
-    "content": whole_content
-  })
+  # Start the prompt execution (non-blocking)
+  await connector.prompt_executor.run_prompt(
+    prompt_id=editor_prompt_id,
+    prompt=architect_coder.partial_response_content,
+    mode="code",
+    coder=editor_coder
+  )
 
-  whole_content = ""
-  # run the editor coder
-  for chunk in editor_coder.run_stream(architect_coder.partial_response_content):
-    if connector.interrupted:
-      break
-    # add small sleeps here to allow other coroutines to run
-    await connector.sio.emit('message', {
-      "action": "response",
-      "finished": False,
-      "content": chunk
-    })
-    whole_content += chunk
-    await asyncio.sleep(0.01)
-
-  # set values back to the architect coder
-  architect_coder.move_back_cur_messages("I made those changes to the files.")
-  architect_coder.total_cost = editor_coder.total_cost
-  architect_coder.aider_commit_hashes = editor_coder.aider_commit_hashes
+  # Wait for completion by awaiting the task
+  if editor_prompt_id in connector.prompt_executor.active_prompts:
+    task = connector.prompt_executor.active_prompts[editor_prompt_id]
+    try:
+      await task
+      architect_coder.aider_edited_files = editor_coder.aider_edited_files
+      architect_coder.total_cost = editor_coder.total_cost
+      architect_coder.aider_commit_hashes = editor_coder.aider_commit_hashes
+    except asyncio.CancelledError:
+      pass # The task was cancelled, which is an expected way for it to end.
 
 class ConnectorInputOutput(InputOutput):
-  def __init__(self, connector=None, **kwargs):
+  def __init__(self, connector=None, prompt_id=None, **kwargs):
     super().__init__(**kwargs)
     self.connector = connector
+    self.prompt_id = prompt_id
     self.running_shell_command = False
     self.processing_loading_message = False
     self.current_command = None
+    self.cancelled = False
 
   def add_to_input_history(self, input_text):
     # handled by AiderDesk
     pass
 
   def tool_output(self, *messages, log_only=False, bold=False):
+    if self.cancelled:
+      return
     super().tool_output(*messages, log_only=log_only, bold=bold)
     if self.running_shell_command:
       for message in messages:
@@ -122,6 +425,8 @@ class ConnectorInputOutput(InputOutput):
     return False
 
   def tool_warning(self, message="", strip=True):
+    if self.cancelled:
+      return
     super().tool_warning(message, strip)
     if self.connector and not self.is_warning_ignored(message):
       wait_for_async(self.connector, self.connector.send_log_message("warning", message, self.processing_loading_message))
@@ -135,6 +440,8 @@ class ConnectorInputOutput(InputOutput):
     return False
 
   def tool_error(self, message="", strip=True):
+    if self.cancelled:
+      return
     super().tool_error(message, strip)
     if self.connector and not self.is_error_ignored(message):
       wait_for_async(self.connector, self.connector.send_log_message("error", message))
@@ -171,15 +478,18 @@ class ConnectorInputOutput(InputOutput):
         'defaultAnswer': default
       })
       while confirmation_result is None:
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.25)
       return confirmation_result
 
     result = wait_for_async(self.connector, ask_question())
 
-    if result == "y" and self.connector.running_coder and question == "Edit the files?":
-      # Process architect coder
-      wait_for_async(self.connector, self.connector.send_log_message("loading", "Editing files..."))
-      wait_for_async(self.connector, run_editor_coder_stream(self.connector.running_coder, self.connector))
+    if result == "y" and question == "Edit the files?":
+      # Get the specific coder for this prompt
+      coder_for_prompt = self.connector.prompt_executor.get_coder(self.prompt_id) if self.prompt_id else None
+      if coder_for_prompt: # Ensure we have a valid coder
+        # Process architect coder
+        wait_for_async(self.connector, self.connector.send_log_message("loading", "Editing files..."))
+        wait_for_async(self.connector, run_editor_coder_stream(coder_for_prompt, self.connector, self.prompt_id))
       return False
 
     if result == "y" and question.startswith("Run shell command"):
@@ -190,10 +500,8 @@ class ConnectorInputOutput(InputOutput):
 
     if result == "a" and group is not None:
       group.preference = "y"
-      self.tool_warning("Always preference.")
     elif result == "s" and group is not None:
       group.preference = "n"
-      self.tool_warning("Never preference.")
 
     return result == "y" or result == "a"
 
@@ -210,7 +518,9 @@ class ConnectorInputOutput(InputOutput):
 
   def interrupt_input(self):
     async def process_changes():
-      await self.connector.run_prompt(prompt)
+      # Generate a new prompt ID for file watcher changes
+      prompt_id = str(uuid.uuid4())
+      await self.connector.prompt_executor.run_prompt(prompt_id=prompt_id, prompt=prompt, mode="code")
       await self.connector.send_update_context_files()
       self.connector.file_watcher.start()
 
@@ -222,18 +532,21 @@ class ConnectorInputOutput(InputOutput):
         wait_for_async(self.connector, self.connector.send_log_message("loading", "Processing request..."))
         self.connector.loop.create_task(process_changes())
 
-def create_coder(connector):
+def create_base_coder(connector):
   coder = cli_main(return_coder=True)
   if not isinstance(coder, Coder):
     raise ValueError(coder)
   if not coder.repo:
     raise ValueError("WebsocketConnector can currently only be used inside a git repo")
 
+  return coder
+
+def create_io(connector, coder, prompt_id=None):
   io = ConnectorInputOutput(
     connector=connector,
+    prompt_id=prompt_id,
     pretty=False,
     yes=None,
-    input_history_file=coder.io.input_history_file,
     chat_history_file=coder.io.chat_history_file,
     input=coder.io.input,
     output=coder.io.output,
@@ -253,11 +566,12 @@ def create_coder(connector):
     editingmode=coder.io.editingmode,
     fancy_input=False
   )
+
   coder.commands.io = io
   coder.io = io
   coder.repo.io = io
 
-  return coder
+  return io
 
 class Connector:
   def __init__(self, base_dir, watch_files=False, server_url="http://localhost:24337", reasoning_effort=None, thinking_tokens=None):
@@ -266,18 +580,21 @@ class Connector:
     self.reasoning_effort = reasoning_effort
     self.thinking_tokens = thinking_tokens
 
-    self.coder = create_coder(self)
+    # Create initial coder for setup and non-prompt operations
+    self.coder = create_base_coder(self)
     if reasoning_effort is not None:
       self.coder.main_model.set_reasoning_effort(reasoning_effort)
     if thinking_tokens is not None:
       self.coder.main_model.set_thinking_tokens(thinking_tokens)
 
-    self.coder.yield_stream = True
-    self.coder.stream = True
     self.coder.pretty = False
     self.monkey_patch_coder_functions(self.coder)
-    self.running_coder = None
-    self.interrupted = False
+
+    self.io = create_io(self, self.coder)
+
+    # Initialize prompt executor
+    self.prompt_executor = PromptExecutor(self)
+
     self.current_tokenization_future = None
     self.tokenization_executor = None
 
@@ -306,28 +623,28 @@ class Connector:
 
     original_lint_edited = coder.lint_edited
     def _patched_lint_edited(coder_instance, fnames):
-        # Add loading message before linting
-        wait_for_async(self, self.send_log_message("loading", "Linting..."))
-        # Call the original Coder.lint_edited logic
-        result = original_lint_edited(fnames)
-        # Finish the loading message after linting
-        wait_for_async(self, self.send_log_message("loading", "Linting...", True))
-        return result
+      # Add loading message before linting
+      wait_for_async(self, self.send_log_message("loading", "Linting..."))
+      # Call the original Coder.lint_edited logic
+      result = original_lint_edited(fnames)
+      # Finish the loading message after linting
+      wait_for_async(self, self.send_log_message("loading", "Linting...", True))
+      return result
 
     # Replace the original lint_edited method with the patched version
     coder.lint_edited = types.MethodType(_patched_lint_edited, coder)
 
     original_cmd_test = coder.commands.cmd_test
     def _patched_cmd_test(coder_commands_instance, args):
-        # self here is the Connector instance
-        # coder_commands_instance is the Commands instance (coder.commands)
-        self.coder.io.running_shell_command = True
-        self.coder.io.tool_output("Running " + args if args else "Running " + self.coder.test_cmd)
-        try:
-            result = original_cmd_test(args)
-        finally:
-            self.coder.io.running_shell_command = False
-        return result
+      # self here is the Connector instance
+      # coder_commands_instance is the Commands instance (coder.commands)
+      coder.io.running_shell_command = True
+      coder.io.tool_output("Running " + args if args else "Running " + self.coder.test_cmd)
+      try:
+        result = original_cmd_test(args)
+      finally:
+        coder.io.running_shell_command = False
+      return result
 
     # Replace the original run_test method with the patched version
     coder.commands.cmd_test = types.MethodType(_patched_cmd_test, coder.commands)
@@ -417,6 +734,10 @@ class Connector:
     """Handle disconnection event."""
     self.coder.io.tool_output("DISCONNECTED FROM SERVER")
 
+    # Shutdown prompt executor
+    if self.prompt_executor:
+      await self.prompt_executor.shutdown()
+
     tokenization_executor = self.tokenization_executor
     self.tokenization_executor = None
     if tokenization_executor:
@@ -463,20 +784,17 @@ class Connector:
         mode = message.get('mode')
         architect_model = message.get('architectModel')
         prompt_id = message.get('promptId')
-        clear_context = message.get('clearContext')
-        clear_files = message.get('clearFiles')
+        messages = message.get('messages', [])
+        files = message.get('files', [])
 
         if not prompt:
           return json.dumps({"success": True})
 
-        try:
-            await self.run_prompt(prompt, mode, architect_model, prompt_id, clear_context, clear_files)
-        finally:
-            if prompt_id:
-                await self.send_action({
-                    "action": "prompt-finished",
-                    "promptId": prompt_id
-                })
+        # Generate prompt ID if not provided
+        if not prompt_id:
+          prompt_id = str(uuid.uuid4())
+
+        await self.prompt_executor.run_prompt(prompt_id, prompt, mode, architect_model, messages, files)
 
       elif action == "answer-question":
         global confirmation_result
@@ -502,32 +820,37 @@ class Connector:
         await self.drop_file(path, no_update)
 
       elif action == "set-models":
-        main_model = message.get('mainModel')
-        weak_model = message.get('weakModel')
-        edit_format = message.get('editFormat')
-        if not main_model:
-          return
+        try:
+          main_model = message.get('mainModel')
+          weak_model = message.get('weakModel')
+          edit_format = message.get('editFormat')
+          if not main_model:
+            return
 
-        model = models.Model(main_model, weak_model=weak_model)
-        models.sanity_check_models(self.coder.io, model)
+          model = models.Model(main_model, weak_model=weak_model)
 
-        if not edit_format:
-          edit_format = model.edit_format
+          if not edit_format:
+            edit_format = model.edit_format
 
-        model.set_reasoning_effort(self.coder.main_model.get_reasoning_effort())
-        model.set_thinking_tokens(self.coder.main_model.get_thinking_tokens())
+          model.set_reasoning_effort(self.coder.main_model.get_reasoning_effort())
+          model.set_thinking_tokens(self.coder.main_model.get_thinking_tokens())
 
-        self.coder = Coder.create(
-          from_coder=self.coder,
-          main_model=model,
-          edit_format=edit_format,
-          summarize_from_coder=False
-        )
-        self.monkey_patch_coder_functions(self.coder)
-        for line in self.coder.get_announcements():
-          self.coder.io.tool_output(line)
-        await self.send_current_models()
-        await self.send_tokens_info()
+          self.coder = Coder.create(
+            from_coder=self.coder,
+            main_model=model,
+            edit_format=edit_format,
+            summarize_from_coder=False
+          )
+          self.monkey_patch_coder_functions(self.coder)
+          create_io(self, self.coder)
+
+          for line in self.coder.get_announcements():
+            self.io.tool_output(line)
+
+          await self.send_current_models()
+          await self.send_tokens_info()
+        except Exception as e:
+          self.io.tool_error(f"Error setting models: {str(e)}")
 
       elif action == "run-command":
         command = message.get('command')
@@ -554,8 +877,9 @@ class Connector:
         await self.send_tokens_info()
 
       elif action == "interrupt-response":
-        self.interrupted = True
-        self.coder.io.tool_output("INTERRUPTING RESPONSE")
+        # Interrupt all active prompts
+        self.coder.io.tool_output("INTERRUPTING ALL RESPONSES")
+        await self.prompt_executor.interrupt_all_prompts()
 
       elif action == "apply-edits":
         edits = message.get('edits')
@@ -590,165 +914,6 @@ class Connector:
 
   def reset_before_action(self):
     self.coder.io.reset_state()
-    self.interrupted = False
-
-  async def run_prompt(self, prompt, mode=None, architect_model=None, prompt_id=None, clear_context=False, clear_files=False):
-    self.coder.io.add_to_input_history(prompt)
-
-    coder_model = self.coder.main_model
-
-    if (mode and mode != "code") or clear_context or clear_files:
-      running_model = self.coder.main_model
-      if mode == "architect" and architect_model:
-        running_model = models.Model(architect_model, weak_model=coder_model.weak_model.name, editor_model=coder_model.name)
-        models.sanity_check_models(self.coder.io, running_model)
-
-      self.running_coder = Coder.create(
-        from_coder=self.coder,
-        edit_format=mode,
-        main_model=running_model,
-        summarize_from_coder=False,
-      )
-      self.monkey_patch_coder_functions(self.running_coder)
-
-      if clear_context:
-        self.running_coder.cur_messages = []
-        self.running_coder.done_messages = []
-
-      if clear_files:
-        self.running_coder.abs_fnames = []
-        self.running_coder.abs_read_only_fnames = []
-
-      # we need to disable auto accept as this does not work properly with AiderDesk
-      self.running_coder.auto_accept_architect=False
-    else:
-      self.running_coder = self.coder
-
-    # setting usage report to None to avoid no attribute error
-    self.running_coder.usage_report = None
-
-    global whole_content
-    whole_content = ""
-
-    async def run_stream_async():
-      try:
-        for chunk in self.running_coder.run_stream(prompt):
-          # add small sleeps here to allow other coroutines to run
-          await asyncio.sleep(0.01)
-          if self.interrupted:
-            break
-          else:
-            yield chunk
-      except Exception as e:
-        self.coder.io.tool_error(str(e))
-
-    async for chunk in run_stream_async():
-      whole_content += chunk
-      await self.send_action({
-        "action": "response",
-        "finished": False,
-        "content": chunk
-      }, False)
-
-    if not whole_content:
-      # if there was no content, use the partial_response_content value (case for non streaming models)
-      whole_content = self.running_coder.partial_response_content
-
-    # Send final response with complete data
-    response_data = {
-      "action": "response",
-      "content": whole_content,
-      "finished": True,
-      "editedFiles": list(self.running_coder.aider_edited_files),
-      "usageReport": self.running_coder.usage_report
-    }
-
-    # Add commit info if there was one
-    if self.running_coder.last_aider_commit_hash:
-      response_data.update({
-        "commitHash": self.running_coder.last_aider_commit_hash,
-        "commitMessage": self.running_coder.last_aider_commit_message,
-      })
-      # Add diff if there was a commit
-      commits = f"{self.running_coder.last_aider_commit_hash}~1"
-      diff = self.running_coder.repo.diff_commits(
-        self.running_coder.pretty,
-        commits,
-        self.running_coder.last_aider_commit_hash,
-      )
-      response_data["diff"] = diff
-    await self.send_action(response_data)
-
-    if self.interrupted:
-      self.running_coder.cur_messages += [dict(role="assistant", content=whole_content + " (interrupted)")]
-
-    if self.running_coder != self.coder:
-      cur_messages = self.coder.cur_messages if clear_context else self.running_coder.cur_messages
-      done_messages = self.coder.done_messages if clear_context else self.running_coder.done_messages
-
-      self.coder = Coder.create(
-        edit_format=self.coder.edit_format,
-        summarize_from_coder=False,
-        main_model=coder_model,
-        from_coder=self.running_coder,
-        cur_messages=cur_messages,
-        done_messages=done_messages,
-      )
-      self.monkey_patch_coder_functions(self.coder)
-
-    await self.send_update_context_files()
-
-    # Check for reflections
-    if self.running_coder.reflected_message:
-      current_reflection = 0
-      while self.running_coder.reflected_message and not self.interrupted:
-        if current_reflection >= self.coder.max_reflections:
-          self.coder.io.tool_warning(f"Only {str(self.coder.max_reflections)} reflections allowed, stopping.")
-          break
-
-        prompt = self.running_coder.reflected_message
-        await self.send_log_message("loading", "Reflecting message...")
-
-        # use default coder to run the reflection
-        self.running_coder = self.coder
-        whole_content = ""
-        async for chunk in run_stream_async():
-          whole_content += chunk
-          await self.send_action({
-            "action": "response",
-            "reflectedMessage": prompt,
-            "finished": False,
-            "content": chunk
-          }, False)
-
-        response_data = {
-          "action": "response",
-          "content": whole_content,
-          "reflected_message": prompt,
-          "finished": True,
-          "editedFiles": list(self.running_coder.aider_edited_files),
-          "usageReport": self.running_coder.usage_report
-        }
-
-        await self.send_action(response_data)
-
-        if self.interrupted:
-          self.running_coder.cur_messages += [dict(role="assistant", content=whole_content + " (interrupted)")]
-
-        await self.send_update_context_files()
-        current_reflection += 1
-
-    self.running_coder = None
-    await self.send_tokens_info()
-    await self.send_repo_map()
-    await self.send_autocompletion()
-
-    # Send prompt-finished message if we have a prompt ID
-    if prompt_id:
-      await self.send_action({
-        "action": "prompt-finished",
-        "promptId": prompt_id
-      })
 
   async def update_environment_variables(self, environment_variables):
     """Update environment variables for the Aider process"""
@@ -799,7 +964,7 @@ class Connector:
       if parts[1] == "none":
         # Safely remove 'reasoning_effort' if it exists
         if self.coder.main_model.extra_params and "extra_body" in self.coder.main_model.extra_params:
-            self.coder.main_model.extra_params["extra_body"].pop("reasoning_effort", None)
+          self.coder.main_model.extra_params["extra_body"].pop("reasoning_effort", None)
         self.reasoning_effort = None
         await asyncio.sleep(0.1)
         await self.send_current_models()
@@ -892,13 +1057,13 @@ class Connector:
 
         # Schedule the synchronous tokenization function in an executor
         self.current_tokenization_future = self.loop.run_in_executor(
-            self.get_tokenization_executor(),
-            self._tokenize_files_sync,
-            self.coder.root,
-            rel_fnames,
-            self.coder.get_addable_relative_files(),
-            self.coder.io.encoding,
-            self.coder.abs_read_only_fnames
+          self.get_tokenization_executor(),
+          self._tokenize_files_sync,
+          self.coder.root,
+          rel_fnames,
+          self.coder.get_addable_relative_files(),
+          self.coder.io.encoding,
+          self.coder.abs_read_only_fnames
         )
 
         # Define a callback to handle the result of the tokenization
@@ -937,7 +1102,7 @@ class Connector:
           # Remove the prefix before sending
           prefix = self.coder.gpt_prompts.repo_content_prefix
           if repo_map.startswith(prefix):
-              repo_map = repo_map[len(prefix):]
+            repo_map = repo_map[len(prefix):]
 
           await self.sio.emit("message", {
             "action": "update-repo-map",

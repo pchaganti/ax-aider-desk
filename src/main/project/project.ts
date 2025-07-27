@@ -611,14 +611,17 @@ export class Project {
     return await this.agent.runAgent(this, profile, prompt, [], contextFiles, systemPrompt, abortSignal);
   }
 
-  public sendPrompt(prompt: string, mode?: Mode, clearContext = false, clearFiles = false): Promise<ResponseCompletedData[]> {
+  public sendPrompt(prompt: string, mode?: Mode, messages?: { role: MessageRole; content: string }[], files?: ContextFile[]): Promise<ResponseCompletedData[]> {
     this.currentPromptResponses = [];
     this.currentResponseMessageId = null;
     this.currentPromptId = uuidv4();
 
-    this.findMessageConnectors('prompt').forEach((connector) =>
-      connector.sendPromptMessage(prompt, mode, this.getArchitectModel(), this.currentPromptId, clearContext, clearFiles),
-    );
+    const connectorMessages = messages || this.sessionManager.toConnectorMessages();
+    const contextFiles = files || this.sessionManager.getContextFiles();
+
+    this.findMessageConnectors('prompt').forEach((connector) => {
+      connector.sendPromptMessage(prompt, mode, this.getArchitectModel(), this.currentPromptId, connectorMessages, contextFiles);
+    });
 
     // Wait for prompt to finish and return collected responses
     return new Promise((resolve) => {
@@ -654,15 +657,11 @@ export class Project {
     }
   }
 
-  public processResponseMessage(message: ResponseMessage, forceNewId = false) {
-    if (!this.currentResponseMessageId || forceNewId) {
-      this.currentResponseMessageId = uuidv4();
-    }
-
+  public processResponseMessage(message: ResponseMessage) {
     if (!message.finished) {
       logger.debug(`Sending response chunk to ${this.baseDir}`);
       const data: ResponseChunkData = {
-        messageId: message.id || this.currentResponseMessageId,
+        messageId: message.id,
         baseDir: this.baseDir,
         chunk: message.content,
         reflectedMessage: message.reflectedMessage,
@@ -679,7 +678,7 @@ export class Project {
         : undefined;
 
       if (usageReport) {
-        this.dataManager.saveMessage(message.id || this.currentResponseMessageId, 'assistant', this.baseDir, usageReport.model, usageReport, message.content);
+        this.dataManager.saveMessage(message.id, 'assistant', this.baseDir, usageReport.model, usageReport, message.content);
       }
 
       if (usageReport) {
@@ -687,7 +686,7 @@ export class Project {
         this.updateTotalCosts(usageReport);
       }
       const data: ResponseCompletedData = {
-        messageId: message.id || this.currentResponseMessageId,
+        messageId: message.id,
         content: message.content,
         reflectedMessage: message.reflectedMessage,
         baseDir: this.baseDir,
@@ -705,8 +704,6 @@ export class Project {
       // Collect the completed response
       this.currentPromptResponses.push(data);
     }
-
-    return this.currentResponseMessageId;
   }
 
   addResponseCompletedMessage(data: ResponseCompletedData) {
@@ -1127,6 +1124,7 @@ export class Project {
 
     this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
     this.agent.interrupt();
+    this.promptFinished();
   }
 
   public applyEdits(edits: FileEdit[]) {
@@ -1284,7 +1282,7 @@ export class Project {
       // After compaction, update estimated tokens
       await this.updateAgentEstimatedTokens();
     } else {
-      const responses = await this.sendPrompt(getCompactConversationPrompt(customInstructions), 'ask', false, true);
+      const responses = await this.sendPrompt(getCompactConversationPrompt(customInstructions), 'ask', undefined, []);
 
       // add messages to session
       this.sessionManager.setContextMessages([userMessage], false);

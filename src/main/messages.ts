@@ -61,12 +61,12 @@ export interface PromptMessage extends Message {
   mode: Mode | null;
   architectModel: string | null;
   promptId?: string | null;
-  clearContext?: boolean;
-  clearFiles?: boolean;
+  messages?: { role: MessageRole; content: string }[];
+  files?: ContextFile[];
 }
 
 export interface ResponseMessage extends Message {
-  id?: string | null;
+  id: string;
   action: 'response';
   content: string;
   reflectedMessage?: string;

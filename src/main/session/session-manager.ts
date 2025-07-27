@@ -1,6 +1,7 @@
 import path from 'path';
 import { promises as fs } from 'fs';
 
+import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, SessionData } from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
@@ -360,6 +361,7 @@ export class SessionManager {
           for (const part of message.content) {
             if (part.type === 'text' && part.text) {
               this.project.processResponseMessage({
+                id: uuidv4(),
                 action: 'response',
                 content: part.text,
                 finished: true,
@@ -378,6 +380,7 @@ export class SessionManager {
         } else if (isTextContent(message.content)) {
           const content = extractTextContent(message.content);
           this.project.processResponseMessage({
+            id: uuidv4(),
             action: 'response',
             content: content,
             finished: true,
@@ -415,6 +418,7 @@ export class SessionManager {
                       for (const subPart of subMessage.content) {
                         if (subPart.type === 'text' && subPart.text) {
                           this.project.processResponseMessage({
+                            id: uuidv4(),
                             action: 'response',
                             content: subPart.text,
                             finished: true,
@@ -427,6 +431,7 @@ export class SessionManager {
                     } else if (isTextContent(subMessage.content)) {
                       const content = extractTextContent(subMessage.content);
                       this.project.processResponseMessage({
+                        id: uuidv4(),
                         action: 'response',
                         content: content,
                         finished: true,
