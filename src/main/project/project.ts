@@ -153,9 +153,6 @@ export class Project {
       });
     });
 
-    void this.runAider();
-    void this.sendInputHistoryUpdatedEvent();
-
     this.agentTotalCost = 0;
     this.aiderTotalCost = 0;
     this.currentPromptId = null;
@@ -165,7 +162,9 @@ export class Project {
     this.currentQuestionResolves = [];
     this.questionAnswers.clear();
 
-    void this.updateAgentEstimatedTokens();
+    await Promise.all([this.runAider(), this.sendInputHistoryUpdatedEvent(), this.updateAgentEstimatedTokens()]);
+
+    this.mainWindow.webContents.send('project-started', this.baseDir);
   }
 
   public addConnector(connector: Connector) {

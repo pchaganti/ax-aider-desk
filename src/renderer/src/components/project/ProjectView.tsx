@@ -113,7 +113,10 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   }, [projectSettings, settings]);
 
   useEffect(() => {
-    window.api.startProject(project.baseDir);
+    const handleProjectStarted = () => {
+      setLoading(false);
+    };
+    const projectStartedListenerId = window.api.addProjectStartedListener(project.baseDir, handleProjectStarted);
 
     // Load existing todos
     const loadTodos = async () => {
@@ -126,9 +129,11 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
+    window.api.startProject(project.baseDir);
     void loadTodos();
 
     return () => {
+      window.api.removeProjectStartedListener(projectStartedListenerId);
       window.api.stopProject(project.baseDir);
     };
   }, [project.baseDir]);
@@ -497,7 +502,6 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const clearSession = () => {
-    setLoading(true);
     setMessages([]);
     setAiderTotalCost(0);
     setProcessing(false);
@@ -648,6 +652,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
   };
 
   const restartProject = () => {
+    setLoading(true);
     void window.api.restartProject(project.baseDir);
     clearSession();
   };
