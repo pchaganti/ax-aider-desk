@@ -9,14 +9,15 @@ import {
   AddMessageMessage,
   AnswerQuestionMessage,
   ApplyEditsMessage,
+  CompactConversationMessage,
   DropFileMessage,
   InterruptResponseMessage,
   Message,
   MessageAction,
   PromptMessage,
+  RequestTokensInfoMessage,
   RunCommandMessage,
   SetModelsMessage,
-  CompactConversationMessage,
   UpdateEnvVarsMessage,
 } from '@/messages';
 
@@ -149,6 +150,15 @@ export class Connector {
     const message: UpdateEnvVarsMessage = {
       action: 'update-env-vars',
       environmentVariables,
+    };
+    this.sendMessage(message);
+  }
+
+  public sendRequestTokensInfoMessage(messages: { role: MessageRole; content: string }[], files: ContextFile[]) {
+    const message: RequestTokensInfoMessage = {
+      action: 'request-tokens-info',
+      messages,
+      files,
     };
     this.sendMessage(message);
   }

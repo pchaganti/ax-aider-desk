@@ -26,11 +26,18 @@ confirmation_result = None
 
 def wait_for_async(connector, coroutine):
   try:
-    future = asyncio.run_coroutine_threadsafe(coroutine, connector.loop)
-    result = future.result()
-    return result
+    if threading.current_thread() is threading.main_thread():
+      # Called from the main thread
+      task = connector.loop.create_task(coroutine)
+      result = connector.loop.run_until_complete(task)
+      return result
+    else:
+      # Called from another thread
+      future = asyncio.run_coroutine_threadsafe(coroutine, connector.loop)
+      result = future.result()
+      return result
   except Exception as e:
-    connector.coder.io.tool_output(f'EXCEPTION: {e}')
+    sys.stderr.write(f"Error in wait_for_async: {str(e)}\n")
     return None
 
 class PromptExecutor:
@@ -134,18 +141,14 @@ class PromptExecutor:
       if mode == "architect" and architect_model:
         running_model = models.Model(architect_model, weak_model=coder_model.weak_model.name, editor_model=coder_model.name)
 
-      coder = Coder.create(
-        from_coder=self.connector.coder,
+      coder = clone_coder(
+        self.connector,
+        self.connector.coder,
+        prompt_id,
         edit_format=mode,
         main_model=running_model,
-        summarize_from_coder=False,
       )
       self.active_coders[prompt_id] = coder
-      self.connector.monkey_patch_coder_functions(coder)
-
-      create_io(self.connector, coder, prompt_id)
-
-      # models.sanity_check_models(coder.io, running_model)
 
     if messages is not None:
       # Set messages from the provided data
@@ -210,7 +213,7 @@ class PromptExecutor:
     if whole_content or not self.is_prompt_interrupted(prompt_id):
       await self.connector.send_action(response_data)
 
-    # await self.connector.send_update_context_files()
+    await self.connector.send_update_context_files(coder)
 
     # Check for reflections
     if coder.reflected_message:
@@ -233,7 +236,7 @@ class PromptExecutor:
           "id": response_id,
           "action": "response",
           "content": whole_content,
-          "reflected_message": reflection_prompt,
+          "reflectedMessage": reflection_prompt,
           "finished": True,
           "editedFiles": list(coder.aider_edited_files),
           "usageReport": get_usage_report()
@@ -249,7 +252,7 @@ class PromptExecutor:
       self.connector.coder.total_cost = coder.total_cost
       self.connector.coder.aider_commit_hashes = coder.aider_commit_hashes
 
-    await self.connector.send_tokens_info()
+    # await self.connector.send_tokens_info()
     await self.connector.send_repo_map()
     await self.connector.send_autocompletion()
 
@@ -268,10 +271,10 @@ class PromptExecutor:
       await prompt_coro
     except asyncio.CancelledError:
       # This is the clean way to handle cancellation.
-      self.connector.coder.io.tool_output(f"Prompt {prompt_id} was cancelled.")
+      self.connector.io.tool_output(f"Prompt {prompt_id} was cancelled.")
       # You could add more specific cleanup logic here if needed.
     except Exception as e:
-      self.connector.coder.io.tool_error(f"Error in prompt task {prompt_id}: {str(e)}")
+      self.connector.io.tool_error(f"Error in prompt task {prompt_id}: {str(e)}")
       # Potentially re-raise or handle as needed
       raise
     finally:
@@ -315,7 +318,7 @@ class PromptExecutor:
       except asyncio.CancelledError:
         pass # Expected
 
-      self.connector.coder.io.tool_output(f"Cancellation request sent to prompt {prompt_id}.")
+      self.connector.io.tool_output(f"Cancellation request sent to prompt {prompt_id}.")
       return True
     return False
 
@@ -324,7 +327,7 @@ class PromptExecutor:
     # Create a copy of keys to avoid issues with modifying the dict while iterating
     prompt_ids = list(self.active_prompts.keys())
     if prompt_ids:
-      self.connector.coder.io.tool_output("Interrupting all active prompts...")
+      self.connector.io.tool_output("Interrupting all active prompts...")
       await asyncio.gather(*(self.cancel_prompt(pid) for pid in prompt_ids))
 
   def is_prompt_interrupted(self, prompt_id: str) -> bool:
@@ -338,29 +341,26 @@ class PromptExecutor:
     """Shutdown the executor by cancelling all active tasks."""
     await self.interrupt_all_prompts()
 
-async def run_editor_coder_stream(architect_coder, connector, prompt_id: str):
+async def run_editor_coder_stream(architect_coder, connector, prompt_id):
   # Use the editor_model from the main_model if it exists, otherwise use the main_model itself
   editor_model = architect_coder.main_model.editor_model or architect_coder.main_model
-
-  kwargs = dict()
-  kwargs["main_model"] = editor_model
-  kwargs["edit_format"] = architect_coder.main_model.editor_edit_format
-  kwargs["suggest_shell_commands"] = False
-  kwargs["map_tokens"] = 0
-  kwargs["total_cost"] = architect_coder.total_cost
-  kwargs["cache_prompts"] = False
-  kwargs["num_cache_warming_pings"] = 0
-  kwargs["summarize_from_coder"] = False
-
-  new_kwargs = dict(io=architect_coder.io, from_coder=architect_coder)
-  new_kwargs.update(kwargs)
-
-  editor_coder = Coder.create(**new_kwargs)
-  editor_coder.cur_messages = []
-  editor_coder.done_messages = []
-
   # Generate a unique prompt ID for the editor coder
   editor_prompt_id = str(uuid.uuid4())
+
+  editor_coder = clone_coder(
+    connector,
+    architect_coder,
+    editor_prompt_id,
+    main_model=editor_model,
+    edit_format=architect_coder.main_model.editor_edit_format,
+    suggest_shell_commands=False,
+    map_tokens=0,
+    total_cost=architect_coder.total_cost,
+    cache_prompts=False,
+    num_cache_warming_pings=0,
+  )
+  editor_coder.cur_messages = []
+  editor_coder.done_messages = []
 
   # Start the prompt execution (non-blocking)
   await connector.prompt_executor.run_prompt(
@@ -444,6 +444,7 @@ class ConnectorInputOutput(InputOutput):
       return
     super().tool_error(message, strip)
     if self.connector and not self.is_error_ignored(message):
+      sys.stderr.write(f"ERROR: {message}\n")
       wait_for_async(self.connector, self.connector.send_log_message("error", message))
 
   def confirm_ask(
@@ -506,7 +507,7 @@ class ConnectorInputOutput(InputOutput):
     return result == "y" or result == "a"
 
   def reset_state(self):
-    if (self.current_command):
+    if self.current_command:
       wait_for_async(self.connector, self.connector.send_action({
         "action": "use-command-output",
         "command": self.current_command,
@@ -531,6 +532,16 @@ class ConnectorInputOutput(InputOutput):
         wait_for_async(self.connector, self.connector.send_log_message("info", f"Detected AI request in files: {changed_files}."))
         wait_for_async(self.connector, self.connector.send_log_message("loading", "Processing request..."))
         self.connector.loop.create_task(process_changes())
+
+def clone_coder(connector, coder, prompt_id=None, **kwargs):
+  kwargs["from_coder"] = coder
+  kwargs["summarize_from_coder"] = False
+
+  coder = Coder.create(**kwargs)
+  create_io(connector, coder, prompt_id)
+  connector.monkey_patch_coder_functions(coder)
+
+  return coder
 
 def create_base_coder(connector):
   coder = cli_main(return_coder=True)
@@ -580,6 +591,12 @@ class Connector:
     self.reasoning_effort = reasoning_effort
     self.thinking_tokens = thinking_tokens
 
+    try:
+      self.loop = asyncio.get_event_loop()
+    except RuntimeError:
+      self.loop = asyncio.new_event_loop()
+      asyncio.set_event_loop(self.loop)
+
     # Create initial coder for setup and non-prompt operations
     self.coder = create_base_coder(self)
     if reasoning_effort is not None:
@@ -607,12 +624,6 @@ class Connector:
 
       self.file_watcher = FileWatcher(self.coder, gitignores=ignores)
       self.file_watcher.start()
-
-    try:
-      self.loop = asyncio.get_event_loop()
-    except RuntimeError:
-      self.loop = asyncio.new_event_loop()
-      asyncio.set_event_loop(self.loop)
 
     self.sio = socketio.AsyncClient()
     self._register_events()
@@ -669,26 +680,25 @@ class Connector:
 
   async def on_connect(self):
     """Handle connection event."""
-    self.coder.io.tool_output("CONNECTED TO SERVER")
+    self.io.tool_output("CONNECTED TO SERVER")
+
     await self.send_action({
-      'action': 'init',
+      "action": 'init',
       'baseDir': self.base_dir,
       'listenTo': [
         'prompt',
-        'add-file',
-        'set-files',
-        'drop-file',
         'answer-question',
         'set-models',
+        'request-tokens-info',
         'run-command',
-        'add-message',
         'interrupt-response',
         'apply-edits',
         'update-env-vars'
       ],
-      'inputHistoryFile': self.coder.io.input_history_file
+      'contextFiles': self.get_context_files(),
+      'inputHistoryFile': self.io.input_history_file
     })
-    await self.send_update_context_files()
+    # await self.send_update_context_files()
     await self.send_current_models()
     await self.send_repo_map()
     await self.send_autocompletion()
@@ -707,7 +717,7 @@ class Connector:
         "models": all_models
       })
     except Exception as e:
-      self.coder.io.tool_error(f"Error sending tokenized autocompletion: {str(e)}")
+      self.io.tool_error(f"Error sending tokenized autocompletion: {str(e)}")
 
   def _tokenize_files_sync(self, root, rel_fnames, addable_rel_fnames, encoding, abs_read_only_fnames):
     """Synchronous helper function for file tokenization."""
@@ -724,15 +734,15 @@ class Connector:
       # Return tokenized words
       return [word[0] if isinstance(word, tuple) else word for word in auto_completer.words]
     except Exception as e:
-      self.coder.io.tool_error(f"Error during tokenization: {str(e)}")
+      self.io.tool_error(f"Error during tokenization: {str(e)}")
       return []
 
   async def on_message(self, data):
-    await self.process_message(data)
+    await asyncio.create_task(self.process_message(data))
 
   async def on_disconnect(self):
     """Handle disconnection event."""
-    self.coder.io.tool_output("DISCONNECTED FROM SERVER")
+    self.io.tool_output("DISCONNECTED FROM SERVER")
 
     # Shutdown prompt executor
     if self.prompt_executor:
@@ -800,25 +810,6 @@ class Connector:
         global confirmation_result
         confirmation_result = message.get('answer')
 
-      elif action == "add-file":
-        path = message.get('path')
-        if not path:
-          return
-
-        read_only = message.get('readOnly')
-        no_update = message.get('noUpdate')
-
-        await self.add_file(path, read_only, no_update)
-
-      elif action == "drop-file":
-        path = message.get('path')
-        if not path:
-          return
-
-        no_update = message.get('noUpdate')
-
-        await self.drop_file(path, no_update)
-
       elif action == "set-models":
         try:
           main_model = message.get('mainModel')
@@ -835,20 +826,14 @@ class Connector:
           model.set_reasoning_effort(self.coder.main_model.get_reasoning_effort())
           model.set_thinking_tokens(self.coder.main_model.get_thinking_tokens())
 
-          self.coder = Coder.create(
-            from_coder=self.coder,
-            main_model=model,
-            edit_format=edit_format,
-            summarize_from_coder=False
-          )
-          self.monkey_patch_coder_functions(self.coder)
-          create_io(self, self.coder)
+          self.coder = clone_coder(self, self.coder, main_model=model, edit_format=edit_format)
+
+          await asyncio.to_thread(models.sanity_check_models, self.io, model)
 
           for line in self.coder.get_announcements():
             self.io.tool_output(line)
 
           await self.send_current_models()
-          await self.send_tokens_info()
         except Exception as e:
           self.io.tool_error(f"Error setting models: {str(e)}")
 
@@ -859,26 +844,9 @@ class Connector:
 
         await self.run_command(command)
 
-      elif action == "add-message":
-        content = message.get('content')
-        if not content:
-          return
-
-        role = message.get('role', 'user')
-        acknowledge = message.get('acknowledge', True)
-
-        self.coder.done_messages += [
-          dict(role=role, content=content)
-        ]
-        if role == "user" and acknowledge:
-          self.coder.done_messages += [
-            dict(role="assistant", content="Ok."),
-          ]
-        await self.send_tokens_info()
-
       elif action == "interrupt-response":
         # Interrupt all active prompts
-        self.coder.io.tool_output("INTERRUPTING ALL RESPONSES")
+        self.io.tool_output("INTERRUPTING ALL RESPONSES")
         await self.prompt_executor.interrupt_all_prompts()
 
       elif action == "apply-edits":
@@ -889,8 +857,6 @@ class Connector:
         edit_tuples = [(edit['path'], edit['original'], edit['updated']) for edit in edits]
         self.coder.apply_edits(edit_tuples)
         await self.send_log_message("info", "Files have been updated." if len(edits) > 1 else "File has been updated.")
-        await self.send_update_context_files()
-        await self.send_tokens_info()
 
       elif action == "update-env-vars":
         environment_variables = message.get('environmentVariables')
@@ -900,6 +866,9 @@ class Connector:
           main_model = models.Model(self.coder.main_model.name, weak_model=self.coder.main_model.weak_model.name)
           self.coder.main_model = main_model
 
+      elif action == "request-tokens-info":
+        await self.send_tokens_info(message.get('messages'), message.get('files'))
+
       else:
         return json.dumps({
           "error": f"Unknown action: {action}"
@@ -907,13 +876,13 @@ class Connector:
 
       return json.dumps({"success": True})
     except Exception as e:
-      self.coder.io.tool_error(f"Exception in connector: {str(e)}")
+      self.io.tool_error(f"Exception in connector: {str(e)}")
       return json.dumps({
         "error": str(e)
       })
 
   def reset_before_action(self):
-    self.coder.io.reset_state()
+    self.io.reset_state()
 
   async def update_environment_variables(self, environment_variables):
     """Update environment variables for the Aider process"""
@@ -924,27 +893,6 @@ class Connector:
           os.environ[key] = str(value)
     except Exception as e:
       await self.send_log_message("error", f"Failed to update environment variables: {str(e)}")
-
-  async def add_file(self, path, read_only, no_update=False):
-    """Add a file to the coder's tracked files"""
-    if read_only:
-      self.coder.commands.cmd_read_only("\"" + path + "\"")
-    else:
-      self.coder.commands.cmd_add("\"" + path + "\"")
-
-    if not no_update:
-      await self.send_update_context_files()
-      await self.send_tokens_info()
-      await self.send_autocompletion()
-
-  async def drop_file(self, path, no_update=False):
-    """Drop a file from the coder's tracked files"""
-    self.coder.commands.cmd_drop("\"" + path + "\"")
-
-    if not no_update:
-      await self.send_update_context_files()
-      await self.send_tokens_info()
-      await self.send_autocompletion()
 
   async def run_command(self, command):
     if command.startswith("/map"):
@@ -972,13 +920,13 @@ class Connector:
       self.reasoning_effort = parts[1]
 
     if command.startswith("/test ") or command.startswith("/run "):
-      self.coder.io.running_shell_command = True
-      self.coder.io.tool_output("Running " + command.split(" ", 1)[1])
+      self.io.running_shell_command = True
+      self.io.tool_output("Running " + command.split(" ", 1)[1])
     elif command.startswith("/tokens"):
-      self.coder.io.running_shell_command = True
-      self.coder.io.tool_output("Running /tokens")
+      self.io.running_shell_command = True
+      self.io.tool_output("Running /tokens")
     elif command.startswith("/commit"):
-      self.coder.io.processing_loading_message = True
+      self.io.processing_loading_message = True
       await self.send_log_message("loading", "Committing changes...")
 
     if command.startswith("/paste"):
@@ -999,14 +947,11 @@ class Connector:
     else:
       self.coder.commands.run(command)
 
-    self.coder.io.running_shell_command = False
-    self.coder.io.processing_loading_message = False
+    self.io.running_shell_command = False
+    self.io.processing_loading_message = False
     if command.startswith("/paste"):
       await asyncio.sleep(0.1)
       await self.send_update_context_files()
-    elif command.startswith("/clear"):
-      await asyncio.sleep(0.1)
-      await self.send_tokens_info()
     elif command.startswith("/map-refresh"):
       await asyncio.sleep(0.1)
       await self.send_log_message("info", "The repo map has been refreshed.")
@@ -1027,7 +972,6 @@ class Connector:
     elif command.startswith("/reset") or command.startswith("/drop"):
       await self.send_update_context_files()
       await self.send_autocompletion()
-      await self.send_tokens_info()
 
   async def send_autocompletion(self):
     if not self.sio:
@@ -1062,7 +1006,7 @@ class Connector:
           self.coder.root,
           rel_fnames,
           self.coder.get_addable_relative_files(),
-          self.coder.io.encoding,
+          self.io.encoding,
           self.coder.abs_read_only_fnames
         )
 
@@ -1079,14 +1023,14 @@ class Connector:
               )
             )
           except Exception as e:
-            self.coder.io.tool_error(f"Error retrieving tokenization result: {str(e)}")
+            self.io.tool_error(f"Error retrieving tokenization result: {str(e)}")
 
         # Add the callback to the future
         self.current_tokenization_future.add_done_callback(_on_tokenization_complete)
 
       # else: The initial message with just filenames is sufficient if too many files
     except Exception as e:
-      self.coder.io.tool_error(f"Error in send_autocompletion: {str(e)}")
+      self.io.tool_error(f"Error in send_autocompletion: {str(e)}")
       await self.sio.emit("message", {
         "action": "update-autocompletion",
         "words": [],
@@ -1109,46 +1053,49 @@ class Connector:
             "repoMap": repo_map
           })
       except Exception as e:
-        self.coder.io.tool_error(f"Error sending repo map: {str(e)}")
+        self.io.tool_error(f"Error sending repo map: {str(e)}")
 
+  def get_context_files(self, coder=None):
+    if not coder:
+      coder = self.coder
 
-  async def send_update_context_files(self):
-    if self.sio:
-      inchat_files = self.coder.get_inchat_relative_files()
-      read_only_files = [self.coder.get_rel_fname(fname) for fname in self.coder.abs_read_only_fnames]
+    inchat_files = coder.get_inchat_relative_files()
+    read_only_files = [coder.get_rel_fname(fname) for fname in coder.abs_read_only_fnames]
 
-      context_files = [
-                        {"path": fname, "readOnly": False} for fname in inchat_files
-                      ] + [
-                        {"path": fname, "readOnly": True} for fname in read_only_files
-                      ]
+    return [
+      {"path": fname, "readOnly": False} for fname in inchat_files
+    ] + [
+      {"path": fname, "readOnly": True} for fname in read_only_files
+    ]
 
-      await self.sio.emit("message", {
-        "action": "update-context-files",
-        "files": context_files
+  async def send_update_context_files(self, coder=None):
+    context_files = self.get_context_files(coder)
+    for file in context_files:
+      await self.send_action({
+        "action": "add-file",
+        "path": file["path"],
+        "readOnly": file["readOnly"]
       })
-      await asyncio.sleep(0.01)
 
   async def send_current_models(self):
-    if self.sio:
-      error = None
-      info = self.coder.main_model.info
+    error = None
+    info = self.coder.main_model.info
 
-      if self.coder.main_model.missing_keys:
-        error = "Missing keys for the model: " + ", ".join(self.coder.main_model.missing_keys)
+    if self.coder.main_model.missing_keys:
+      error = "Missing keys for the model: " + ", ".join(self.coder.main_model.missing_keys)
 
-      await self.sio.emit("message", {
-        "action": "set-models",
-        "mainModel": self.coder.main_model.name,
-        "weakModel": self.coder.main_model.weak_model.name,
-        "reasoningEffort": self.coder.main_model.get_reasoning_effort() if self.coder.main_model.get_reasoning_effort() is not None else self.reasoning_effort,
-        "thinkingTokens": self.coder.main_model.get_thinking_tokens() if self.coder.main_model.get_thinking_tokens() is not None else self.thinking_tokens,
-        "editFormat": self.coder.edit_format,
-        "info": info,
-        "error": error
-      })
+    await self.send_action({
+      "action": "set-models",
+      "mainModel": self.coder.main_model.name,
+      "weakModel": self.coder.main_model.weak_model.name,
+      "reasoningEffort": self.coder.main_model.get_reasoning_effort() if self.coder.main_model.get_reasoning_effort() is not None else self.reasoning_effort,
+      "thinkingTokens": self.coder.main_model.get_thinking_tokens() if self.coder.main_model.get_thinking_tokens() is not None else self.thinking_tokens,
+      "editFormat": self.coder.edit_format,
+      "info": info,
+      "error": error
+    })
 
-  async def send_tokens_info(self):
+  async def send_tokens_info(self, messages, files):
     cost_per_token = self.coder.main_model.info.get("input_cost_per_token") or 0
     info = {
       "files": {}
@@ -1172,8 +1119,9 @@ class Connector:
       "cost": tokens * cost_per_token,
     }
 
-    # chat history
-    msgs = self.coder.done_messages + self.coder.cur_messages
+    # Convert messages to the format expected by token_count
+    msgs = [dict(role=msg['role'], content=msg['content']) for msg in messages]
+
     if msgs:
       tokens = self.coder.main_model.token_count(msgs)
     else:
@@ -1183,10 +1131,25 @@ class Connector:
       "cost": tokens * cost_per_token,
     }
 
-    # repo map
-    other_files = set(self.coder.get_all_abs_files()) - set(self.coder.abs_fnames)
+    # Convert context_files to absolute file paths like coder does
+    abs_fnames = set()
+    abs_read_only_fnames = set()
+
+    for file in files:
+      file_path = file['path']
+      if not file_path.startswith(self.base_dir):
+        file_path = os.path.join(self.base_dir, file_path)
+
+      if file.get('readOnly', False):
+        abs_read_only_fnames.add(file_path)
+      else:
+        abs_fnames.add(file_path)
+
+    all_abs_files = self.coder.get_all_abs_files()
+    other_files = set(all_abs_files) - abs_fnames
+
     if self.coder.repo_map:
-      repo_content = self.coder.repo_map.get_repo_map(self.coder.abs_fnames, other_files)
+      repo_content = self.coder.repo_map.get_repo_map(abs_fnames, other_files)
       if repo_content:
         tokens = self.coder.main_model.token_count(repo_content)
       else:
@@ -1200,12 +1163,20 @@ class Connector:
 
     fence = "`" * 3
 
-    # files
-    for fname in self.coder.abs_fnames:
-      relative_fname = self.coder.get_rel_fname(fname)
-      content = self.coder.io.read_text(fname)
+    # Process the provided context files
+    for file in files:
+      file_path = file['path']
+      if not file_path.startswith(self.base_dir):
+        file_path = os.path.join(self.base_dir, file_path)
+
+      # Skip directories
+      if os.path.isdir(file_path):
+        continue
+
+      relative_fname = self.coder.get_rel_fname(file_path)
+      content = self.io.read_text(file_path)
       if is_image_file(relative_fname):
-        tokens = self.coder.main_model.token_count_for_image(fname)
+        tokens = self.coder.main_model.token_count_for_image(file_path)
       elif content is not None:
         # approximate
         content = f"{relative_fname}\n{fence}\n" + content + "{fence}\n"
@@ -1216,19 +1187,6 @@ class Connector:
         "tokens": tokens,
         "cost": tokens * cost_per_token,
       }
-
-    # read-only files
-    for fname in self.coder.abs_read_only_fnames:
-      relative_fname = self.coder.get_rel_fname(fname)
-      content = self.coder.io.read_text(fname)
-      if content is not None and not is_image_file(relative_fname):
-        # approximate
-        content = f"{relative_fname}\n{fence}\n" + content + "{fence}\n"
-        tokens = self.coder.main_model.token_count(content)
-        info["files"][relative_fname] = {
-          "tokens": tokens,
-          "cost": tokens * cost_per_token,
-        }
 
     if self.sio:
       await self.sio.emit("message", {

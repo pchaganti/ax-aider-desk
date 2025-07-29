@@ -1,5 +1,11 @@
 # Changelog
 
+## [UNRELEASED]
+
+- improved connection and communication with Aider
+- reading cached tokens when working with Aider modes
+- fixed start up with using local Aider installation via AIDER_DESK_AIDER_VERSION
+
 ## [0.24.0]
 
 - support for headers in streamable MCP servers
