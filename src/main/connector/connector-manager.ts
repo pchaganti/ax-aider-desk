@@ -172,7 +172,7 @@ export class ConnectorManager {
         }
         const project = this.projectManager.getProject(connector.baseDir);
         if (message.finished) {
-          project.closeCommandOutput();
+          project.closeCommandOutput(message.addToContext);
         } else {
           project.openCommandOutput(message.command);
         }

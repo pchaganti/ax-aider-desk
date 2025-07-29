@@ -36,27 +36,27 @@ import {
 } from '@common/types';
 import { extractTextContent, fileExists, getActiveAgentProfile, parseUsageReport } from '@common/utils';
 import {
-  INIT_PROJECT_RULES_AGENT_PROFILE,
-  COMPACT_CONVERSATION_AGENT_PROFILE,
-  getLlmProviderConfig,
-  isOpenAiProvider,
-  isOllamaProvider,
-  isOpenAiCompatibleProvider,
-  isAnthropicProvider,
-  isGeminiProvider,
-  isDeepseekProvider,
-  isOpenRouterProvider,
-  isBedrockProvider,
-  isLmStudioProvider,
-  OpenAiCompatibleProvider,
   AnthropicProvider,
   BedrockProvider,
-  OpenRouterProvider,
+  COMPACT_CONVERSATION_AGENT_PROFILE,
   DeepseekProvider,
   GeminiProvider,
-  OpenAiProvider,
-  OllamaProvider,
+  getLlmProviderConfig,
+  INIT_PROJECT_RULES_AGENT_PROFILE,
+  isAnthropicProvider,
+  isBedrockProvider,
+  isDeepseekProvider,
+  isGeminiProvider,
+  isLmStudioProvider,
+  isOllamaProvider,
+  isOpenAiCompatibleProvider,
+  isOpenAiProvider,
+  isOpenRouterProvider,
   LmStudioProvider,
+  OllamaProvider,
+  OpenAiCompatibleProvider,
+  OpenAiProvider,
+  OpenRouterProvider,
 } from '@common/agent';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
@@ -64,7 +64,7 @@ import { parse } from '@dotenvx/dotenvx';
 
 import type { SimpleGit } from 'simple-git';
 
-import { getInitProjectPrompt, getCompactConversationPrompt, getSystemPrompt } from '@/agent/prompts';
+import { getCompactConversationPrompt, getInitProjectPrompt, getSystemPrompt } from '@/agent/prompts';
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from '@/constants';
 import { TaskManager } from '@/tasks';
 import { SessionManager } from '@/session';
@@ -76,7 +76,7 @@ import { MessageAction, ResponseMessage } from '@/messages';
 import { Store } from '@/store';
 import { DEFAULT_MAIN_MODEL } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
-import { TelemetryManager, getLangfuseEnvironmentVariables } from '@/telemetry';
+import { getLangfuseEnvironmentVariables, TelemetryManager } from '@/telemetry';
 
 export class Project {
   private process: ChildProcessWithoutNullStreams | null = null;
@@ -521,6 +521,15 @@ export class Project {
     return this.connectors.filter((connector) => connector.listenTo.includes(action));
   }
 
+  private async waitForCurrentPromptToFinish() {
+    if (this.currentPromptId) {
+      logger.info('Waiting for prompt to finish...');
+      await new Promise<void>((resolve) => {
+        this.runPromptResolves.push(() => resolve());
+      });
+    }
+  }
+
   public async runPrompt(prompt: string, mode?: Mode): Promise<ResponseCompletedData[]> {
     if (this.currentQuestion) {
       if (this.answerQuestion('n', prompt)) {
@@ -529,13 +538,7 @@ export class Project {
       }
     }
 
-    // If a prompt is already running, wait for it to finish
-    if (this.currentPromptId) {
-      logger.info('Waiting for prompt to finish...');
-      await new Promise<void>((resolve) => {
-        this.runPromptResolves.push(() => resolve());
-      });
-    }
+    await this.waitForCurrentPromptToFinish();
 
     logger.info('Running prompt:', {
       baseDir: this.baseDir,
@@ -602,7 +605,7 @@ export class Project {
     }
 
     this.notifyIfEnabled('Prompt finished', 'Your Agent task has finished.');
-    await this.sendRequestTokensInfo();
+    this.sendRequestTokensInfo();
 
     return [];
   }
@@ -1075,20 +1078,6 @@ export class Project {
     this.addCommandOutput(command, '');
   }
 
-  public closeCommandOutput() {
-    if (!this.currentCommand) {
-      return;
-    }
-    const command = this.currentCommand;
-    const output = this.commandOutputs.get(command);
-    if (output && output.trim()) {
-      // Add the command output to the session manager as an assistant message, prepending the command
-      this.sessionManager.addContextMessage(MessageRole.Assistant, `${command}\n\n${output}`);
-    }
-    this.commandOutputs.delete(command);
-    this.currentCommand = null;
-  }
-
   private addCommandOutput(command: string, output: string) {
     // Append output to the commandOutputs map
     const prev = this.commandOutputs.get(command) || '';
@@ -1099,6 +1088,23 @@ export class Project {
       command,
       output,
     });
+  }
+
+  public closeCommandOutput(addToContext = true) {
+    if (!this.currentCommand) {
+      return;
+    }
+    const command = this.currentCommand;
+    const output = this.commandOutputs.get(command);
+    if (output && output.trim() && addToContext) {
+      // Add the command output to the session manager as an assistant message, prepending the command
+      this.sessionManager.addContextMessage(MessageRole.User, `Output from \`${command}\`\n\n\`\`\`${output}\`\`\``);
+      this.sessionManager.addContextMessage(MessageRole.Assistant, 'Ok.');
+
+      void this.updateContextInfo(true, false);
+    }
+    this.commandOutputs.delete(command);
+    this.currentCommand = null;
   }
 
   public addLogMessage(level: LogLevel, message?: string, finished = false) {
@@ -1116,6 +1122,17 @@ export class Project {
     return this.sessionManager.getContextMessages();
   }
 
+  public async addContextMessage(role: MessageRole, content: string) {
+    logger.debug('Adding context message to session:', {
+      baseDir: this.baseDir,
+      role,
+      content: content.substring(0, 30),
+    });
+
+    this.sessionManager.addContextMessage(role, content);
+    await this.updateContextInfo();
+  }
+
   public sendAddMessage(role: MessageRole = MessageRole.User, content: string, acknowledge = true) {
     logger.debug('Adding message:', {
       baseDir: this.baseDir,
@@ -1126,12 +1143,12 @@ export class Project {
     this.findMessageConnectors('add-message').forEach((connector) => connector.sendAddMessageMessage(role, content, acknowledge));
   }
 
-  public clearContext(addToHistory = false, updateEstimatedTokens = true) {
+  public clearContext(addToHistory = false, updateContextInfo = true) {
     this.sessionManager.clearMessages();
     this.runCommand('clear', addToHistory);
     this.mainWindow.webContents.send('clear-project', this.baseDir, true, false);
 
-    if (updateEstimatedTokens) {
+    if (updateContextInfo) {
       void this.updateContextInfo();
     }
   }

@@ -148,7 +148,11 @@ class PromptExecutor:
         edit_format=mode,
         main_model=running_model,
       )
-      self.active_coders[prompt_id] = coder
+
+    # we are sending all the additional messages after the prompt finishes
+    coder.io.add_command_to_context = False
+
+    self.active_coders[prompt_id] = coder
 
     if messages is not None:
       # Set messages from the provided data
@@ -213,10 +217,11 @@ class PromptExecutor:
     if whole_content or not self.is_prompt_interrupted(prompt_id):
       await self.connector.send_action(response_data)
 
-    await self.connector.send_update_context_files(coder)
-
     # Check for reflections
     if coder.reflected_message:
+      # send newly added context files
+      await self.connector.send_add_context_files(coder)
+
       current_reflection = 0
       while coder.reflected_message and not self.is_prompt_interrupted(prompt_id):
         if current_reflection >= self.connector.coder.max_reflections:
@@ -252,15 +257,20 @@ class PromptExecutor:
       self.connector.coder.total_cost = coder.total_cost
       self.connector.coder.aider_commit_hashes = coder.aider_commit_hashes
 
-    # await self.connector.send_tokens_info()
-    await self.connector.send_repo_map()
-    await self.connector.send_autocompletion()
-
     # Send prompt-finished message
     await self.connector.send_action({
       "action": "prompt-finished",
       "promptId": prompt_id
     })
+
+    await self.connector.send_repo_map()
+    await self.connector.send_autocompletion()
+
+    # Send command outputs as context messages
+    if hasattr(coder, 'command_outputs') and coder.command_outputs:
+      for output in coder.command_outputs:
+        await self.connector.send_add_context_message("user", output)
+        await self.connector.send_add_context_message("assistant", "Ok.")
 
   async def _execute_prompt_wrapper(self, prompt_id: str, prompt_coro: Coroutine[Any, Any, Any]):
     """
@@ -389,6 +399,7 @@ class ConnectorInputOutput(InputOutput):
     self.running_shell_command = False
     self.processing_loading_message = False
     self.current_command = None
+    self.add_command_to_context = True
     self.cancelled = False
 
   def add_to_input_history(self, input_text):
@@ -496,8 +507,8 @@ class ConnectorInputOutput(InputOutput):
     if result == "y" and question.startswith("Run shell command"):
       self.running_shell_command = True
       self.current_command = None
-    if question == "Add command output to the chat?":
-      self.reset_state()
+    if question.endswith("command output to the chat?"):
+      self.reset_state((result == "y" or result == "a") and self.add_command_to_context)
 
     if result == "a" and group is not None:
       group.preference = "y"
@@ -506,11 +517,12 @@ class ConnectorInputOutput(InputOutput):
 
     return result == "y" or result == "a"
 
-  def reset_state(self):
+  def reset_state(self, add_command_to_context=None):
     if self.current_command:
       wait_for_async(self.connector, self.connector.send_action({
         "action": "use-command-output",
         "command": self.current_command,
+        "addToContext": add_command_to_context if add_command_to_context is not None else self.add_command_to_context,
         "finished": True
       }))
 
@@ -522,7 +534,7 @@ class ConnectorInputOutput(InputOutput):
       # Generate a new prompt ID for file watcher changes
       prompt_id = str(uuid.uuid4())
       await self.connector.prompt_executor.run_prompt(prompt_id=prompt_id, prompt=prompt, mode="code")
-      await self.connector.send_update_context_files()
+      await self.connector.send_add_context_files()
       self.connector.file_watcher.start()
 
     if self.connector.file_watcher:
@@ -660,6 +672,22 @@ class Connector:
     # Replace the original run_test method with the patched version
     coder.commands.cmd_test = types.MethodType(_patched_cmd_test, coder.commands)
 
+    # Initialize command_outputs list if it doesn't exist
+    if not hasattr(coder, 'command_outputs'):
+      coder.command_outputs = []
+
+    original_run_shell_commands = coder.run_shell_commands
+    def _patched_run_shell_commands(coder_instance):
+      # Call the original run_shell_commands method
+      result = original_run_shell_commands()
+      # Store the result in command_outputs list
+      if result:
+        coder.command_outputs.append(result)
+      return result
+
+    # Replace the original run_shell_commands method with the patched version
+    coder.run_shell_commands = types.MethodType(_patched_run_shell_commands, coder)
+
   def get_tokenization_executor(self):
     if self.tokenization_executor is None:
       self.tokenization_executor = ThreadPoolExecutor(max_workers=2)
@@ -787,7 +815,7 @@ class Connector:
       if not action:
         return json.dumps({"error": "No action specified"})
 
-      self.reset_before_action()
+      # self.reset_before_action()
 
       if action == "prompt":
         prompt = message.get('prompt')
@@ -882,7 +910,7 @@ class Connector:
       })
 
   def reset_before_action(self):
-    self.io.reset_state()
+    self.io.reset_state(False)
 
   async def update_environment_variables(self, environment_variables):
     """Update environment variables for the Aider process"""
@@ -951,7 +979,7 @@ class Connector:
     self.io.processing_loading_message = False
     if command.startswith("/paste"):
       await asyncio.sleep(0.1)
-      await self.send_update_context_files()
+      await self.send_add_context_files()
     elif command.startswith("/map-refresh"):
       await asyncio.sleep(0.1)
       await self.send_log_message("info", "The repo map has been refreshed.")
@@ -970,7 +998,7 @@ class Connector:
       await asyncio.sleep(0.1)
       await self.send_current_models()
     elif command.startswith("/reset") or command.startswith("/drop"):
-      await self.send_update_context_files()
+      await self.send_add_context_files()
       await self.send_autocompletion()
 
   async def send_autocompletion(self):
@@ -1068,7 +1096,14 @@ class Connector:
       {"path": fname, "readOnly": True} for fname in read_only_files
     ]
 
-  async def send_update_context_files(self, coder=None):
+  async def send_add_context_message(self, role, content):
+    await self.send_action({
+      "action": "add-message",
+      "role": role,
+      "content": content
+    })
+
+  async def send_add_context_files(self, coder=None):
     context_files = self.get_context_files(coder)
     for file in context_files:
       await self.send_action({

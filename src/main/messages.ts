@@ -164,6 +164,7 @@ export const isUpdateContextFilesMessage = (message: Message): message is Update
 export interface UseCommandOutputMessage extends Message {
   action: 'use-command-output';
   command: string;
+  addToContext?: boolean;
   finished: boolean;
 }
 
@@ -191,6 +192,10 @@ export interface AddMessageMessage extends Message {
   role: MessageRole;
   acknowledge: boolean;
 }
+
+export const isAddMessageMessage = (message: Message): message is AddMessageMessage => {
+  return message.action === 'add-message';
+};
 
 export interface InterruptResponseMessage extends Message {
   action: 'interrupt-response';
