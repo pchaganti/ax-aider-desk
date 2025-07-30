@@ -80,11 +80,11 @@ class PromptExecutor:
 
     except asyncio.CancelledError:
       # This is important! The task must be allowed to handle its own cancellation.
-      self.connector.io.tool_output(f"Prompt logic for {prompt_id} gracefully cancelled.")
+      self.connector.coder.io.tool_output(f"Prompt logic for {prompt_id} gracefully cancelled.")
       # Propagate the cancellation to ensure the wrapper knows about it.
       raise
     except Exception as e:
-      self.connector.io.tool_error(f"Error in prompt logic {prompt_id}: {str(e)}")
+      self.connector.coder.io.tool_error(f"Error in prompt logic {prompt_id}: {str(e)}")
       raise
 
   async def _stream_and_send_responses(self, coder, prompt_id, prompt_to_run, log_context, extra_response_data=None):
@@ -107,7 +107,7 @@ class PromptExecutor:
           fut.result() # Wait for it to be put in queue
         asyncio.run_coroutine_threadsafe(queue.put(None), self.connector.loop).result() # Sentinel for end
       except Exception as e:
-        self.connector.io.tool_error(f"Error in run_stream for {log_context}: {str(e)}")
+        self.connector.coder.io.tool_error(f"Error in run_stream for {log_context}: {str(e)}")
 
     future = self.connector.loop.run_in_executor(executor, _sync_worker)
     self.active_futures[prompt_id] = future
@@ -278,10 +278,10 @@ class PromptExecutor:
       await prompt_coro
     except asyncio.CancelledError:
       # This is the clean way to handle cancellation.
-      self.connector.io.tool_output(f"Prompt {prompt_id} was cancelled.")
+      self.connector.coder.io.tool_output(f"Prompt {prompt_id} was cancelled.")
       # You could add more specific cleanup logic here if needed.
     except Exception as e:
-      self.connector.io.tool_error(f"Error in prompt task {prompt_id}: {str(e)}")
+      self.connector.coder.io.tool_error(f"Error in prompt task {prompt_id}: {str(e)}")
       # Potentially re-raise or handle as needed
       raise
     finally:
@@ -325,7 +325,7 @@ class PromptExecutor:
       except asyncio.CancelledError:
         pass # Expected
 
-      self.connector.io.tool_output(f"Cancellation request sent to prompt {prompt_id}.")
+      self.connector.coder.io.tool_output(f"Cancellation request sent to prompt {prompt_id}.")
       return True
     return False
 
@@ -334,7 +334,7 @@ class PromptExecutor:
     # Create a copy of keys to avoid issues with modifying the dict while iterating
     prompt_ids = list(self.active_prompts.keys())
     if prompt_ids:
-      self.connector.io.tool_output("Interrupting all active prompts...")
+      self.connector.coder.io.tool_output("Interrupting all active prompts...")
       await asyncio.gather(*(self.cancel_prompt(pid) for pid in prompt_ids))
 
   def is_prompt_interrupted(self, prompt_id: str) -> bool:
@@ -615,7 +615,7 @@ class Connector:
     self.coder.pretty = False
     self.monkey_patch_coder_functions(self.coder)
 
-    self.io = create_io(self, self.coder)
+    create_io(self, self.coder)
 
     # Initialize prompt executor
     self.prompt_executor = PromptExecutor(self)
@@ -698,7 +698,7 @@ class Connector:
 
   async def on_connect(self):
     """Handle connection event."""
-    self.io.tool_output("CONNECTED TO SERVER")
+    self.coder.io.tool_output("CONNECTED TO SERVER")
 
     await self.send_action({
       "action": 'init',
@@ -714,7 +714,7 @@ class Connector:
         'update-env-vars'
       ],
       'contextFiles': self.get_context_files(),
-      'inputHistoryFile': self.io.input_history_file
+      'inputHistoryFile': self.coder.io.input_history_file
     })
     await self.send_current_models()
 
@@ -732,7 +732,7 @@ class Connector:
         "models": all_models
       })
     except Exception as e:
-      self.io.tool_error(f"Error sending tokenized autocompletion: {str(e)}")
+      self.coder.io.tool_error(f"Error sending tokenized autocompletion: {str(e)}")
 
   def _tokenize_files_sync(self, root, rel_fnames, addable_rel_fnames, encoding, abs_read_only_fnames):
     """Synchronous helper function for file tokenization."""
@@ -749,7 +749,7 @@ class Connector:
       # Return tokenized words
       return [word[0] if isinstance(word, tuple) else word for word in auto_completer.words]
     except Exception as e:
-      self.io.tool_error(f"Error during tokenization: {str(e)}")
+      self.coder.io.tool_error(f"Error during tokenization: {str(e)}")
       return []
 
   async def on_message(self, data):
@@ -757,7 +757,7 @@ class Connector:
 
   async def on_disconnect(self):
     """Handle disconnection event."""
-    self.io.tool_output("DISCONNECTED FROM SERVER")
+    self.coder.io.tool_output("DISCONNECTED FROM SERVER")
 
     # Shutdown prompt executor
     if self.prompt_executor:
@@ -840,14 +840,14 @@ class Connector:
 
           self.coder = clone_coder(self, self.coder, main_model=model, edit_format=edit_format)
 
-          await asyncio.to_thread(models.sanity_check_models, self.io, model)
+          await asyncio.to_thread(models.sanity_check_models, self.coder.io, model)
 
           for line in self.coder.get_announcements():
-            self.io.tool_output(line)
+            self.coder.io.tool_output(line)
 
           await self.send_current_models()
         except Exception as e:
-          self.io.tool_error(f"Error setting models: {str(e)}")
+          self.coder.io.tool_error(f"Error setting models: {str(e)}")
 
       elif action == "run-command":
         command = message.get('command')
@@ -858,7 +858,7 @@ class Connector:
 
       elif action == "interrupt-response":
         # Interrupt all active prompts
-        self.io.tool_output("INTERRUPTING ALL RESPONSES")
+        self.coder.io.tool_output("INTERRUPTING ALL RESPONSES")
         await self.prompt_executor.interrupt_all_prompts()
 
       elif action == "apply-edits":
@@ -892,13 +892,13 @@ class Connector:
 
       return json.dumps({"success": True})
     except Exception as e:
-      self.io.tool_error(f"Exception in connector: {str(e)}")
+      self.coder.io.tool_error(f"Exception in connector: {str(e)}")
       return json.dumps({
         "error": str(e)
       })
 
   def reset_before_action(self):
-    self.io.reset_state(False)
+    self.coder.io.reset_state(False)
 
   async def update_environment_variables(self, environment_variables):
     """Update environment variables for the Aider process"""
@@ -934,13 +934,13 @@ class Connector:
       self.reasoning_effort = parts[1]
 
     if command.startswith("/test ") or command.startswith("/run "):
-      self.io.running_shell_command = True
-      self.io.tool_output("Running " + command.split(" ", 1)[1])
+      self.coder.io.running_shell_command = True
+      self.coder.io.tool_output("Running " + command.split(" ", 1)[1])
     elif command.startswith("/tokens"):
-      self.io.running_shell_command = True
-      self.io.tool_output("Running /tokens")
+      self.coder.io.running_shell_command = True
+      self.coder.io.tool_output("Running /tokens")
     elif command.startswith("/commit"):
-      self.io.processing_loading_message = True
+      self.coder.io.processing_loading_message = True
       await self.send_log_message("loading", "Committing changes...")
 
     if command.startswith("/paste"):
@@ -961,8 +961,8 @@ class Connector:
     else:
       self.coder.commands.run(command)
 
-    self.io.running_shell_command = False
-    self.io.processing_loading_message = False
+    self.coder.io.running_shell_command = False
+    self.coder.io.processing_loading_message = False
     if command.startswith("/paste"):
       await self.send_add_context_files()
     elif command.startswith("/map-refresh"):
@@ -1018,7 +1018,7 @@ class Connector:
               self.coder.root,
               rel_fnames,
               self.coder.get_addable_relative_files(),
-              self.io.encoding,
+              self.coder.io.encoding,
               self.coder.abs_read_only_fnames
             )
             await self._send_tokenized_autocompletion(
@@ -1028,13 +1028,13 @@ class Connector:
             # Task was cancelled, do nothing.
             pass
           except Exception as e:
-            self.io.tool_error(f"Error during tokenization: {str(e)}")
+            self.coder.io.tool_error(f"Error during tokenization: {str(e)}")
 
         self.current_tokenization_task = asyncio.create_task(tokenize_and_send())
 
       # else: The initial message with just filenames is sufficient if too many files
     except Exception as e:
-      self.io.tool_error(f"Error in send_autocompletion: {str(e)}")
+      self.coder.io.tool_error(f"Error in send_autocompletion: {str(e)}")
       await self.send_action({
         "action": "update-autocompletion",
         "words": [],
@@ -1057,7 +1057,7 @@ class Connector:
             "repoMap": repo_map
           })
       except Exception as e:
-        self.io.tool_error(f"Error sending repo map: {str(e)}")
+        self.coder.io.tool_error(f"Error sending repo map: {str(e)}")
 
   def get_context_files(self, coder=None):
     if not coder:
@@ -1185,7 +1185,7 @@ class Connector:
         continue
 
       relative_fname = self.coder.get_rel_fname(file_path)
-      content = self.io.read_text(file_path)
+      content = self.coder.io.read_text(file_path)
       if is_image_file(relative_fname):
         tokens = self.coder.main_model.token_count_for_image(file_path)
       elif content is not None:
