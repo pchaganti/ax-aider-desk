@@ -6,6 +6,7 @@
 - reading cached tokens when working with Aider modes
 - fixed start up with using local Aider installation via AIDER_DESK_AIDER_VERSION
 - fixed command output messages in the context
+- added hourly, daily, monthly, yearly aggregation for dashboard data
 
 ## [0.24.0]
 
