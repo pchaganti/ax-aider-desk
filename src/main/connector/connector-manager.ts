@@ -20,6 +20,7 @@ import {
   isUseCommandOutputMessage,
   LogMessage,
   Message,
+  isAddMessageMessage,
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
@@ -204,6 +205,12 @@ export class ConnectorManager {
         }
         logger.debug('Updating repo map', { baseDir: connector.baseDir });
         this.projectManager.getProject(connector.baseDir).updateRepoMapFromConnector(message.repoMap);
+      } else if (isAddMessageMessage(message)) {
+        const connector = this.findConnectorBySocket(socket);
+        if (!connector) {
+          return;
+        }
+        void this.projectManager.getProject(connector.baseDir).addContextMessage(message.role, message.content);
       } else {
         logger.warn('Unknown message type: ', message);
       }
