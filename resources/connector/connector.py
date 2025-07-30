@@ -115,7 +115,7 @@ class PromptExecutor:
     while True:
       chunk = await queue.get()
       if chunk is None:
-          break
+        break
       whole_content += chunk
 
       response_payload = {
@@ -262,9 +262,6 @@ class PromptExecutor:
       "action": "prompt-finished",
       "promptId": prompt_id
     })
-
-    await self.connector.send_repo_map()
-    await self.connector.send_autocompletion()
 
     # Send command outputs as context messages
     if hasattr(coder, 'command_outputs') and coder.command_outputs:
@@ -419,7 +416,6 @@ class ConnectorInputOutput(InputOutput):
               "action": "use-command-output",
               "command": self.current_command,
             })
-            await asyncio.sleep(0.1)
 
           self.current_command = message[8:]
           wait_for_async(self.connector, send_use_command_output())
@@ -624,8 +620,7 @@ class Connector:
     # Initialize prompt executor
     self.prompt_executor = PromptExecutor(self)
 
-    self.current_tokenization_future = None
-    self.tokenization_executor = None
+    self.current_tokenization_task = None
 
     if watch_files:
       ignores = []
@@ -688,11 +683,6 @@ class Connector:
     # Replace the original run_shell_commands method with the patched version
     coder.run_shell_commands = types.MethodType(_patched_run_shell_commands, coder)
 
-  def get_tokenization_executor(self):
-    if self.tokenization_executor is None:
-      self.tokenization_executor = ThreadPoolExecutor(max_workers=2)
-    return self.tokenization_executor
-
   def _register_events(self):
     @self.sio.event
     async def connect():
@@ -717,7 +707,7 @@ class Connector:
         'prompt',
         'answer-question',
         'set-models',
-        'request-tokens-info',
+        'request-context-info',
         'run-command',
         'interrupt-response',
         'apply-edits',
@@ -726,10 +716,7 @@ class Connector:
       'contextFiles': self.get_context_files(),
       'inputHistoryFile': self.io.input_history_file
     })
-    # await self.send_update_context_files()
     await self.send_current_models()
-    await self.send_repo_map()
-    await self.send_autocompletion()
 
   async def _send_tokenized_autocompletion(self, tokenized_words, initial_words, all_relative_files, all_models):
     """Sends the final autocompletion message after tokenization."""
@@ -738,7 +725,7 @@ class Connector:
       final_words = initial_words + tokenized_words
 
       # Send the final list of words
-      await self.sio.emit("message", {
+      await self.send_action({
         "action": "update-autocompletion",
         "words": final_words,
         "allFiles": all_relative_files,
@@ -776,11 +763,8 @@ class Connector:
     if self.prompt_executor:
       await self.prompt_executor.shutdown()
 
-    tokenization_executor = self.tokenization_executor
-    self.tokenization_executor = None
-    if tokenization_executor:
-      # Shutdown the executor if it was created
-      tokenization_executor.shutdown(wait=True, cancel_futures=True)
+    if self.current_tokenization_task and not self.current_tokenization_task.done():
+      self.current_tokenization_task.cancel()
 
   async def connect(self):
     """Connect to the server."""
@@ -894,8 +878,12 @@ class Connector:
           main_model = models.Model(self.coder.main_model.name, weak_model=self.coder.main_model.weak_model.name)
           self.coder.main_model = main_model
 
-      elif action == "request-tokens-info":
-        await self.send_tokens_info(message.get('messages'), message.get('files'))
+      elif action == "request-context-info":
+        messages = message.get('messages')
+        files = message.get('files')
+        await self.send_tokens_info(messages, files)
+        await self.send_repo_map()
+        await self.send_autocompletion(files)
 
       else:
         return json.dumps({
@@ -925,7 +913,6 @@ class Connector:
   async def run_command(self, command):
     if command.startswith("/map"):
       repo_map = self.coder.repo_map.get_repo_map(set(), self.coder.get_all_abs_files()) if self.coder.repo_map else None
-      await asyncio.sleep(0.1)
       if repo_map:
         await self.send_log_message("info", repo_map)
       else:
@@ -942,7 +929,6 @@ class Connector:
         if self.coder.main_model.extra_params and "extra_body" in self.coder.main_model.extra_params:
           self.coder.main_model.extra_params["extra_body"].pop("reasoning_effort", None)
         self.reasoning_effort = None
-        await asyncio.sleep(0.1)
         await self.send_current_models()
         return
       self.reasoning_effort = parts[1]
@@ -978,15 +964,11 @@ class Connector:
     self.io.running_shell_command = False
     self.io.processing_loading_message = False
     if command.startswith("/paste"):
-      await asyncio.sleep(0.1)
       await self.send_add_context_files()
     elif command.startswith("/map-refresh"):
-      await asyncio.sleep(0.1)
       await self.send_log_message("info", "The repo map has been refreshed.")
       await self.send_repo_map()
-      await self.send_autocompletion()
     elif command.startswith("/reasoning-effort"):
-      await asyncio.sleep(0.1)
       await self.send_current_models()
     elif command.startswith("/think-tokens"):
       self.coder.commands.run(command)
@@ -995,71 +977,65 @@ class Connector:
           self.coder.main_model.extra_params.pop("reasoning", None)
           self.coder.main_model.extra_params.pop("thinking", None)
         self.thinking_tokens = None
-      await asyncio.sleep(0.1)
       await self.send_current_models()
     elif command.startswith("/reset") or command.startswith("/drop"):
       await self.send_add_context_files()
-      await self.send_autocompletion()
 
-  async def send_autocompletion(self):
-    if not self.sio:
-      return
+  async def send_autocompletion(self, files):
     try:
-      inchat_files = self.coder.get_inchat_relative_files()
-      read_only_files = [self.coder.get_rel_fname(fname) for fname in self.coder.abs_read_only_fnames]
-      rel_fnames = sorted(set(inchat_files + read_only_files))
+      # Use all files from files parameter and convert to relative paths
+      rel_fnames = []
+      for f in files:
+        file_path = f['path']
+        # Convert to relative path if it's an absolute path
+        if file_path.startswith(self.base_dir):
+          relative_path = os.path.relpath(file_path, self.base_dir)
+        else:
+          relative_path = file_path
+        rel_fnames.append(relative_path)
       all_relative_files = self.coder.get_all_relative_files()
       all_models = sorted(set(models.fuzzy_match_models("") + [model_settings.name for model_settings in models.MODEL_SETTINGS]))
 
       # Initialize words with just the filenames and send immediately
-      initial_words = [fname.split('/')[-1] for fname in rel_fnames]
-      await self.sio.emit("message", {
+      initial_words = [fname.split('/')[-1] for fname in all_relative_files]
+      await self.send_action({
         "action": "update-autocompletion",
         "words": initial_words,
         "allFiles": all_relative_files,
         "models": all_models
       })
-      await asyncio.sleep(0.01) # Allow message to send
 
       # Run tokenization in a separate thread
       if len(rel_fnames) > 0:
         # Cancel any previous tokenization task if it's still running
-        if self.current_tokenization_future and not self.current_tokenization_future.done():
-          self.current_tokenization_future.cancel()
+        if self.current_tokenization_task and not self.current_tokenization_task.done():
+          self.current_tokenization_task.cancel()
 
-        # Schedule the synchronous tokenization function in an executor
-        self.current_tokenization_future = self.loop.run_in_executor(
-          self.get_tokenization_executor(),
-          self._tokenize_files_sync,
-          self.coder.root,
-          rel_fnames,
-          self.coder.get_addable_relative_files(),
-          self.io.encoding,
-          self.coder.abs_read_only_fnames
-        )
-
-        # Define a callback to handle the result of the tokenization
-        def _on_tokenization_complete(future):
-          if future.cancelled():
-            return  # Do nothing if the task was cancelled
+        async def tokenize_and_send():
           try:
-            tokenized_words = future.result()
-            # Schedule the sending of the final autocompletion message
-            self.loop.create_task(
-              self._send_tokenized_autocompletion(
-                tokenized_words, initial_words, all_relative_files, all_models
-              )
+            tokenized_words = await asyncio.to_thread(
+              self._tokenize_files_sync,
+              self.coder.root,
+              rel_fnames,
+              self.coder.get_addable_relative_files(),
+              self.io.encoding,
+              self.coder.abs_read_only_fnames
             )
+            await self._send_tokenized_autocompletion(
+              tokenized_words, initial_words, all_relative_files, all_models
+            )
+          except asyncio.CancelledError:
+            # Task was cancelled, do nothing.
+            pass
           except Exception as e:
-            self.io.tool_error(f"Error retrieving tokenization result: {str(e)}")
+            self.io.tool_error(f"Error during tokenization: {str(e)}")
 
-        # Add the callback to the future
-        self.current_tokenization_future.add_done_callback(_on_tokenization_complete)
+        self.current_tokenization_task = asyncio.create_task(tokenize_and_send())
 
       # else: The initial message with just filenames is sufficient if too many files
     except Exception as e:
       self.io.tool_error(f"Error in send_autocompletion: {str(e)}")
-      await self.sio.emit("message", {
+      await self.send_action({
         "action": "update-autocompletion",
         "words": [],
         "allFiles": [],
@@ -1067,7 +1043,7 @@ class Connector:
       })
 
   async def send_repo_map(self):
-    if self.sio and self.coder.repo_map:
+    if self.coder.repo_map:
       try:
         repo_map = self.coder.repo_map.get_repo_map(set(), self.coder.get_all_abs_files())
         if repo_map:
@@ -1076,7 +1052,7 @@ class Connector:
           if repo_map.startswith(prefix):
             repo_map = repo_map[len(prefix):]
 
-          await self.sio.emit("message", {
+          await self.send_action({
             "action": "update-repo-map",
             "repoMap": repo_map
           })
@@ -1223,12 +1199,10 @@ class Connector:
         "cost": tokens * cost_per_token,
       }
 
-    if self.sio:
-      await self.sio.emit("message", {
-        "action": "tokens-info",
-        "info": info
-      })
-      await asyncio.sleep(0.01)
+    await self.send_action({
+      "action": "tokens-info",
+      "info": info
+    })
 
 def main(argv=None):
   try:

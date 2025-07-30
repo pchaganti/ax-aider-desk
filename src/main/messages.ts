@@ -32,7 +32,7 @@ export type MessageAction =
   | 'compact-conversation'
   | 'update-repo-map'
   | 'update-env-vars'
-  | 'request-tokens-info';
+  | 'request-context-info';
 
 export interface Message {
   action: MessageAction;
@@ -238,12 +238,12 @@ export const isUpdateEnvVarsMessage = (message: Message): message is UpdateEnvVa
   return message.action === 'update-env-vars';
 };
 
-export interface RequestTokensInfoMessage extends Message {
-  action: 'request-tokens-info';
+export interface RequestContextInfoMessage extends Message {
+  action: 'request-context-info';
   messages?: { role: MessageRole; content: string }[];
   files?: ContextFile[];
 }
 
-export const isRequestTokensInfoMessage = (message: Message): message is RequestTokensInfoMessage => {
-  return message.action === 'request-tokens-info';
+export const isRequestContextInfoMessage = (message: Message): message is RequestContextInfoMessage => {
+  return message.action === 'request-context-info';
 };

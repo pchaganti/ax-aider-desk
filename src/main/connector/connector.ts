@@ -15,7 +15,7 @@ import {
   Message,
   MessageAction,
   PromptMessage,
-  RequestTokensInfoMessage,
+  RequestContextInfoMessage,
   RunCommandMessage,
   SetModelsMessage,
   UpdateEnvVarsMessage,
@@ -155,8 +155,8 @@ export class Connector {
   }
 
   public sendRequestTokensInfoMessage(messages: { role: MessageRole; content: string }[], files: ContextFile[]) {
-    const message: RequestTokensInfoMessage = {
-      action: 'request-tokens-info',
+    const message: RequestContextInfoMessage = {
+      action: 'request-context-info',
       messages,
       files,
     };

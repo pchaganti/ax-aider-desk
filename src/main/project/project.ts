@@ -188,7 +188,7 @@ export class Project {
     if (connector.listenTo.includes('update-env-vars')) {
       this.sendUpdateEnvVars(this.store.getSettings());
     }
-    if (connector.listenTo.includes('request-tokens-info')) {
+    if (connector.listenTo.includes('request-context-info')) {
       connector.sendRequestTokensInfoMessage(this.sessionManager.toConnectorMessages(), this.getContextFiles());
     }
 
@@ -605,7 +605,7 @@ export class Project {
     }
 
     this.notifyIfEnabled('Prompt finished', 'Your Agent task has finished.');
-    this.sendRequestTokensInfo();
+    this.sendRequestContextInfo();
 
     return [];
   }
@@ -1377,12 +1377,12 @@ export class Project {
   }
 
   async updateContextInfo(checkContextFilesIncluded = false, checkRepoMapIncluded = false) {
-    this.sendRequestTokensInfo();
+    this.sendRequestContextInfo();
     await this.updateAgentEstimatedTokens(checkContextFilesIncluded, checkRepoMapIncluded);
   }
 
-  private sendRequestTokensInfo() {
-    this.findMessageConnectors('request-tokens-info').forEach((connector) =>
+  private sendRequestContextInfo() {
+    this.findMessageConnectors('request-context-info').forEach((connector) =>
       connector.sendRequestTokensInfoMessage(this.sessionManager.toConnectorMessages(), this.getContextFiles()),
     );
   }
