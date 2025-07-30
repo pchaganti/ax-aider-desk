@@ -22,17 +22,13 @@ import {
 } from '@/messages';
 
 export class Connector {
-  socket: Socket;
-  baseDir: string;
-  listenTo: MessageAction[];
-  inputHistoryFile?: string;
-
-  constructor(socket: Socket, baseDir: string, listenTo: MessageAction[] = [], inputHistoryFile?: string) {
-    this.socket = socket;
-    this.baseDir = baseDir;
-    this.listenTo = listenTo;
-    this.inputHistoryFile = inputHistoryFile;
-  }
+  constructor(
+    readonly socket: Socket,
+    readonly baseDir: string,
+    readonly source: string | undefined,
+    readonly listenTo: MessageAction[] = [],
+    readonly inputHistoryFile?: string,
+  ) {}
 
   private sendMessage = (message: Message) => {
     if (!this.socket.connected) {

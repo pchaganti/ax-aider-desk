@@ -87,7 +87,7 @@ export class ConnectorManager {
           baseDir: message.baseDir,
           listenTo: message.listenTo,
         });
-        const connector = new Connector(socket, message.baseDir, message.listenTo, message.inputHistoryFile);
+        const connector = new Connector(socket, message.baseDir, message.source, message.listenTo, message.inputHistoryFile);
         this.connectors.push(connector);
 
         const project = this.projectManager.getProject(message.baseDir);

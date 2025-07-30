@@ -47,6 +47,7 @@ export interface LogMessage {
 export interface InitMessage {
   action: 'init';
   baseDir: string;
+  source?: string;
   contextFiles?: ContextFile[];
   listenTo?: MessageAction[];
   inputHistoryFile?: string;

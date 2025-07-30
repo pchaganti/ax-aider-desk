@@ -555,8 +555,8 @@ def create_base_coder(connector):
   coder = cli_main(return_coder=True)
   if not isinstance(coder, Coder):
     raise ValueError(coder)
-  if not coder.repo:
-    raise ValueError("WebsocketConnector can currently only be used inside a git repo")
+  # if not coder.repo:
+  #   raise ValueError("WebsocketConnector can currently only be used inside a git repo")
 
   return coder
 
@@ -588,7 +588,8 @@ def create_io(connector, coder, prompt_id=None):
 
   coder.commands.io = io
   coder.io = io
-  coder.repo.io = io
+  if coder.repo:
+    coder.repo.io = io
 
   return io
 
@@ -626,7 +627,7 @@ class Connector:
       ignores = []
       if self.coder.root:
         ignores.append(self.coder.root + "/.gitignore")
-      if self.coder.repo.aider_ignore_file:
+      if self.coder.repo and self.coder.repo.aider_ignore_file:
         ignores.append(self.coder.repo.aider_ignore_file)
 
       self.file_watcher = FileWatcher(self.coder, gitignores=ignores)
@@ -698,23 +699,24 @@ class Connector:
 
   async def on_connect(self):
     """Handle connection event."""
-    self.coder.io.tool_output("CONNECTED TO SERVER")
+    self.coder.io.tool_output("---- AIDER CONNECTOR CONNECTED TO AIDER DESK ----")
 
     await self.send_action({
-      "action": 'init',
-      'baseDir': self.base_dir,
-      'listenTo': [
-        'prompt',
-        'answer-question',
-        'set-models',
-        'request-context-info',
-        'run-command',
-        'interrupt-response',
-        'apply-edits',
-        'update-env-vars'
+      "action": "init",
+      "source": "aider",
+      "baseDir": self.base_dir,
+      "listenTo": [
+        "prompt",
+        "answer-question",
+        "set-models",
+        "request-context-info",
+        "run-command",
+        "interrupt-response",
+        "apply-edits",
+        "update-env-vars"
       ],
-      'contextFiles': self.get_context_files(),
-      'inputHistoryFile': self.coder.io.input_history_file
+      "contextFiles": self.get_context_files(),
+      "inputHistoryFile": self.coder.io.input_history_file
     })
     await self.send_current_models()
 
@@ -785,9 +787,9 @@ class Connector:
 
   async def send_log_message(self, level, message, finished=False):
     await self.sio.emit("log", {
-      'level': level,
-      'message': message,
-      'finished': finished
+      "level": level,
+      "message": message,
+      "finished": finished
     })
     await asyncio.sleep(0.01)
 

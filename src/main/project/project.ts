@@ -98,6 +98,7 @@ export class Project {
   private taskManager: TaskManager = new TaskManager();
   private commandOutputs: Map<string, string> = new Map();
   private repoMap: string = '';
+  private aiderStarting: boolean = false;
 
   aiderTotalCost: number = 0;
   agentTotalCost: number = 0;
@@ -171,7 +172,14 @@ export class Project {
   public addConnector(connector: Connector) {
     logger.info('Adding connector for base directory:', {
       baseDir: this.baseDir,
+      source: connector.source,
     });
+
+    // Set aiderStarting to false when a connector with source==='aider' is added
+    if (connector.source === 'aider') {
+      this.aiderStarting = false;
+    }
+
     this.connectors.push(connector);
     if (connector.listenTo.includes('add-file')) {
       const contextFiles = this.sessionManager.getContextFiles();
@@ -268,6 +276,9 @@ export class Project {
     }
 
     await this.checkAndCleanupPidFile();
+
+    // Set aiderStarting to true when starting aider
+    this.aiderStarting = true;
 
     const settings = this.store.getSettings();
     const projectSettings = this.store.getProjectSettings(this.baseDir);
@@ -379,6 +390,11 @@ export class Project {
       }
 
       logger.error('Aider stderr:', { baseDir: this.baseDir, error: output });
+
+      // Send stderr errors as log messages while aider is starting
+      if (this.aiderStarting) {
+        this.addLogMessage('error', output);
+      }
     });
 
     this.process.on('close', (code) => {
