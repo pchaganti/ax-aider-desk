@@ -759,7 +759,7 @@ class Connector:
 
   async def on_disconnect(self):
     """Handle disconnection event."""
-    self.coder.io.tool_output("DISCONNECTED FROM SERVER")
+    self.coder.io.tool_output("AIDER CONNECTOR DISCONNECTED FROM AIDER DESK")
 
     # Shutdown prompt executor
     if self.prompt_executor:
@@ -799,9 +799,7 @@ class Connector:
       action = message.get('action')
 
       if not action:
-        return json.dumps({"error": "No action specified"})
-
-      # self.reset_before_action()
+        return
 
       if action == "prompt":
         prompt = message.get('prompt')
@@ -812,7 +810,7 @@ class Connector:
         files = message.get('files', [])
 
         if not prompt:
-          return json.dumps({"success": True})
+          return
 
         # Generate prompt ID if not provided
         if not prompt_id:
@@ -887,17 +885,9 @@ class Connector:
         await self.send_repo_map()
         await self.send_autocompletion(files)
 
-      else:
-        return json.dumps({
-          "error": f"Unknown action: {action}"
-        })
-
-      return json.dumps({"success": True})
     except Exception as e:
       self.coder.io.tool_error(f"Exception in connector: {str(e)}")
-      return json.dumps({
-        "error": str(e)
-      })
+      return
 
   def reset_before_action(self):
     self.coder.io.reset_state(False)
@@ -913,7 +903,7 @@ class Connector:
       await self.send_log_message("error", f"Failed to update environment variables: {str(e)}")
 
   async def run_command(self, command):
-    if command.startswith("/map"):
+    if command.strip() == "/map":
       repo_map = self.coder.repo_map.get_repo_map(set(), self.coder.get_all_abs_files()) if self.coder.repo_map else None
       if repo_map:
         await self.send_log_message("info", repo_map)

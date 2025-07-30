@@ -8,6 +8,7 @@
 - fixed command output messages in the context
 - added hourly, daily, monthly, yearly aggregation for dashboard data
 - added support for non-git projects
+- fixed map-refresh command not to display the map
 
 ## [0.24.0]
 
