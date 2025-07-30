@@ -979,7 +979,7 @@ class Connector:
         self.thinking_tokens = None
       await self.send_current_models()
     elif command.startswith("/reset") or command.startswith("/drop"):
-      await self.send_add_context_files()
+      await self.send_update_context_files()
 
   async def send_autocompletion(self, files):
     try:
@@ -1087,6 +1087,13 @@ class Connector:
         "path": file["path"],
         "readOnly": file["readOnly"]
       })
+
+  async def send_update_context_files(self, coder=None):
+    context_files = self.get_context_files(coder)
+    await self.sio.emit("message", {
+      "action": "update-context-files",
+      "files": context_files
+    })
 
   async def send_current_models(self):
     error = None
