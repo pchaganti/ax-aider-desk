@@ -10,6 +10,7 @@
 - added support for non-git projects
 - fixed map-refresh command not to display the map
 - added integrated terminal component
+- added model selectors loaded from the Requesty and OpenRouter APIs
 
 ## [0.24.0]
 
