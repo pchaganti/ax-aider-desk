@@ -11,6 +11,7 @@
 - fixed map-refresh command not to display the map
 - added integrated terminal component
 - added model selectors loaded from the Requesty and OpenRouter APIs
+- added advanced settings to OpenRouter provider
 
 ## [0.24.0]
 
