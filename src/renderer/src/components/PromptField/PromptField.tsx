@@ -104,6 +104,7 @@ type Props = {
   clearLogMessages: () => void;
   toggleTerminal?: () => void;
   terminalVisible?: boolean;
+  scrollToBottom?: () => void;
 };
 
 export const PromptField = forwardRef<PromptFieldRef, Props>(
@@ -135,6 +136,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       clearLogMessages,
       toggleTerminal,
       terminalVisible = false,
+      scrollToBottom,
     }: Props,
     ref,
   ) => {
@@ -498,6 +500,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     };
 
     const handleSubmit = () => {
+      scrollToBottom?.();
       if (text) {
         if (text.startsWith('/') && !isPathLike(text)) {
           // Check if it's a custom command

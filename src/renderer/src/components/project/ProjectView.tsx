@@ -872,6 +872,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               clearLogMessages={clearLogMessages}
               toggleTerminal={toggleTerminal}
               terminalVisible={terminalVisible}
+              scrollToBottom={messagesRef.current?.scrollToBottom}
             />
           </div>
         </div>
