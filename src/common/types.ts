@@ -42,6 +42,7 @@ export interface ResponseCompletedData {
   commitMessage?: string;
   diff?: string;
   usageReport?: UsageReportData;
+  sequenceNumber?: number;
 }
 
 export interface CommandOutputData {

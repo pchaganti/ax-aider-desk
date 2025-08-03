@@ -12,6 +12,7 @@
 - added integrated terminal component
 - added model selectors loaded from the Requesty and OpenRouter APIs
 - added advanced settings to OpenRouter provider
+- correctly handling user's rejected message to Architect plan
 
 ## [0.24.0]
 
