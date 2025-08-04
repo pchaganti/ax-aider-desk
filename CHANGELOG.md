@@ -4,6 +4,7 @@
 
 - pasting image processed in AiderDesk instead of using Aider to handle it
 - added image file processing support for Agent context
+- using relative path for web scrapped content files
 
 ## [0.25.0]
 

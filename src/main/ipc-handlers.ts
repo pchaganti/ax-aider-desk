@@ -332,7 +332,7 @@ export const setupIpcHandlers = (
       }
 
       await fs.writeFile(targetFilePath, `Scraped content of ${url}:\n\n${content}`);
-      await project.addFile({ path: targetFilePath, readOnly: true });
+      await project.addFile({ path: path.relative(baseDir, targetFilePath), readOnly: true });
       if (filePath) {
         await project.addToInputHistory(`/web ${url} ${filePath}`);
       } else {
