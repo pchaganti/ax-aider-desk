@@ -940,29 +940,14 @@ class Connector:
       self.coder.io.processing_loading_message = True
       await self.send_log_message("loading", "Committing changes...")
 
-    if command.startswith("/paste"):
-      original_mkdtemp = tempfile.mkdtemp
-      tmp_dir = os.path.join(self.base_dir, '.aider-desk', 'tmp')
-      os.makedirs(tmp_dir, exist_ok=True)
+    # run the command
+    self.coder.commands.run(command)
 
-      def patched_mkdtemp(*args, **kwargs):
-        kwargs['dir'] = tmp_dir
-        return original_mkdtemp(*args, **kwargs)
-
-      tempfile.mkdtemp = patched_mkdtemp
-
-      try:
-        self.coder.commands.run(command)
-      finally:
-        tempfile.mkdtemp = original_mkdtemp
-    else:
-      self.coder.commands.run(command)
-
+    # reset flags
     self.coder.io.running_shell_command = False
     self.coder.io.processing_loading_message = False
-    if command.startswith("/paste"):
-      await self.send_add_context_files()
-    elif command.startswith("/map-refresh"):
+
+    if command.startswith("/map-refresh"):
       await self.send_log_message("info", "The repo map has been refreshed.")
       await self.send_repo_map()
     elif command.startswith("/reasoning-effort"):

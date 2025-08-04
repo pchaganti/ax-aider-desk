@@ -792,7 +792,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                     if (items) {
                       for (let i = 0; i < items.length; i++) {
                         if (items[i].type.indexOf('image') !== -1) {
-                          window.api.runCommand(baseDir, 'paste');
+                          window.api.pasteImage(baseDir);
                           break;
                         }
                       }

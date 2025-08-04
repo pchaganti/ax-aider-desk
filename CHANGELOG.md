@@ -2,6 +2,8 @@
 
 ## [UNRELEASED]
 
+- pasting image processed in AiderDesk instead of using Aider to handle it
+
 ## [0.25.0]
 
 - improved connection and communication with Aider
