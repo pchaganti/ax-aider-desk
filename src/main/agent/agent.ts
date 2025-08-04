@@ -11,6 +11,7 @@ import {
   type CoreUserMessage,
   type FinishReason,
   generateText,
+  type ImagePart,
   InvalidToolArgumentsError,
   NoSuchToolError,
   type StepResult,
@@ -27,6 +28,7 @@ import { jsonSchemaToZod } from '@n8n/json-schema-to-zod';
 import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
 import { ZodSchema } from 'zod';
 import { isBinary } from 'istextorbinary';
+import { fileTypeFromBuffer } from 'file-type';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import { createPowerToolset } from './tools/power';
@@ -74,16 +76,38 @@ export class Agent {
     }
   }
 
-  private async getFilesContentForPrompt(files: ContextFile[], project: Project): Promise<string> {
-    const fileSections = await Promise.all(
+  private async getFilesContentForPrompt(files: ContextFile[], project: Project): Promise<{ textFileContents: string[]; imageParts: ImagePart[] }> {
+    const textFileContents: string[] = [];
+    const imageParts: ImagePart[] = [];
+
+    const fileInfos = await Promise.all(
       files.map(async (file) => {
         try {
           const filePath = path.resolve(project.baseDir, file.path);
           const fileContentBuffer = await fs.readFile(filePath);
 
-          // Skip known binary extensions
+          // If binary, try to detect if it's an image using image-type and return base64
           if (isBinary(filePath, fileContentBuffer)) {
-            logger.debug(`Skipping binary file: ${file.path}`);
+            try {
+              const detected = await fileTypeFromBuffer(fileContentBuffer);
+              if (detected?.mime.startsWith('image/')) {
+                const imageBase64 = fileContentBuffer.toString('base64');
+                logger.debug(`Detected image file: ${file.path}`);
+
+                return {
+                  path: file.path,
+                  content: null,
+                  readOnly: file.readOnly,
+                  imageBase64,
+                  mimeType: detected.mime,
+                  isImage: true,
+                };
+              }
+            } catch (e) {
+              logger.warn(`image-type failed to detect image for ${file.path}`, { error: e instanceof Error ? e.message : String(e) });
+            }
+
+            logger.debug(`Skipping non-image binary file: ${file.path}`);
             return null;
           }
 
@@ -99,6 +123,7 @@ export class Agent {
             path: file.path,
             content,
             readOnly: file.readOnly,
+            isImage: false,
           };
         } catch (error) {
           logger.error('Error reading context file:', {
@@ -110,13 +135,24 @@ export class Agent {
       }),
     );
 
-    return fileSections
-      .filter(Boolean)
-      .map((file) => {
+    // Process the results and separate text files from images
+    fileInfos.filter(Boolean).forEach((file) => {
+      if (file!.isImage && file!.imageBase64) {
+        // Add to imageParts array
+        imageParts.push({
+          type: 'image',
+          image: `data:${file!.mimeType};base64,${file!.imageBase64}`,
+          mimeType: file!.mimeType,
+        });
+      } else if (!file!.isImage && file!.content) {
+        // Add to textFileContents array
         const filePath = path.isAbsolute(file!.path) ? path.relative(project.baseDir, file!.path) : file!.path;
-        return `<file>\n  <path>${filePath}</path>\n  <content-with-line-numbers>\n${file!.content}</content-with-line-numbers>\n</file>`;
-      })
-      .join('\n\n'); // Join sections into a single string
+        const textContent = `<file>\n  <path>${filePath}</path>\n  <content-with-line-numbers>\n${file!.content}</content-with-line-numbers>\n</file>`;
+        textFileContents.push(textContent);
+      }
+    });
+
+    return { textFileContents, imageParts };
   }
 
   private async getContextFilesMessages(project: Project, profile: AgentProfile, contextFiles: ContextFile[]): Promise<CoreMessage[]> {
@@ -141,37 +177,42 @@ export class Agent {
         ([readOnly, editable], file) => (file.readOnly ? [[...readOnly, file], editable] : [readOnly, [...editable, file]]),
         [[], []] as [ContextFile[], ContextFile[]],
       );
+      const allImageParts: ImagePart[] = [];
 
       // Process readonly files first
       if (readOnlyFiles.length > 0) {
-        const fileContent = await this.getFilesContentForPrompt(readOnlyFiles, project);
-        if (fileContent) {
+        const { textFileContents, imageParts } = await this.getFilesContentForPrompt(readOnlyFiles, project);
+
+        if (textFileContents.length > 0) {
           messages.push({
             role: 'user',
             content:
               (profile.useAiderTools
                 ? 'The following files are already part of the Aider context as READ-ONLY reference material. You can analyze and reference their content, but you must NOT modify, edit, or suggest changes to these files. Use them only for understanding context and making informed decisions about other files:\n\n'
                 : 'The following files are provided as READ-ONLY reference material. You can analyze and reference their content, but you must NOT modify, edit, or suggest changes to these files. Use them only for understanding context and making informed decisions:\n\n') +
-              fileContent,
+              textFileContents.join('\n\n'),
           });
           messages.push({
             role: 'assistant',
             content: 'Understood. I will use the provided files as read-only references and will not attempt to modify their content.',
           });
         }
+
+        allImageParts.push(...imageParts);
       }
 
       // Process editable files
       if (editableFiles.length > 0) {
-        const fileContent = await this.getFilesContentForPrompt(editableFiles, project);
-        if (fileContent) {
+        const { textFileContents, imageParts } = await this.getFilesContentForPrompt(editableFiles, project);
+
+        if (textFileContents.length > 0) {
           messages.push({
             role: 'user',
             content:
               (profile.useAiderTools
                 ? 'The following files are available for editing and modification. These files are already loaded in the Aider context, so you can directly use Aider tools to modify them without needing to add them to the context first. The content shown below is current and up-to-date:\n\n'
                 : 'The following files are available for editing and modification. The content shown below is current and up-to-date, so you can reference it directly without needing to read the files again. You may suggest changes or modifications to these files:\n\n') +
-              fileContent,
+              textFileContents.join('\n\n'),
           });
           messages.push({
             role: 'assistant',
@@ -180,6 +221,19 @@ export class Agent {
               : 'Understood. The content of these files is current, and I will refer to them as editable files without needing to read them again.',
           });
         }
+
+        allImageParts.push(...imageParts);
+      }
+
+      if (allImageParts.length > 0) {
+        messages.push({
+          role: 'user',
+          content: allImageParts,
+        });
+        messages.push({
+          role: 'assistant',
+          content: 'I can see the provided images and will use them for reference.',
+        });
       }
     }
 

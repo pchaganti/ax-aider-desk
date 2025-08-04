@@ -77,6 +77,7 @@
     "electron-store": "^10.0.0",
     "electron-updater": "^6.1.7",
     "express": "^4.21.2",
+    "file-type": "^21.0.0",
     "fix-path": "^4.0.0",
     "focus-trap-react": "^11.0.3",
     "framer-motion": "^11.18.2",
