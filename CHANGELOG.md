@@ -1,5 +1,7 @@
 # Changelog
 
+## [UNRELEASED]
+
 ## [0.25.0]
 
 - improved connection and communication with Aider
