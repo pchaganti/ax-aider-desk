@@ -7,6 +7,7 @@
 - using relative path for web scrapped content files
 - properly adding files recursively when directory is added to context
 - AGENTS.md instead of PROJECT.md when using /init
+- using "diff" mode as default for models in Aider
 
 ## [0.25.0]
 

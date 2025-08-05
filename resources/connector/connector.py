@@ -838,7 +838,7 @@ class Connector:
           model = models.Model(main_model, weak_model=weak_model)
 
           if not edit_format:
-            edit_format = model.edit_format
+            edit_format = "diff"
 
           model.set_reasoning_effort(self.coder.main_model.get_reasoning_effort())
           model.set_thinking_tokens(self.coder.main_model.get_thinking_tokens())
