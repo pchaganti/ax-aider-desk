@@ -98,7 +98,9 @@
       "quantizations": "Quantizations",
       "quantizationsDescription": "List of quantization levels to filter by (e.g. [\"int4\", \"int8\"]).",
       "sort": "Sort",
-      "sortDescription": "Sort providers by price or throughput."
+      "sortDescription": "Sort providers by price or throughput.",
+      "requireParameters": "Require Parameters",
+      "requireParametersDescription": "Only use providers that support all parameters in your request."
     },
     "agent": {
       "title": "Meet Your AI Agent",

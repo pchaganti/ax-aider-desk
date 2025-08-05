@@ -98,7 +98,9 @@
       "quantizations": "量化",
       "quantizationsDescription": "按量化级别过滤的列表（例如 [\"int4\", \"int8\"]）",
       "sort": "排序",
-      "sortDescription": "按价格或吞吐量对提供商进行排序"
+      "sortDescription": "按价格或吞吐量对提供商进行排序",
+      "requireParameters": "要求参数",
+      "requireParametersDescription": "是否要求提供商支持模型参数。"
     },
     "agent": {
       "title": "认识您的AI代理",

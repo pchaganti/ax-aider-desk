@@ -119,6 +119,7 @@ export interface OpenRouterProvider extends LlmProviderBase {
   apiKey: string;
   models: string[];
   // Advanced routing options
+  requireParameters: boolean;
   order: string[];
   only: string[];
   ignore: string[];
@@ -316,6 +317,7 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
           ignore: [],
           quantizations: [],
           sort: 'price',
+          requireParameters: true,
         } satisfies OpenRouterProvider;
         break;
       case 'lmstudio':

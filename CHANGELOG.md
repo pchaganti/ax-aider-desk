@@ -8,6 +8,7 @@
 - properly adding files recursively when directory is added to context
 - AGENTS.md instead of PROJECT.md when using /init
 - using "diff" mode as default for models in Aider
+- added configurable require_parameters for OpenRouter
 
 ## [0.25.0]
 

@@ -163,7 +163,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
       },
       extraBody: {
         provider: {
-          require_parameters: true,
+          require_parameters: provider.requireParameters,
           order: provider.order?.length ? provider.order : undefined,
           only: provider.only?.length ? provider.only : undefined,
           ignore: provider.ignore?.length ? provider.ignore : undefined,
