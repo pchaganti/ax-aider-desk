@@ -664,7 +664,7 @@
     "copy-context": "Copy the current chat context as markdown, suitable to paste into a web UI",
     "drop": "Remove files from the context to free up context space",
     "edit-last": "Edits the last user message",
-    "init": "Initializes PROJECT.md rule file with project information",
+    "init": "Initializes AGENTS.md rule file with project information",
     "agentModeOnly": "Agent mode only",
     "map": "Print out the current repository map",
     "map-refresh": "Force a refresh of the repository map",

@@ -658,7 +658,7 @@
     "copy-context": "将当前聊天上下文复制为 Markdown 格式，适合粘贴到 Web UI 中。",
     "drop": "从上下文中删除文件以释放上下文空间。",
     "edit-last": "编辑最后一条用户消息",
-    "init": "使用项目信息初始化 PROJECT.md 规则文件",
+    "init": "使用项目信息初始化 AGENTS.md 规则文件",
     "agentModeOnly": "仅在代理模式下可用",
     "map": "打印当前仓库地图",
     "map-refresh": "强制刷新仓库地图",
@@ -713,7 +713,7 @@
     "periods": {
       "hour": "小时",
       "day": "天",
-      "month": "月", 
+      "month": "月",
       "year": "年"
     },
     "tabs": {

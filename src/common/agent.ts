@@ -201,7 +201,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   autoApprove: false,
 };
 
-export const INIT_PROJECT_RULES_AGENT_PROFILE: AgentProfile = {
+export const INIT_PROJECT_AGENTS_PROFILE: AgentProfile = {
   ...DEFAULT_AGENT_PROFILE,
   id: 'init',
   maxIterations: 50,

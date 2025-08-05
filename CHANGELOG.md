@@ -6,6 +6,7 @@
 - added image file processing support for Agent context
 - using relative path for web scrapped content files
 - properly adding files recursively when directory is added to context
+- AGENTS.md instead of PROJECT.md when using /init
 
 ## [0.25.0]
 

@@ -426,7 +426,7 @@ export const setupIpcHandlers = (
   });
 
   ipcMain.handle('init-project-rules-file', async (_, baseDir: string) => {
-    return await projectManager.getProject(baseDir).initProjectRulesFile();
+    return await projectManager.getProject(baseDir).initProjectAgentsFile();
   });
 
   ipcMain.handle('get-todos', async (_, baseDir: string) => {

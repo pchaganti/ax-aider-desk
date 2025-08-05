@@ -42,7 +42,7 @@ import {
   DeepseekProvider,
   GeminiProvider,
   getLlmProviderConfig,
-  INIT_PROJECT_RULES_AGENT_PROFILE,
+  INIT_PROJECT_AGENTS_PROFILE,
   isAnthropicProvider,
   isBedrockProvider,
   isDeepseekProvider,
@@ -1592,12 +1592,12 @@ export class Project {
     return [];
   }
 
-  async initProjectRulesFile(): Promise<void> {
-    logger.info('Initializing PROJECT.md rules file', {
+  async initProjectAgentsFile(): Promise<void> {
+    logger.info('Initializing AGENTS.md file', {
       baseDir: this.baseDir,
     });
 
-    this.addLogMessage('loading', 'Analyzing project to create PROJECT.md rules file...');
+    this.addLogMessage('loading', 'Analyzing project to create AGENTS.md...');
 
     const messages = this.sessionManager.getContextMessages();
     const files = this.sessionManager.getContextFiles();
@@ -1612,9 +1612,8 @@ export class Project {
         throw new Error('No active agent profile found');
       }
 
-      // Create a modified INIT_PROJECT_RULES_AGENT_PROFILE with active profile's provider and model
       const initProjectRulesAgentProfile: AgentProfile = {
-        ...INIT_PROJECT_RULES_AGENT_PROFILE,
+        ...INIT_PROJECT_AGENTS_PROFILE,
         provider: activeProfile.provider,
         model: activeProfile.model,
       };
@@ -1622,34 +1621,34 @@ export class Project {
       // Run the agent with the modified profile
       await this.runPromptInAgent(initProjectRulesAgentProfile, getInitProjectPrompt());
 
-      // Check if the PROJECT.md file was created
-      const projectRulesPath = path.join(this.baseDir, '.aider-desk', 'rules', 'PROJECT.md');
-      const projectRulesExists = await fileExists(projectRulesPath);
+      // Check if the AGENTS.md file was created
+      const projectAgentsPath = path.join(this.baseDir, 'AGENTS.md');
+      const projectAgentsFileExists = await fileExists(projectAgentsPath);
 
-      if (projectRulesExists) {
-        logger.info('PROJECT.md file created successfully', {
-          path: projectRulesPath,
+      if (projectAgentsFileExists) {
+        logger.info('AGENTS.md file created successfully', {
+          path: projectAgentsPath,
         });
-        this.addLogMessage('info', 'PROJECT.md has been successfully initialized.');
+        this.addLogMessage('info', 'AGENTS.md has been successfully initialized.');
 
         // Ask the user if they want to add this file to .aider.conf.yml
         const [answer] = await this.askQuestion({
           baseDir: this.baseDir,
-          text: 'Do you want to add this file as read-only file for Aider (in .aider.conf.yml)?',
+          text: 'Do you want to add AGENTS.md as read-only file for Aider (in .aider.conf.yml)?',
           defaultAnswer: 'y',
           internal: false,
         });
 
         if (answer === 'y') {
-          await this.addProjectRulesToAiderConfig();
+          await this.addProjectAgentsToAiderConfig();
         }
       } else {
-        logger.warn('PROJECT.md file was not created');
-        this.addLogMessage('warning', 'PROJECT.md file was not created.');
+        logger.warn('AGENTS.md file was not created');
+        this.addLogMessage('warning', 'AGENTS.md file was not created.');
       }
     } catch (error) {
-      logger.error('Error initializing PROJECT.md rules file:', error);
-      this.addLogMessage('error', `Failed to initialize PROJECT.md rules file: ${error instanceof Error ? error.message : String(error)}`);
+      logger.error('Error initializing AGENTS.md file:', error);
+      this.addLogMessage('error', `Failed to initialize AGENTS.md file: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     } finally {
       this.sessionManager.setContextFiles(files, false);
@@ -1657,9 +1656,9 @@ export class Project {
     }
   }
 
-  private async addProjectRulesToAiderConfig(): Promise<void> {
+  private async addProjectAgentsToAiderConfig(): Promise<void> {
     const aiderConfigPath = path.join(this.baseDir, '.aider.conf.yml');
-    const projectRulesRelativePath = '.aider-desk/rules/PROJECT.md';
+    const projectAgentsRelativePath = 'AGENTS.md';
 
     try {
       let config: { read?: string | string[] } = {};
@@ -1678,19 +1677,19 @@ export class Project {
       }
 
       // Add PROJECT.md to read section if not already present
-      if (!config.read.includes(projectRulesRelativePath)) {
-        config.read.push(projectRulesRelativePath);
+      if (!config.read.includes(projectAgentsRelativePath)) {
+        config.read.push(projectAgentsRelativePath);
 
         // Write the updated config
         const yamlContent = YAML.stringify(config);
         await fs.writeFile(aiderConfigPath, yamlContent, 'utf8');
 
-        logger.info('Added PROJECT.md to .aider.conf.yml', {
+        logger.info('Added AGENTS.md to .aider.conf.yml', {
           path: aiderConfigPath,
         });
-        this.addLogMessage('info', `Added ${projectRulesRelativePath} to .aider.conf.yml`);
+        this.addLogMessage('info', `Added ${projectAgentsRelativePath} to .aider.conf.yml`);
       } else {
-        logger.info('PROJECT.md already exists in .aider.conf.yml');
+        logger.info('AGENTS.md already exists in .aider.conf.yml');
       }
     } catch (error) {
       logger.error('Error updating .aider.conf.yml:', error);
