@@ -9,6 +9,7 @@
 - AGENTS.md instead of PROJECT.md when using /init
 - using "diff" mode as default for models in Aider
 - added configurable require_parameters for OpenRouter
+- updated prompt field placeholders with real like examples
 
 ## [0.25.0]
 
