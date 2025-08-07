@@ -11,6 +11,7 @@ import {
   AgentProfile,
   ContextFile,
   ContextMessage,
+  ContextAssistantMessage,
   CustomCommand,
   EditFormat,
   FileEdit,
@@ -21,6 +22,7 @@ import {
   Mode,
   ModelsData,
   ProjectSettings,
+  PromptContext,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -87,13 +89,13 @@ export class Project {
   private questionAnswers: Map<string, 'y' | 'n'> = new Map();
   private allTrackedFiles: string[] = [];
   private currentResponseMessageId: string | null = null;
-  private currentPromptId: string | null = null;
+  private currentPromptContext: PromptContext | null = null;
   private inputHistoryFile = '.aider.input.history';
   private aiderModels: ModelsData | null = null;
   private tokensInfo: TokensInfoData;
   private currentPromptResponses: ResponseCompletedData[] = [];
   private runPromptResolves: ((value: ResponseCompletedData[]) => void)[] = [];
-  private sessionManager: SessionManager = new SessionManager(this);
+  public sessionManager: SessionManager = new SessionManager(this);
   private customCommandManager: CustomCommandManager;
   private taskManager: TaskManager = new TaskManager();
   private commandOutputs: Map<string, string> = new Map();
@@ -156,7 +158,7 @@ export class Project {
 
     this.agentTotalCost = 0;
     this.aiderTotalCost = 0;
-    this.currentPromptId = null;
+    this.currentPromptContext = null;
     this.currentResponseMessageId = null;
     this.currentCommand = null;
     this.currentQuestion = null;
@@ -517,7 +519,7 @@ export class Project {
         this.currentCommand = null;
         this.currentQuestion = null;
         this.currentResponseMessageId = null;
-        this.currentPromptId = null;
+        this.currentPromptContext = null;
         this.currentPromptResponses = [];
 
         this.runPromptResolves.forEach((resolve) => resolve([]));
@@ -538,7 +540,7 @@ export class Project {
   }
 
   private async waitForCurrentPromptToFinish() {
-    if (this.currentPromptId) {
+    if (this.currentPromptContext) {
       logger.info('Waiting for prompt to finish...');
       await new Promise<void>((resolve) => {
         this.runPromptResolves.push(() => resolve());
@@ -569,6 +571,11 @@ export class Project {
 
     this.telemetryManager.captureRunPrompt(mode);
 
+    // Generate promptContext for this run
+    const promptContext: PromptContext = {
+      id: uuidv4(),
+    };
+
     if (mode === 'agent') {
       const profile = getActiveAgentProfile(this.store.getSettings(), this.store.getProjectSettings(this.baseDir));
       logger.debug('AgentProfile:', profile);
@@ -577,24 +584,42 @@ export class Project {
         throw new Error('No active Agent profile found');
       }
 
-      return this.runPromptInAgent(profile, prompt);
+      return this.runPromptInAgent(profile, prompt, promptContext);
     } else {
-      return this.runPromptInAider(prompt, mode);
+      return this.runPromptInAider(prompt, promptContext, mode);
     }
   }
 
-  public async runPromptInAider(prompt: string, mode?: Mode): Promise<ResponseCompletedData[]> {
-    const responses = await this.sendPrompt(prompt, mode);
+  public async runPromptInAider(prompt: string, promptContext: PromptContext, mode?: Mode): Promise<ResponseCompletedData[]> {
+    const responses = await this.sendPrompt(prompt, promptContext, mode);
     logger.debug('Responses:', { responses });
 
     // add messages to session
-    this.sessionManager.addContextMessage(MessageRole.User, prompt);
+    this.sessionManager.addContextMessage({
+      id: promptContext.id,
+      role: MessageRole.User,
+      content: prompt,
+      promptContext,
+    });
     for (const response of responses) {
-      if (response.reflectedMessage) {
-        this.sessionManager.addContextMessage(MessageRole.User, response.reflectedMessage);
-      }
-      if (response.content) {
-        this.sessionManager.addContextMessage(MessageRole.Assistant, response.content);
+      // if (response.reflectedMessage) {
+      //   this.sessionManager.addContextMessage(MessageRole.User, response.reflectedMessage);
+      // }
+      if (response.content || response.reflectedMessage) {
+        // Create enhanced assistant message with full metadata
+        const assistantMessage: ContextAssistantMessage = {
+          id: response.messageId,
+          role: MessageRole.Assistant,
+          content: response.content,
+          usageReport: response.usageReport,
+          reflectedMessage: response.reflectedMessage,
+          editedFiles: response.editedFiles,
+          commitHash: response.commitHash,
+          commitMessage: response.commitMessage,
+          diff: response.diff,
+          promptContext,
+        };
+        this.sessionManager.addContextMessage(assistantMessage);
       }
     }
 
@@ -606,11 +631,12 @@ export class Project {
   public async runPromptInAgent(
     profile: AgentProfile,
     prompt: string,
+    promptContext: PromptContext = { id: uuidv4() },
     contextMessages?: ContextMessage[],
     contextFiles?: ContextFile[],
     systemPrompt?: string,
   ): Promise<ResponseCompletedData[]> {
-    const agentMessages = await this.agent.runAgent(this, profile, prompt, contextMessages, contextFiles, systemPrompt);
+    const agentMessages = await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt);
     if (agentMessages.length > 0) {
       agentMessages.forEach((message) => this.sessionManager.addContextMessage(message));
 
@@ -632,20 +658,27 @@ export class Project {
     contextFiles: ContextFile[],
     systemPrompt?: string,
     abortSignal?: AbortSignal,
+    promptContext?: PromptContext,
   ): Promise<ContextMessage[]> {
-    return await this.agent.runAgent(this, profile, prompt, [], contextFiles, systemPrompt, abortSignal);
+    return await this.agent.runAgent(this, profile, prompt, promptContext, [], contextFiles, systemPrompt, abortSignal);
   }
 
-  public sendPrompt(prompt: string, mode?: Mode, messages?: { role: MessageRole; content: string }[], files?: ContextFile[]): Promise<ResponseCompletedData[]> {
+  public sendPrompt(
+    prompt: string,
+    promptContext: PromptContext = { id: uuidv4() },
+    mode?: Mode,
+    messages?: { role: MessageRole; content: string }[],
+    files?: ContextFile[],
+  ): Promise<ResponseCompletedData[]> {
     this.currentPromptResponses = [];
     this.currentResponseMessageId = null;
-    this.currentPromptId = uuidv4();
+    this.currentPromptContext = promptContext;
 
     const connectorMessages = messages || this.sessionManager.toConnectorMessages();
     const contextFiles = files || this.sessionManager.getContextFiles();
 
     this.findMessageConnectors('prompt').forEach((connector) => {
-      connector.sendPromptMessage(prompt, mode, this.getArchitectModel(), this.currentPromptId, connectorMessages, contextFiles);
+      connector.sendPromptMessage(prompt, promptContext, mode, this.getArchitectModel(), connectorMessages, contextFiles);
     });
 
     // Wait for prompt to finish and return collected responses
@@ -659,10 +692,10 @@ export class Project {
   }
 
   public promptFinished(promptId?: string) {
-    if (promptId && promptId !== this.currentPromptId) {
+    if (promptId && promptId !== this.currentPromptContext?.id) {
       logger.debug('Received prompt finished for different prompt id', {
         baseDir: this.baseDir,
-        expectedPromptId: this.currentPromptId,
+        expectedPromptId: this.currentPromptContext?.id,
         receivedPromptId: promptId,
       });
       return;
@@ -680,7 +713,7 @@ export class Project {
     // Notify waiting prompts with collected responses
     const responses = [...this.currentPromptResponses];
     this.currentPromptResponses = [];
-    this.currentPromptId = null;
+    this.currentPromptContext = null;
     this.closeCommandOutput();
 
     while (this.runPromptResolves.length) {
@@ -699,6 +732,7 @@ export class Project {
         baseDir: this.baseDir,
         chunk: message.content,
         reflectedMessage: message.reflectedMessage,
+        promptContext: message.promptContext,
       };
       this.mainWindow.webContents.send('response-chunk', data);
     } else {
@@ -730,6 +764,7 @@ export class Project {
         diff: message.diff,
         usageReport,
         sequenceNumber: message.sequenceNumber,
+        promptContext: message.promptContext,
       };
 
       this.sendResponseCompleted(data);
@@ -1141,12 +1176,13 @@ export class Project {
     this.currentCommand = null;
   }
 
-  public addLogMessage(level: LogLevel, message?: string, finished = false) {
+  public addLogMessage(level: LogLevel, message?: string, finished = false, promptContext?: PromptContext) {
     const data: LogData = {
       baseDir: this.baseDir,
       level,
       message,
       finished,
+      promptContext,
     };
 
     this.mainWindow.webContents.send('log', data);
@@ -1156,14 +1192,14 @@ export class Project {
     return this.sessionManager.getContextMessages();
   }
 
-  public async addContextMessage(role: MessageRole, content: string) {
+  public async addContextMessage(role: MessageRole, content: string, usageReport?: UsageReportData) {
     logger.debug('Adding context message to session:', {
       baseDir: this.baseDir,
       role,
       content: content.substring(0, 30),
     });
 
-    this.sessionManager.addContextMessage(role, content);
+    this.sessionManager.addContextMessage(role, content, usageReport);
     await this.updateContextInfo();
   }
 
@@ -1204,7 +1240,15 @@ export class Project {
     this.findMessageConnectors('apply-edits').forEach((connector) => connector.sendApplyEditsMessage(edits));
   }
 
-  public addToolMessage(id: string, serverName: string, toolName: string, args?: Record<string, unknown>, response?: string, usageReport?: UsageReportData) {
+  public addToolMessage(
+    id: string,
+    serverName: string,
+    toolName: string,
+    args?: Record<string, unknown>,
+    response?: string,
+    usageReport?: UsageReportData,
+    promptContext?: PromptContext,
+  ) {
     logger.debug('Sending tool message:', {
       id,
       baseDir: this.baseDir,
@@ -1213,6 +1257,7 @@ export class Project {
       args,
       response,
       usageReport,
+      promptContext,
     });
     const data: ToolData = {
       baseDir: this.baseDir,
@@ -1222,6 +1267,7 @@ export class Project {
       args,
       response,
       usageReport,
+      promptContext,
     };
 
     if (response && usageReport) {
@@ -1256,7 +1302,7 @@ export class Project {
     }
   }
 
-  public addUserMessage(content: string, mode?: Mode) {
+  public addUserMessage(content: string, mode?: Mode, promptContext?: PromptContext) {
     logger.info('Adding user message:', {
       baseDir: this.baseDir,
       content: content.substring(0, 100),
@@ -1267,6 +1313,7 @@ export class Project {
       baseDir: this.baseDir,
       content,
       mode,
+      promptContext,
     };
 
     this.mainWindow.webContents.send('user-message', data);
@@ -1351,7 +1398,7 @@ export class Project {
         await this.sessionManager.loadMessages(this.sessionManager.getContextMessages());
       }
     } else {
-      const responses = await this.sendPrompt(getCompactConversationPrompt(customInstructions), 'ask', undefined, []);
+      const responses = await this.sendPrompt(getCompactConversationPrompt(customInstructions), undefined, 'ask', undefined, []);
 
       // add messages to session
       this.sessionManager.setContextMessages([userMessage], false);
@@ -1772,10 +1819,13 @@ ${error.stderr}`,
 
         const messages = command.includeContext === false ? [] : undefined;
         const contextFiles = command.includeContext === false ? [] : undefined;
-        await this.runPromptInAgent(profile, prompt, messages, contextFiles, systemPrompt);
+        await this.runPromptInAgent(profile, prompt, undefined, messages, contextFiles, systemPrompt);
       } else {
         // All other modes (code, ask, architect)
-        await this.runPromptInAider(prompt, mode);
+        const promptContext: PromptContext = {
+          id: uuidv4(),
+        };
+        await this.runPromptInAider(prompt, promptContext, mode);
       }
     } finally {
       // Clear loading message after execution completes (success or failure)

@@ -4,11 +4,20 @@ import { homedir } from 'os';
 
 import dotenv from 'dotenv';
 import { v4 as uuidv4 } from 'uuid';
-import { AgentProfile, ContextFile, ContextMessage, McpTool, SettingsData, ToolApprovalState, UsageReportData } from '@common/types';
+import {
+  AgentProfile,
+  ContextFile,
+  ContextMessage,
+  ContextUserMessage,
+  McpTool,
+  PromptContext,
+  SettingsData,
+  ToolApprovalState,
+  UsageReportData,
+} from '@common/types';
 import {
   APICallError,
   type CoreMessage,
-  type CoreUserMessage,
   type FinishReason,
   generateText,
   type ImagePart,
@@ -39,6 +48,7 @@ import { createHelpersToolset } from './tools/helpers';
 import { calculateCost, createLlm, getCacheControl, getProviderOptions, getUsageReport } from './llm-providers';
 import { MCP_CLIENT_TIMEOUT, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
+import { extractPromptContextFromToolResult } from './utils';
 
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
 
@@ -50,6 +60,7 @@ import { parseAiderEnv } from '@/utils';
 import { optimizeMessages } from '@/agent/optimizer';
 import { ModelInfoManager } from '@/models/model-info-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
+import { ResponseMessage } from '@/messages';
 
 export class Agent {
   private abortController: AbortController | null = null;
@@ -263,7 +274,12 @@ export class Agent {
     return messages;
   }
 
-  private async getAvailableTools(project: Project, profile: AgentProfile, abortSignal?: AbortSignal): Promise<ToolSet> {
+  private async getAvailableTools(project: Project, profile: AgentProfile, abortSignal?: AbortSignal, promptContext?: PromptContext): Promise<ToolSet> {
+    logger.debug('getAvailableTools', {
+      enabledServers: profile.enabledServers,
+      promptContext,
+    });
+
     const mcpConnectors = await this.mcpManager.getConnectors();
     const approvalManager = new ApprovalManager(project, profile);
 
@@ -296,6 +312,7 @@ export class Agent {
           mcpConnector.client,
           tool,
           approvalManager,
+          promptContext,
         );
       });
 
@@ -303,17 +320,17 @@ export class Agent {
     }, {} as ToolSet);
 
     if (profile.useAiderTools) {
-      const aiderTools = createAiderToolset(project, profile);
+      const aiderTools = createAiderToolset(project, profile, promptContext);
       Object.assign(toolSet, aiderTools);
     }
 
     if (profile.usePowerTools) {
-      const powerTools = createPowerToolset(project, profile, abortSignal);
+      const powerTools = createPowerToolset(project, profile, abortSignal, promptContext);
       Object.assign(toolSet, powerTools);
     }
 
     if (profile.useTodoTools) {
-      const todoTools = createTodoToolset(project, profile);
+      const todoTools = createTodoToolset(project, profile, promptContext);
       Object.assign(toolSet, todoTools);
     }
 
@@ -332,6 +349,7 @@ export class Agent {
     mcpClient: McpSdkClient,
     toolDef: McpTool,
     approvalManager: ApprovalManager,
+    promptContext?: PromptContext,
   ): Tool {
     const toolId = `${serverName}${TOOL_GROUP_NAME_SEPARATOR}${toolDef.name}`;
     let zodSchema: ZodSchema;
@@ -344,7 +362,7 @@ export class Agent {
     }
 
     const execute = async (args: { [x: string]: unknown } | undefined, { toolCallId }: ToolExecutionOptions) => {
-      project.addToolMessage(toolCallId, serverName, toolDef.name, args);
+      project.addToolMessage(toolCallId, serverName, toolDef.name, args, undefined, undefined, promptContext);
 
       // --- Tool Approval Logic ---
       const questionKey = toolId;
@@ -465,6 +483,7 @@ export class Agent {
     project: Project,
     profile: AgentProfile,
     prompt: string,
+    promptContext?: PromptContext,
     contextMessages: CoreMessage[] = project.getContextMessages(),
     contextFiles: ContextFile[] = project.getContextFiles(),
     systemPrompt?: string,
@@ -473,6 +492,15 @@ export class Agent {
     const settings = this.store.getSettings();
 
     this.telemetryManager.captureAgentRun(profile);
+
+    logger.debug('runAgent', {
+      profile,
+      prompt,
+      promptContext,
+      contextMessages,
+      contextFiles,
+      systemPrompt,
+    });
 
     // Create new abort controller for this run only if abortSignal is not provided
     const shouldCreateAbortController = !abortSignal;
@@ -485,12 +513,14 @@ export class Agent {
     const cacheControl = getCacheControl(profile, llmProvider);
     const providerOptions = getProviderOptions(llmProvider);
 
-    const userRequestMessage: CoreUserMessage = {
+    const userRequestMessage: ContextUserMessage = {
+      id: promptContext?.id || uuidv4(),
       role: 'user',
       content: prompt,
+      promptContext,
     };
     const messages = await this.prepareMessages(project, profile, contextMessages, contextFiles);
-    const resultMessages: CoreMessage[] = [userRequestMessage];
+    const resultMessages: ContextMessage[] = [userRequestMessage];
     const initialUserRequestMessageIndex = messages.length - contextMessages.length;
 
     // add user message
@@ -501,10 +531,10 @@ export class Agent {
       await this.mcpManager.initMcpConnectors(settings.mcpServers, project.baseDir, false, profile.enabledServers);
     } catch (error) {
       logger.error('Error reinitializing MCP clients:', error);
-      project.addLogMessage('error', `Error reinitializing MCP clients: ${error}`);
+      project.addLogMessage('error', `Error reinitializing MCP clients: ${error}`, false, promptContext);
     }
 
-    const toolSet = await this.getAvailableTools(project, profile, effectiveAbortSignal);
+    const toolSet = await this.getAvailableTools(project, profile, effectiveAbortSignal, promptContext);
 
     logger.info(`Running prompt with ${Object.keys(toolSet).length} tools.`);
     logger.debug('Tools:', {
@@ -630,6 +660,8 @@ export class Agent {
           project.addLogMessage(
             'warning',
             `The Agent has reached the maximum number of allowed iterations (${profile.maxIterations}). To allow more iterations, go to Settings -> Agent -> Parameters and increase Max Iterations.`,
+            false,
+            promptContext,
           );
           break;
         }
@@ -637,7 +669,8 @@ export class Agent {
         let iterationError: unknown | null = null;
         let hasReasoning: boolean = false;
         let finishReason: null | FinishReason = null;
-        let responseMessages: CoreMessage[] = [];
+        let responseMessages: ContextMessage[] = [];
+        let currentTextResponse = '';
 
         const result = streamText({
           providerOptions,
@@ -661,14 +694,14 @@ export class Agent {
             logger.error('Error during prompt:', { error });
             iterationError = error;
             if (typeof error === 'string') {
-              project.addLogMessage('error', error);
+              project.addLogMessage('error', error, false, promptContext);
               // @ts-expect-error checking keys in error
             } else if (APICallError.isInstance(error) || ('message' in error && 'responseBody' in error)) {
-              project.addLogMessage('error', `${error.message}: ${error.responseBody}`);
+              project.addLogMessage('error', `${error.message}: ${error.responseBody}`, false, promptContext);
             } else if (error instanceof Error) {
-              project.addLogMessage('error', error.message);
+              project.addLogMessage('error', error.message, false, promptContext);
             } else {
-              project.addLogMessage('error', JSON.stringify(error));
+              project.addLogMessage('error', JSON.stringify(error), false, promptContext);
             }
           },
           onChunk: ({ chunk }) => {
@@ -679,16 +712,21 @@ export class Agent {
                   action: 'response',
                   content: '---\n► **ANSWER**\n',
                   finished: false,
+                  promptContext,
                 });
                 hasReasoning = false;
               }
 
-              project.processResponseMessage({
-                id: currentResponseId,
-                action: 'response',
-                content: chunk.textDelta,
-                finished: false,
-              });
+              if (chunk.textDelta?.trim() || currentTextResponse.trim()) {
+                project.processResponseMessage({
+                  id: currentResponseId,
+                  action: 'response',
+                  content: chunk.textDelta,
+                  finished: false,
+                  promptContext,
+                });
+                currentTextResponse += chunk.textDelta;
+              }
             } else if (chunk.type === 'reasoning') {
               if (!hasReasoning) {
                 project.processResponseMessage({
@@ -696,6 +734,7 @@ export class Agent {
                   action: 'response',
                   content: '---\n► **THINKING**\n',
                   finished: false,
+                  promptContext,
                 });
                 hasReasoning = true;
               }
@@ -705,15 +744,16 @@ export class Agent {
                 action: 'response',
                 content: chunk.textDelta,
                 finished: false,
+                promptContext,
               });
             } else if (chunk.type === 'tool-call-streaming-start') {
-              project.addLogMessage('loading', 'Preparing tool...');
+              project.addLogMessage('loading', 'Preparing tool...', false, promptContext);
             } else if (chunk.type === 'tool-call') {
-              project.addLogMessage('loading', 'Executing tool...');
+              project.addLogMessage('loading', 'Executing tool...', false, promptContext);
             } else {
               // @ts-expect-error key exists
               if (chunk.type === 'tool-result') {
-                project.addLogMessage('loading');
+                project.addLogMessage('loading', undefined, false, promptContext);
               }
             }
           },
@@ -730,11 +770,9 @@ export class Agent {
               return;
             }
 
-            this.processStep<typeof toolSet>(currentResponseId, stepResult, project, profile);
-
+            responseMessages = this.processStep<typeof toolSet>(currentResponseId, stepResult, project, profile, promptContext);
             currentResponseId = uuidv4();
             hasReasoning = false;
-            responseMessages = stepResult.response.messages;
           },
           onFinish: ({ finishReason }) => {
             logger.info(`onFinish prompt finished. Reason: ${finishReason}`);
@@ -774,6 +812,8 @@ export class Agent {
           project.addLogMessage(
             'warning',
             'The Agent has reached the maximum number of allowed tokens. To allow more tokens, go to Settings -> Agent -> Parameters and increase Max Tokens.',
+            false,
+            promptContext,
           );
         }
 
@@ -790,9 +830,14 @@ export class Agent {
 
       logger.error('Error running prompt:', error);
       if (error instanceof Error && (error.message.includes('API key') || error.message.includes('credentials'))) {
-        project.addLogMessage('error', `Error running MCP servers. ${error.message}. Configure credentials in the Settings -> Providers.`);
+        project.addLogMessage(
+          'error',
+          `Error running MCP servers. ${error.message}. Configure credentials in the Settings -> Providers.`,
+          false,
+          promptContext,
+        );
       } else {
-        project.addLogMessage('error', `Error running MCP servers: ${error instanceof Error ? error.message : String(error)}`);
+        project.addLogMessage('error', `Error running MCP servers: ${error instanceof Error ? error.message : String(error)}`, false, promptContext);
       }
     } finally {
       // Clean up abort controller only if we created it
@@ -806,6 +851,7 @@ export class Agent {
         action: 'response',
         content: '',
         finished: true,
+        promptContext,
       });
     }
 
@@ -888,6 +934,15 @@ export class Agent {
       const systemPrompt = await getSystemPrompt(project.baseDir, profile);
       const messages = await this.prepareMessages(project, profile, project.getContextMessages(), project.getContextFiles());
 
+      const settings = this.store.getSettings();
+      const llmProvider = getLlmProviderConfig(profile.provider, settings);
+      const cacheControl = getCacheControl(profile, llmProvider);
+
+      const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
+      const userRequestMessageIndex = lastUserIndex >= 0 ? lastUserIndex : 0;
+
+      const optimizedMessages = optimizeMessages(profile, userRequestMessageIndex, messages, cacheControl);
+
       // Format tools for the prompt
       const toolDefinitions = Object.entries(toolSet).map(([name, tool]) => ({
         name,
@@ -897,10 +952,10 @@ export class Agent {
       const toolDefinitionsString = `Available tools: ${JSON.stringify(toolDefinitions, null, 2)}`;
 
       // Add tool definitions and system prompt to the beginning
-      messages.unshift({ role: 'system', content: toolDefinitionsString });
-      messages.unshift({ role: 'system', content: systemPrompt });
+      optimizedMessages.unshift({ role: 'system', content: toolDefinitionsString });
+      optimizedMessages.unshift({ role: 'system', content: systemPrompt });
 
-      const chatMessages = messages.map((msg) => ({
+      const chatMessages = optimizedMessages.map((msg) => ({
         role: msg.role === 'tool' ? 'user' : msg.role, // Map 'tool' role to user message as gpt-tokenizer does not support tool messages
         content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content), // Handle potential non-string content if necessary
       }));
@@ -919,10 +974,11 @@ export class Agent {
 
   private processStep<TOOLS extends ToolSet>(
     currentResponseId: string,
-    { reasoning, text, toolCalls, toolResults, finishReason, usage, providerMetadata }: StepResult<TOOLS>,
+    { reasoning, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response }: StepResult<TOOLS>,
     project: Project,
     profile: AgentProfile,
-  ): void {
+    promptContext?: PromptContext,
+  ): ContextMessage[] {
     logger.info(`Step finished. Reason: ${finishReason}`, {
       reasoning: reasoning?.substring(0, 100), // Log truncated reasoning
       text: text?.substring(0, 100), // Log truncated text
@@ -930,14 +986,16 @@ export class Agent {
       toolResults: toolResults?.map((tr) => tr.toolName),
       usage,
       providerMetadata,
+      promptContext,
     });
 
+    const messages: ContextMessage[] = [];
     const messageCost = calculateCost(this.modelInfoManager, profile, usage.promptTokens, usage.completionTokens, providerMetadata);
     const usageReport: UsageReportData = getUsageReport(project, profile, messageCost, usage, providerMetadata);
 
     // Process text/reasoning content
-    if (reasoning || text) {
-      project.processResponseMessage({
+    if (reasoning || text?.trim()) {
+      const message: ResponseMessage = {
         id: currentResponseId,
         action: 'response',
         content:
@@ -952,17 +1010,40 @@ ${text.trim()}`
         finished: true,
         // only send usage report if there are no tool results
         usageReport: toolResults?.length ? undefined : usageReport,
-      });
-      project.addLogMessage('loading');
+        promptContext,
+      };
+      project.processResponseMessage(message);
     }
 
     if (toolResults) {
       // Process successful tool results *after* sending text/reasoning and handling errors
       for (const toolResult of toolResults) {
         const [serverName, toolName] = extractServerNameToolName(toolResult.toolName);
+        const toolPromptContext = extractPromptContextFromToolResult(toolResult.result) ?? promptContext;
+
         // Update the existing tool message with the result
-        project.addToolMessage(toolResult.toolCallId, serverName, toolName, toolResult.args, JSON.stringify(toolResult.result), usageReport);
+        project.addToolMessage(toolResult.toolCallId, serverName, toolName, toolResult.args, JSON.stringify(toolResult.result), usageReport, toolPromptContext);
       }
     }
+
+    project.addLogMessage('loading', undefined, false, promptContext);
+
+    response.messages.forEach((message) => {
+      if (message.role === 'assistant') {
+        messages.push({
+          ...message,
+          usageReport: toolResults?.length ? undefined : usageReport,
+          promptContext,
+        });
+      } else if (message.role === 'tool') {
+        messages.push({
+          ...message,
+          usageReport,
+          promptContext,
+        });
+      }
+    });
+
+    return messages;
   }
 }

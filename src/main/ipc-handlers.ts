@@ -190,7 +190,7 @@ export const setupIpcHandlers = (
     if (clearWeakModel) {
       projectSettings.weakModel = null;
     }
-    projectSettings.editFormat = null;
+    projectSettings.editFormat = 'diff';
 
     store.saveProjectSettings(baseDir, projectSettings);
     projectManager.getProject(baseDir).updateModels(mainModel, projectSettings?.weakModel || null);

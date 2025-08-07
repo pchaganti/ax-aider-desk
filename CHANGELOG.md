@@ -11,6 +11,7 @@
 - added configurable require_parameters for OpenRouter
 - updated prompt field placeholders with real like examples
 - added support for arm64 macOS builds
+- message groups for Aider and Sub-agent prompts
 
 ## [0.25.0]
 

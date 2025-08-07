@@ -353,7 +353,8 @@
     "redo": "重做",
     "edit": "编辑",
     "editingLastMessage": "正在编辑最后一条消息",
-    "cancelEdit": "取消编辑"
+    "cancelEdit": "取消编辑",
+    "group": "分组"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
@@ -552,7 +553,10 @@
     "aider": {
       "addContextFiles": "添加文件到 Aider 上下文: {{paths}}",
       "dropContextFiles": "从 Aider 上下文移除文件: {{paths}}",
-      "runPrompt": "运行 Aider 提示: "
+      "runPrompt": "运行 Aider 提示: ",
+      "working": "Aider 正在工作中...",
+      "finishedTask": "Aider 完成了任务。",
+      "noChanges": "Aider 未进行任何更改。"
     },
     "power": {
       "fileRead": "读取文件",
