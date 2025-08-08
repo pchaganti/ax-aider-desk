@@ -14,6 +14,7 @@
 - message groups for Aider and Sub-agent prompts
 - added support for Vertex AI provider
 - increase stdout buffer size for shell commands in custom commands
+- added keyboard navigation to select component
 
 ## [0.25.0]
 
