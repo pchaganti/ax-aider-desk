@@ -15,6 +15,7 @@
 - added support for Vertex AI provider
 - increase stdout buffer size for shell commands in custom commands
 - added keyboard navigation to select component
+- remember last editFormat per model and per project
 
 ## [0.25.0]
 

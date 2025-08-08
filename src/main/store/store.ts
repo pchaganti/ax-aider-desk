@@ -67,6 +67,7 @@ export const getDefaultProjectSettings = (store: Store, baseDir: string): Projec
   return {
     mainModel: determineMainModel(store.getSettings(), baseDir),
     weakModel: determineWeakModel(baseDir),
+    modelEditFormats: {},
     currentMode: 'code',
     renderMarkdown: true,
     agentProfileId: DEFAULT_AGENT_PROFILE.id,
