@@ -12,6 +12,7 @@
 - updated prompt field placeholders with real like examples
 - added support for arm64 macOS builds
 - message groups for Aider and Sub-agent prompts
+- added support for Vertex AI provider
 
 ## [0.25.0]
 
