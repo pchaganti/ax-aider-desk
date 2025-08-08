@@ -13,6 +13,7 @@
 - added support for arm64 macOS builds
 - message groups for Aider and Sub-agent prompts
 - added support for Vertex AI provider
+- increase stdout buffer size for shell commands in custom commands
 
 ## [0.25.0]
 
