@@ -51,6 +51,13 @@ const terminalDataListeners: Record<string, (event: Electron.IpcRendererEvent, d
 const terminalExitListeners: Record<string, (event: Electron.IpcRendererEvent, data: TerminalExitData) => void> = {};
 
 const api: ApplicationAPI = {
+  addContextMenuListener: (callback) => {
+    const listener = (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => callback(event, params);
+    ipcRenderer.on('context-menu', listener);
+    return () => {
+      ipcRenderer.removeListener('context-menu', listener);
+    };
+  },
   openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),

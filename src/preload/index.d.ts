@@ -160,6 +160,8 @@ export interface ApplicationAPI {
   addTerminalExitListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalExitData) => void) => string;
   removeTerminalExitListener: (listenerId: string) => void;
 
+  addContextMenuListener: (callback: (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => void) => () => void;
+
   getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
   runCustomCommand: (baseDir: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
 

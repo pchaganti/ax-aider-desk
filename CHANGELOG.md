@@ -21,6 +21,7 @@
 - updated Electron libraries to the latest versions
 - properly set history item when search query is used
 - tool message names to use neutral tense
+- added context menu with Copy and Paste actions
 
 ## [0.25.0]
 
