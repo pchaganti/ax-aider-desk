@@ -17,6 +17,7 @@ const AUTOSAVED_SESSION_NAME = '.autosaved';
 export class SessionManager {
   private contextMessages: ContextMessage[];
   private contextFiles: ContextFile[];
+  private autosaveEnabled = false;
 
   constructor(
     private readonly project: Project,
@@ -25,6 +26,14 @@ export class SessionManager {
   ) {
     this.contextMessages = initialMessages;
     this.contextFiles = initialFiles;
+  }
+
+  public enableAutosave() {
+    this.autosaveEnabled = true;
+  }
+
+  public disableAutosave() {
+    this.autosaveEnabled = false;
   }
 
   addContextMessage(role: MessageRole, content: string, usageReport?: UsageReportData): void;
@@ -569,12 +578,23 @@ export class SessionManager {
   private debouncedSaveAsAutosaved = debounce(async () => {
     logger.info('Saving session as autosaved', {
       projectDir: this.project.baseDir,
+      messages: this.contextMessages.length,
+      files: this.contextFiles.length,
     });
     await this.save('.autosaved');
   }, 1000);
 
   private saveAsAutosaved() {
-    void this.debouncedSaveAsAutosaved();
+    logger.debug('Saving autosaved session', {
+      projectDir: this.project.baseDir,
+      messages: this.contextMessages.length,
+      files: this.contextFiles.length,
+      enabled: this.autosaveEnabled,
+    });
+
+    if (this.autosaveEnabled) {
+      void this.debouncedSaveAsAutosaved();
+    }
   }
 
   async loadAutosaved(): Promise<void> {

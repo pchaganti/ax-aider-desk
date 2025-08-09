@@ -22,6 +22,7 @@
 - properly set history item when search query is used
 - tool message names to use neutral tense
 - added context menu with Copy and Paste actions
+- properly loading last session on start when IDE plugin is connected
 
 ## [0.25.0]
 

@@ -149,6 +149,8 @@ export class Project {
       logger.error('Error loading session:', { error });
     }
 
+    this.sessionManager.enableAutosave();
+
     this.sessionManager.getContextFiles().forEach((contextFile) => {
       this.mainWindow.webContents.send('file-added', {
         baseDir: this.baseDir,
@@ -461,6 +463,7 @@ export class Project {
     }
     await this.killAider();
     this.customCommandManager.dispose();
+    this.sessionManager.disableAutosave();
   }
 
   public async saveSession(name: string): Promise<void> {
@@ -1215,6 +1218,12 @@ export class Project {
   }
 
   public clearContext(addToHistory = false, updateContextInfo = true) {
+    logger.debug('Clearing context:', {
+      baseDir: this.baseDir,
+      addToHistory,
+      updateContextInfo,
+    });
+
     this.sessionManager.clearMessages();
     this.runCommand('clear', addToHistory);
     this.mainWindow.webContents.send('clear-project', this.baseDir, true, false);
@@ -1225,7 +1234,7 @@ export class Project {
   }
 
   public interruptResponse() {
-    logger.info('Interrupting response:', { baseDir: this.baseDir });
+    logger.debug('Interrupting response:', { baseDir: this.baseDir });
 
     if (this.currentQuestion) {
       this.answerQuestion('n', 'Cancelled');
