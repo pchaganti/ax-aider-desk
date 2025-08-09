@@ -19,6 +19,7 @@
 - fixed issue with GPT-5 model in Agent mode
 - added summaries to Agent profile sections accordions
 - updated Electron libraries to the latest versions
+- properly set history item when search query is used
 
 ## [0.25.0]
 

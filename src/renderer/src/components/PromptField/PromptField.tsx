@@ -565,13 +565,15 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             }
           } else if (historyMenuVisible) {
             setHistoryMenuVisible(false);
+            const newText = historyItems[historyItems.length - 1 - highlightedHistoryItemIndex];
             view.dispatch({
               changes: {
                 from: 0,
-                insert: historyItems[historyItems.length - 1 - highlightedHistoryItemIndex],
+                to: view.state.doc.length,
+                insert: newText,
               },
               selection: {
-                anchor: historyItems[historyItems.length - 1 - highlightedHistoryItemIndex].length,
+                anchor: newText.length,
               },
             });
           } else if (!processing || question) {
