@@ -184,7 +184,7 @@ export const createAiderToolset = (project: Project, profile: AgentProfile, prom
       prompt: z.string().describe('The prompt to run in natural language.'),
     }),
     execute: async ({ prompt }, { toolCallId }) => {
-      const aiderPromptContext: PromptContext = promptContext ?? {
+      const aiderPromptContext: PromptContext = {
         id: uuidv4(),
         group: {
           id: uuidv4(),
