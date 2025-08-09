@@ -20,6 +20,7 @@
 - added summaries to Agent profile sections accordions
 - updated Electron libraries to the latest versions
 - properly set history item when search query is used
+- tool message names to use neutral tense
 
 ## [0.25.0]
 

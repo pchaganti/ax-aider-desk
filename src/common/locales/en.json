@@ -560,37 +560,37 @@
   "toolMessage": {
     "toolLabel": "{{server}}: {{tool}}",
     "arguments": "Arguments:",
-    "executing": "Tool is executing...",
+    "executing": "Executing tool...",
     "result": "Result:",
-    "error": "Error while executing tool",
+    "error": "Error while executing tool:",
     "denied": "Denied by user.",
     "deniedByReason": "Denied by user:\n{{reason}}",
     "aider": {
-      "addContextFiles": "Adding file(s) to Aider's context:\n{{paths}}",
-      "dropContextFiles": "Dropping file(s) from Aider's context:\n{{paths}}",
-      "runPrompt": "Running prompt in Aider: ",
+      "addContextFiles": "Add file(s) to Aider's context:\n{{paths}}",
+      "dropContextFiles": "Drop file(s) from Aider's context:\n{{paths}}",
+      "runPrompt": "Run prompt in Aider",
       "working": "Aider is working...",
       "finishedTask": "Aider finished the task.",
       "noChanges": "Aider did not make any changes."
     },
     "power": {
-      "fileRead": "Reading",
+      "fileRead": "Read",
       "fileWrite": {
-        "overwrite": "Rewriting",
-        "append": "Appending to",
-        "createOnly": "Creating"
+        "overwrite": "Rewrite",
+        "append": "Append to",
+        "createOnly": "Create"
       },
       "fileEdit": {
-        "title": "Editing",
+        "title": "Edit",
         "searchTerm": "Search Term",
         "regex": "Regex",
         "replacementText": "Replacement Text",
         "replaceAll": "Replace All"
       },
-      "glob": "Finding files matching pattern: {{pattern}}",
-      "grep": "Searching files matching '{{filePattern}}' for '{{searchTerm}}'",
-      "bash": "Running",
-      "semanticSearch": "Performing semantic search: '{{query}}' in path: '{{path}}'",
+      "glob": "Find files matching pattern: {{pattern}}",
+      "grep": "Search files matching '{{filePattern}}' for '{{searchTerm}}'",
+      "bash": "Run command",
+      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'",
       "agent": {
         "running": "Sub-agent is working...",
         "completed": "Sub-agent finished the task.",

@@ -554,15 +554,15 @@
   "toolMessage": {
     "toolLabel": "工具: {{server}}/{{tool}}",
     "arguments": "参数:",
-    "executing": "工具执行中...",
+    "executing": "执行工具...",
     "result": "结果:",
     "error": "执行工具时出错:",
     "denied": "拒绝访问",
     "deniedByReason": "用户拒绝: {{reason}}",
     "aider": {
-      "addContextFiles": "添加文件到 Aider 上下文: {{paths}}",
-      "dropContextFiles": "从 Aider 上下文移除文件: {{paths}}",
-      "runPrompt": "运行 Aider 提示: ",
+      "addContextFiles": "添加文件到Aider上下文:\n{{paths}}",
+      "dropContextFiles": "从Aider上下文删除文件:\n{{paths}}",
+      "runPrompt": "在Aider中运行提示",
       "working": "Aider 正在工作中...",
       "finishedTask": "Aider 完成了任务。",
       "noChanges": "Aider 未进行任何更改。"
@@ -570,9 +570,9 @@
     "power": {
       "fileRead": "读取文件",
       "fileWrite": {
-        "overwrite": "重写文件",
+        "overwrite": "覆盖文件",
         "append": "追加到文件",
-        "createOnly": "创建文件"
+        "createOnly": "仅创建文件"
       },
       "fileEdit": {
         "title": "编辑文件",
@@ -582,9 +582,9 @@
         "replaceAll": "替换所有"
       },
       "glob": "查找匹配模式的文件: {{pattern}}",
-      "grep": "在匹配 {{filePattern}} 的文件中搜索 {{searchTerm}}",
-      "bash": "执行 bash 命令",
-      "semanticSearch": "执行语义搜索: {{query}} {{path}}",
+      "grep": "在“{{filePattern}}”中搜索“{{searchTerm}}”",
+      "bash": "运行命令",
+      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”",
       "agent": {
         "running": "正在运行子代理...",
         "completed": "子代理执行了以下查询:",
