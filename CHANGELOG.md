@@ -17,6 +17,7 @@
 - added keyboard navigation to select component
 - remember last editFormat per model and per project
 - fixed issue with GPT-5 model in Agent mode
+- added summaries to Agent profile sections accordions
 
 ## [0.25.0]
 
