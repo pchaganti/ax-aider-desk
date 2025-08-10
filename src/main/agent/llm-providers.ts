@@ -394,12 +394,12 @@ export const getCacheControl = (profile: AgentProfile, llmProvider: LlmProvider)
 };
 
 export const getProviderOptions = (llmProvider: LlmProvider): Record<string, Record<string, JSONValue>> | undefined => {
-  if (isGeminiProvider(llmProvider)) {
+  if (isGeminiProvider(llmProvider) || isVertexAiProvider(llmProvider)) {
     return {
       google: {
         ...((llmProvider.includeThoughts || llmProvider.thinkingBudget) && {
           thinkingConfig: {
-            includeThoughts: llmProvider.includeThoughts,
+            includeThoughts: llmProvider.includeThoughts && (llmProvider.thinkingBudget ?? 0) > 0,
             thinkingBudget: llmProvider.thinkingBudget || null,
           },
         }),
