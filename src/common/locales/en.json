@@ -164,7 +164,11 @@
     "apiKey": "API Key",
     "baseUrl": "Base URL",
     "modelName": "Model Name",
-    "baseUrlPlaceholder": "e.g. http://localhost:8080/v1"
+    "baseUrlPlaceholder": "e.g. http://localhost:8080/v1",
+    "reasoningEffort": "Reasoning Effort",
+    "reasoningEffortLow": "Low",
+    "reasoningEffortMedium": "Medium",
+    "reasoningEffortHigh": "High"
   },
   "ollama": {
     "baseUrl": "Base URL",

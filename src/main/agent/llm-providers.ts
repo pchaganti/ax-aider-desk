@@ -15,7 +15,6 @@ import {
   isBedrockProvider,
   isDeepseekProvider,
   isGeminiProvider,
-  isVertexAiProvider,
   isGroqProvider,
   isLmStudioProvider,
   isOllamaProvider,
@@ -23,6 +22,7 @@ import {
   isOpenAiProvider,
   isOpenRouterProvider,
   isRequestyProvider,
+  isVertexAiProvider,
   LlmProvider,
 } from '@common/agent';
 import { AgentProfile, ReasoningEffort, UsageReportData } from '@common/types';
@@ -56,6 +56,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     });
     return openAIProvider(model, {
       structuredOutputs: false,
+      reasoningEffort: provider.reasoningEffort,
     });
   } else if (isGeminiProvider(provider)) {
     const apiKey = provider.apiKey || env['GEMINI_API_KEY'];

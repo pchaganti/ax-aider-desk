@@ -163,7 +163,11 @@
     "apiKey": "API 密钥",
     "baseUrl": "基础 URL",
     "modelName": "模型",
-    "baseUrlPlaceholder": "例如 http://localhost:8080/v1"
+    "baseUrlPlaceholder": "例如 http://localhost:8080/v1",
+    "reasoningEffort": "推理努力",
+    "reasoningEffortLow": "低",
+    "reasoningEffortMedium": "中",
+    "reasoningEffortHigh": "高"
   },
   "ollama": {
     "baseUrl": "基础 URL",

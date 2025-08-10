@@ -58,6 +58,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
 export interface OpenAiProvider extends LlmProviderBase {
   name: 'openai';
   apiKey: string;
+  reasoningEffort?: 'low' | 'medium' | 'high';
 }
 export const isOpenAiProvider = (provider: LlmProviderBase): provider is OpenAiProvider => provider.name === 'openai';
 
@@ -266,6 +267,7 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
         provider = {
           name: 'openai',
           apiKey: '',
+          reasoningEffort: 'medium',
         } satisfies OpenAiProvider;
         break;
       case 'anthropic':

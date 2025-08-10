@@ -23,6 +23,7 @@
 - tool message names to use neutral tense
 - added context menu with Copy and Paste actions
 - properly loading last session on start when IDE plugin is connected
+- added reasoning effort to OpenAI provider in Agent mode
 
 ## [0.25.0]
 
