@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- parsing <think> tags as reasoning part of the response
+
 ## [0.26.0]
 
 - pasting image processed in AiderDesk instead of using Aider to handle it
