@@ -17,19 +17,19 @@ type Props = {
 
 const colorClasses: Record<ButtonColor, Record<ButtonVariant, string>> = {
   primary: {
-    contained: 'bg-amber-600 hover:bg-amber-500 text-white',
-    text: 'text-amber-600 hover:bg-amber-600/10',
-    outline: 'border-amber-600 text-amber-600 hover:bg-amber-600/10',
+    contained: 'bg-warning hover:bg-warning-light text-warning-text',
+    text: 'text-warning hover:bg-warning-subtle',
+    outline: 'border-warning text-warning hover:bg-warning-subtle',
   },
   secondary: {
-    contained: 'bg-blue-600 hover:bg-blue-500 text-white',
-    text: 'text-blue-600 hover:bg-blue-600/10',
-    outline: 'border-blue-600 text-blue-600 hover:bg-blue-600/10',
+    contained: 'bg-info hover:bg-info-light text-text-primary',
+    text: 'text-info hover:bg-info-subtle',
+    outline: 'border-info text-info hover:bg-info-subtle',
   },
   danger: {
-    contained: 'bg-red-500 hover:bg-red-500 text-white',
-    text: 'text-red-500 hover:bg-red-500/10',
-    outline: 'border-red-500 text-red-500 hover:bg-red-500/10',
+    contained: 'bg-error hover:bg-error text-text-primary',
+    text: 'text-error hover:bg-error-subtle',
+    outline: 'border-error text-error hover:bg-error-subtle',
   },
 };
 
@@ -50,7 +50,7 @@ export const Button = ({
   size = 'md',
 }: Props) => {
   const baseColorClasses = disabled
-    ? 'bg-neutral-700/50 text-neutral-500 cursor-not-allowed hover:bg-neutral-700/50 hover:text-neutral-500'
+    ? 'bg-bg-tertiary-strong text-text-muted cursor-not-allowed hover:bg-bg-tertiary-strong hover:text-text-muted'
     : colorClasses[color][variant];
 
   const baseSizeClasses = sizeClasses[size];

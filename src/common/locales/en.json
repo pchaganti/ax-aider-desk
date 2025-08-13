@@ -321,7 +321,15 @@
     "theme": "Theme",
     "themeOptions": {
       "dark": "Dark",
-      "light": "Light"
+      "light": "Light",
+      "blue": "Blue",
+      "green": "Green",
+      "purple": "Purple",
+      "bw": "Black & White",
+      "black": "Black",
+      "neon": "Neon",
+      "neopunk": "Neopunk",
+      "charcoal": "Charcoal"
     },
     "aiderRestartConfirm": {
       "title": "Restart Required",
