@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.27.0]
 
 - parsing <think> tags as reasoning part of the response
 - fixed unnecessary reload of component during onboarding process
@@ -9,6 +9,7 @@
 - added keyboard shortcuts to toggle TODO list (Alt+T), Include context files (Alt+F), Include repository map (Alt+R), and Auto-approve (Alt+Y)
 - updated application main menu and included Settings
 - fixed multiselect checkboxes
+- added `docs-site/` with documentation app
 
 ## [0.26.0]
 
