@@ -5,6 +5,7 @@ import { BrowserWindow } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
 import logger from '@/logger';
+import { TelemetryManager } from '@/telemetry';
 
 export interface TerminalInstance {
   id: string;
@@ -17,9 +18,11 @@ export interface TerminalInstance {
 export class TerminalManager {
   private terminals: Map<string, TerminalInstance> = new Map();
   private mainWindow: BrowserWindow;
+  private telemetryManager?: TelemetryManager;
 
-  constructor(mainWindow: BrowserWindow) {
+  constructor(mainWindow: BrowserWindow, telemetryManager?: TelemetryManager) {
     this.mainWindow = mainWindow;
+    this.telemetryManager = telemetryManager;
   }
 
   private getShellCommand(): string {
@@ -102,6 +105,10 @@ export class TerminalManager {
       this.terminals.set(terminalId, terminal);
 
       logger.info('Terminal created successfully:', { terminalId, baseDir });
+
+      // Capture telemetry event for terminal creation
+      this.telemetryManager?.captureTerminalCreated();
+
       return terminalId;
     } catch (error) {
       logger.error('Failed to create terminal:', { baseDir, error });

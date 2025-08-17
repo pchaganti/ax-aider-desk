@@ -197,7 +197,7 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   const projectManager = new ProjectManager(mainWindow, store, agent, telemetryManager, dataManager);
 
   // Initialize terminal manager
-  const terminalManager = new TerminalManager(mainWindow);
+  const terminalManager = new TerminalManager(mainWindow, telemetryManager);
 
   // Create HTTP server
   const httpServer = createServer();

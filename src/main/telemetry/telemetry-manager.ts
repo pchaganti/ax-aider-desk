@@ -141,4 +141,14 @@ export class TelemetryManager {
       },
     });
   }
+
+  captureTerminalCreated() {
+    if (!this.store.getSettings().telemetryEnabled) {
+      return;
+    }
+    this.client?.capture({
+      distinctId: this.distinctId,
+      event: 'terminal-created',
+    });
+  }
 }
