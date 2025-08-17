@@ -21,7 +21,6 @@ AiderDesk supports multiple Large Language Model (LLM) providers to power your A
 - [LM Studio](#lm-studio)
 - [OpenRouter](#openrouter)
 - [Requesty](#requesty)
-- [Special Configuration for Aider Modes](#special-configuration-for-aider-modes)
 
 ---
 
