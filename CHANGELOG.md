@@ -8,6 +8,7 @@
 - implemented support for fonts + new fonts added
 - added keyboard shortcuts to toggle TODO list (Alt+T), Include context files (Alt+F), Include repository map (Alt+R), and Auto-approve (Alt+Y)
 - updated application main menu and included Settings
+- fixed multiselect checkboxes
 
 ## [0.26.0]
 
