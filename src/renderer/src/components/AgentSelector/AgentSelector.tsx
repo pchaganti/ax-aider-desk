@@ -80,7 +80,7 @@ export const AgentSelector = ({ isActive }: Props) => {
     [handleToggleProfileSetting],
   );
   useHotkeys(
-    'alt+m',
+    'alt+r',
     () => handleToggleProfileSetting('includeRepoMap', !activeProfile?.includeRepoMap),
     {
       enabled: isActive,
@@ -326,7 +326,7 @@ export const AgentSelector = ({ isActive }: Props) => {
                   icon={<MdOutlineMap className={clsx('w-3.5 h-3.5', activeProfile.includeRepoMap ? 'text-agent-repo-map' : 'text-text-muted opacity-50')} />}
                   onClick={() => handleToggleProfileSetting('includeRepoMap', !activeProfile.includeRepoMap)}
                   className="p-1.5 hover:bg-bg-secondary rounded-md"
-                  tooltip={`${t('settings.agent.includeRepoMap')} (Alt + M)`}
+                  tooltip={`${t('settings.agent.includeRepoMap')} (Alt + R)`}
                   tooltipId="agent-selector-tooltip"
                 />
               </div>
