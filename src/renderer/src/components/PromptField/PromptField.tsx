@@ -865,7 +865,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           </div>
           <div className="relative w-full flex items-center gap-1.5">
             <ModeSelector mode={mode} onModeChange={onModeChanged} />
-            {mode === 'agent' && <AgentSelector />}
+            {mode === 'agent' && <AgentSelector isActive={isActive} />}
             <div className="flex-grow" />
             {toggleTerminal && (
               <Button

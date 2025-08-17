@@ -6,6 +6,7 @@
 - fixed unnecessary reload of component during onboarding process
 - implemented better support for themes + new themes added
 - implemented support for fonts + new fonts added
+- added keyboard shortcuts to toggle TODO list (Alt+T), Include context files (Alt+F), Include repository map (Alt+M), and Auto-approve (Alt+Y)
 
 ## [0.26.0]
 
