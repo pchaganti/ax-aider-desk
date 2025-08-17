@@ -58,6 +58,13 @@ const api: ApplicationAPI = {
       ipcRenderer.removeListener('context-menu', listener);
     };
   },
+  addOpenSettingsListener: (callback) => {
+    const listener = (event: Electron.IpcRendererEvent, tabIndex: number) => callback(event, tabIndex);
+    ipcRenderer.on('open-settings', listener);
+    return () => {
+      ipcRenderer.removeListener('open-settings', listener);
+    };
+  },
   openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),

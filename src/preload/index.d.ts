@@ -4,6 +4,7 @@ import type {
   ContextFilesUpdatedData,
   CustomCommandsUpdatedData,
   InputHistoryData,
+  LogData,
   ModelsData,
   ProjectData,
   ProjectSettings,
@@ -165,6 +166,7 @@ export interface ApplicationAPI {
   removeTerminalExitListener: (listenerId: string) => void;
 
   addContextMenuListener: (callback: (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => void) => () => void;
+  addOpenSettingsListener: (callback: (event: Electron.IpcRendererEvent, tabIndex: number) => void) => () => void;
 
   getCustomCommands: (baseDir: string) => Promise<CustomCommand[]>;
   runCustomCommand: (baseDir: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
