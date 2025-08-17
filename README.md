@@ -13,7 +13,7 @@
 See AiderDesk in action:
 
 <div align="center">
-  <a href="https://www.youtube.com/watch?v=g4qg7xTjxcM">
+  <a href="https://www.youtube.com/watch?v=KSWlhB-O2SE">
     <img src="https://img.youtube.com/vi/9oyIdntCh7g/0.jpg" alt="AiderDesk Overview Video" width=400>
   </a>
 </div>

@@ -250,7 +250,7 @@ const Home = () => {
         <div className={styles.container}>
           <h2 className={styles.sectionTitle}>See It In Action</h2>
           <div className={styles.videoWrapper}>
-            <a href="https://www.youtube.com/watch?v=9oyIdntCh7g" className={styles.videoLink}>
+            <a href="https://www.youtube.com/watch?v=KSWlhB-O2SE" className={styles.videoLink}>
               <div className={styles.videoThumbnail}>
                 <img src="https://img.youtube.com/vi/9oyIdntCh7g/0.jpg" alt="AiderDesk Demo" />
                 <div className={styles.playButton}>
