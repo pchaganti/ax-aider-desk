@@ -1,6 +1,6 @@
 ---
-title: "Compact Command"
-sidebar_label: "Compact"
+title: "Compact Conversation"
+sidebar_label: "Compact Conversation"
 ---
 
 # `/compact` Command

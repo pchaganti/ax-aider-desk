@@ -37,6 +37,7 @@ const sidebars: SidebarsConfig = {
         'features/session-management',
         'features/usage-dashboard',
         'features/rest-api',
+        'features/aider-mcp-server',
       ],
     },
     {
