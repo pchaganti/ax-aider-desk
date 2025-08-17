@@ -1,5 +1,4 @@
 ---
-sidebar_position: 4
 title: "Telemetry"
 sidebar_label: "Telemetry"
 ---
@@ -43,6 +42,7 @@ When telemetry is enabled, AiderDesk captures the following events:
 *   **`custom-command-run`**: Sent when a custom command is run.
     *   `commandName`: The name of the custom command.
     *   `argsCount`: The number of arguments provided to the command.
+*   **`terminal-created`**: Sent when a new terminal instance is created.
 
 ## Source Code Transparency
 
@@ -52,7 +52,7 @@ We believe in transparency. You can review the exact telemetry collection code i
 
 Beyond the anonymous usage data, AiderDesk also supports collecting detailed telemetry for Agent and Aider messages. This allows users to gain deeper insights into their AI interactions, including token usage, costs, and model responses, by integrating with OpenTelemetry-compatible tracing systems.
 
-For detailed setup instructions and information on supported providers, please refer to the [OpenTelemetry Integration Guide](open-telemetry).
+For detailed setup instructions and information on supported providers, please refer to the [OpenTelemetry Integration Guide](../advanced/open-telemetry).
 
 ---
 

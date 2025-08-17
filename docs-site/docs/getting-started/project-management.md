@@ -1,5 +1,4 @@
 ---
-sidebar_position: 2
 title: "Project Management"
 sidebar_label: "Projects"
 slug: "/getting-started/projects"

@@ -1,5 +1,4 @@
 ---
-sidebar_position: 4
 title: "Prompt Behavior"
 sidebar_label: "Prompt Behavior"
 ---

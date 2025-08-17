@@ -1,5 +1,4 @@
 ---
-sidebar_position: 5
 title: "Compact Command"
 sidebar_label: "Compact"
 ---

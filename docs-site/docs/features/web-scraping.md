@@ -1,5 +1,4 @@
 ---
-sidebar_position: 2
 title: "Web Scraping"
 sidebar_label: "Web Scraping"
 ---

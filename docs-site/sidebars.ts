@@ -24,15 +24,19 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Core Features',
+      label: 'Features',
       collapsed: true,
       items: [
-        'core-features/chat-modes',
-        'core-features/commands-reference',
-        'core-features/custom-commands',
-        'core-features/reviewing-code-changes',
-        'core-features/session-management',
-        'core-features/usage-dashboard',
+        'features/chat-modes',
+        'features/commands-reference',
+        'features/ide-integration',
+        'features/reviewing-code-changes',
+        'features/custom-commands',
+        'features/web-scraping',
+        'features/compact',
+        'features/session-management',
+        'features/usage-dashboard',
+        'features/rest-api',
       ],
     },
     {
@@ -61,39 +65,16 @@ const sidebars: SidebarsConfig = {
         'configuration/project-specific-rules',
         'configuration/prompt-behavior',
         'configuration/automatic-updates',
+        'configuration/telemetry',
       ],
     },
     {
       type: 'category',
-      label: 'Advanced Features',
+      label: 'Advanced',
       collapsed: true,
-      items: [
-        'advanced-features/usage-tracking',
-        'advanced-features/web-scraping',
-        'advanced-features/ide-integration',
-        'advanced-features/rest-api',
-        'advanced-features/compact',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Advanced Settings',
-      collapsed: true,
-      items: ['customization/custom-aider-version', 'customization/extra-python-packages', 'customization/telemetry'],
+      items: ['advanced/custom-aider-version', 'advanced/extra-python-packages', 'advanced/open-telemetry'],
     },
   ],
-  // But you can create a sidebar manually
-  /*
-  tutorialSidebar: [
-    'intro',
-    'hello',
-    {
-      type: 'category',
-      label: 'Tutorial',
-      items: ['tutorial-basics/create-a-document'],
-    },
-  ],
-   */
 };
 
 export default sidebars;

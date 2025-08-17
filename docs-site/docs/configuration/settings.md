@@ -1,5 +1,4 @@
 ---
-sidebar_position: 1
 title: "Settings Overview"
 sidebar_label: "Settings"
 ---
