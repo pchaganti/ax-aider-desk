@@ -1,12 +1,12 @@
 
 # ✨ AiderDesk: AI-Powered Coding
 
+[![Documentation](https://img.shields.io/badge/Docs-blue?logo=ReadTheDocs&logoColor=white)](https://aiderdesk.hotovo.com/docs)
+[![Discord](https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=white)](https://discord.gg/HxgHU4ue)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/hotovo/aider-desk)
 [![GitMCP](https://img.shields.io/endpoint?url=https://gitmcp.io/badge/hotovo/aider-desk)](https://gitmcp.io/hotovo/aider-desk)
 
 **Elevate your development workflow with AiderDesk**, a sophisticated desktop application bringing all the power of [aider](https://aider.chat) into a user-friendly graphical interface. Whether you're managing multiple projects, integrating with your favorite IDE, or tracking costs, AiderDesk elevates your productivity to new heights.
-
-[📖 Documentation](https://aiderdesk.hotovo.com/docs)
 
 ## 🎬 Overview
 
