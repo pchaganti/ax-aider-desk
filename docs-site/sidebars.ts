@@ -64,6 +64,7 @@ const sidebars: SidebarsConfig = {
         'configuration/providers',
         'configuration/aider-configuration',
         'configuration/project-specific-rules',
+        'configuration/look-and-feel',
         'configuration/prompt-behavior',
         'configuration/automatic-updates',
         'configuration/telemetry',
