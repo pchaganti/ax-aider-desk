@@ -43,4 +43,4 @@ View version information for AiderDesk and the integrated Aider library.
 - **Check for Updates**: Manually trigger an update check.
 - **Automatic Updates**: Enable or disable automatic downloading of AiderDesk updates.
 - **Logs**: Open the directory containing application logs for troubleshooting.
-See [Automatic Updates](../customization/automatic-updates.md) for more details.
+See [Automatic Updates](./automatic-updates.md) for more details.
