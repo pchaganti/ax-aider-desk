@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added model selector to Agent profile in Settings
+
 ## [0.27.0]
 
 - parsing <think> tags as reasoning part of the response
