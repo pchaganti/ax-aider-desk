@@ -25,7 +25,7 @@ type Props = {
   className?: string;
   settings: SettingsData | null;
   agentProfile: AgentProfile | undefined;
-  saveSettings: (settings: SettingsData) => Promise<void>;
+  saveSettings: (settings: SettingsData) => void;
   showSettingsButton?: boolean;
 };
 
@@ -150,7 +150,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ classNa
         },
         llmProviders: updatedLlmProviders,
       };
-      void saveSettings(updatedSettings);
+      saveSettings(updatedSettings);
     },
     [settings, saveSettings, t, agentProfile?.id],
   );
@@ -168,7 +168,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ classNa
           agentPreferred: (settings.models.agentPreferred || []).filter((m: string) => m !== model),
         },
       };
-      void saveSettings(updatedSettings);
+      saveSettings(updatedSettings);
     },
     [settings, saveSettings],
   );

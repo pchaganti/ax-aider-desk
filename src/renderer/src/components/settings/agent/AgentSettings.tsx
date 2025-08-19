@@ -1,4 +1,4 @@
-import { AgentProfile, GenericTool, McpServerConfig, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, GenericTool, InvocationMode, McpServerConfig, SettingsData, ToolApprovalState } from '@common/types';
 import React, { ReactNode, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
@@ -12,7 +12,6 @@ import {
   AIDER_TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
-  POWER_TOOL_AGENT,
   POWER_TOOL_BASH,
   POWER_TOOL_DESCRIPTIONS,
   POWER_TOOL_FILE_EDIT,
@@ -46,8 +45,8 @@ import { InfoIcon } from '@/components/common/InfoIcon';
 import { Accordion } from '@/components/common/Accordion';
 import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
+import { Select } from '@/components/common/Select';
 import { TextArea } from '@/components/common/TextArea';
-import { useSettings } from '@/context/SettingsContext';
 
 const tools: Record<string, GenericTool[]> = {
   [AIDER_TOOL_GROUP_NAME]: [
@@ -107,11 +106,6 @@ const tools: Record<string, GenericTool[]> = {
       groupName: POWER_TOOL_GROUP_NAME,
       name: POWER_TOOL_BASH,
       description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_BASH],
-    },
-    {
-      groupName: POWER_TOOL_GROUP_NAME,
-      name: POWER_TOOL_AGENT,
-      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_AGENT],
     },
   ],
   [TODO_TOOL_GROUP_NAME]: [
@@ -215,7 +209,6 @@ type Props = {
 
 export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props) => {
   const { t } = useTranslation();
-  const { saveSettings } = useSettings();
   const [isAddingMcpServer, setIsAddingMcpServer] = useState(false);
   const [editingMcpServer, setEditingMcpServer] = useState<McpServer | null>(null);
   const [isEditingMcpServersConfig, setIsEditingMcpServersConfig] = useState(false);
@@ -228,6 +221,15 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
   const { agentProfiles, mcpServers } = settings;
   const selectedProfile = agentProfiles.find((profile) => profile.id === selectedProfileId) || null;
   const defaultProfile = agentProfiles.find((profile) => profile.id === DEFAULT_AGENT_PROFILE.id) || DEFAULT_AGENT_PROFILE;
+
+  const getSubagentSummary = (profile: AgentProfile) => {
+    if (!profile.subagent.enabled) {
+      return t('settings.agent.subagent.statusDisabled');
+    }
+    return profile.subagent.invocationMode === InvocationMode.Automatic
+      ? t('settings.agent.subagent.statusAutomatic')
+      : t('settings.agent.subagent.statusOnDemand');
+  };
 
   const handleCreateNewProfile = () => {
     const newProfileId = uuidv4();
@@ -443,7 +445,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
             <TextArea
               label={t('agentProfiles.profileDescription')}
               id="agent-profile-description"
-              className="mb-1 min-h-[100px]"
+              className="mb-1 min-h-[60px]"
               value={selectedProfile.description || ''}
               onChange={(e) => handleProfileSettingChange('description', e.target.value)}
               placeholder={t('agentProfiles.profileDescriptionPlaceholder')}
@@ -456,7 +458,7 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                     className="w-full justify-between"
                     settings={settings}
                     agentProfile={selectedProfile}
-                    saveSettings={saveSettings}
+                    saveSettings={setSettings}
                     showSettingsButton={false}
                   />
                 </div>
@@ -647,6 +649,57 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
               mcpServersExpanded,
               setMcpServersExpanded,
               <span className="text-xs text-text-muted-light">{getMcpServersSummary(selectedProfile, mcpServers)}</span>,
+            )}
+
+            {renderSectionAccordion(
+              t('settings.agent.subagent.title'),
+              <div>
+                <Checkbox
+                  label={
+                    <div className="flex items-center">
+                      <span>{t('settings.agent.subagent.enableAsSubagent')}</span>
+                      <InfoIcon className="ml-2" tooltip={t('settings.agent.subagent.enableAsSubagentTooltip')} />
+                    </div>
+                  }
+                  checked={selectedProfile.subagent.enabled}
+                  onChange={(checked) => handleProfileSettingChange('subagent', { ...selectedProfile.subagent, enabled: checked })}
+                />
+
+                {selectedProfile.subagent.enabled && (
+                  <div className="mt-4">
+                    <TextArea
+                      label={<label className="text-xs font-medium text-text-primary">{t('settings.agent.subagent.systemPrompt')}</label>}
+                      className="min-h-[100px]"
+                      value={selectedProfile.subagent.systemPrompt}
+                      onChange={(e) => handleProfileSettingChange('subagent', { ...selectedProfile.subagent, systemPrompt: e.target.value })}
+                      placeholder={t('settings.agent.subagent.systemPromptPlaceholder')}
+                    />
+
+                    <div>
+                      <div className="flex items-center gap-4 mb-1">
+                        <Select
+                          label={<label className="text-xs font-medium text-text-primary">{t('settings.agent.subagent.invocationMode')}</label>}
+                          options={[
+                            { label: t('settings.agent.subagent.invocationModeOnDemand'), value: InvocationMode.OnDemand },
+                            { label: t('settings.agent.subagent.invocationModeAutomatic'), value: InvocationMode.Automatic },
+                          ]}
+                          value={selectedProfile.subagent.invocationMode}
+                          onChange={(value) => handleProfileSettingChange('subagent', { ...selectedProfile.subagent, invocationMode: value as InvocationMode })}
+                          size="sm"
+                        />
+                      </div>
+                      <div className="text-2xs text-text-muted-light mt-3">
+                        {selectedProfile.subagent.invocationMode === InvocationMode.Automatic
+                          ? t('settings.agent.subagent.invocationModeAutomaticTooltip')
+                          : t('settings.agent.subagent.invocationModeOnDemandTooltip')}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>,
+              undefined,
+              undefined,
+              <span className="text-xs text-text-muted-light">{getSubagentSummary(selectedProfile)}</span>,
             )}
 
             <div className="mt-4 pt-2 flex justify-end items-center">
