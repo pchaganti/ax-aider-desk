@@ -9201,7 +9201,7 @@ type AgentRulesProps = {
 ================
 File: src/renderer/src/components/settings/agent/AgentSettings.tsx
 ================
-import { AgentProfile, GenericTool, InvocationMode, McpServerConfig, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, GenericTool, McpServerConfig, SettingsData, ToolApprovalState } from '@common/types';
 import React, { ReactNode, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
@@ -9215,6 +9215,7 @@ import {
   AIDER_TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
+  POWER_TOOL_AGENT,
   POWER_TOOL_BASH,
   POWER_TOOL_DESCRIPTIONS,
   POWER_TOOL_FILE_EDIT,
@@ -9248,7 +9249,6 @@ import { InfoIcon } from '@/components/common/InfoIcon';
 import { Accordion } from '@/components/common/Accordion';
 import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
-import { Select } from '@/components/common/Select';
 import { TextArea } from '@/components/common/TextArea';
 ⋮----
 // Helper functions for accordion summaries
@@ -9259,8 +9259,6 @@ type Props = {
   setSettings: (settings: SettingsData) => void;
   initialProfileId?: string;
 };
-⋮----
-const getSubagentSummary = (profile: AgentProfile) =>
 ⋮----
 const handleCreateNewProfile = () =>
 ⋮----
