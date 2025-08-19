@@ -36,6 +36,6 @@ jobs:
             echo "No changes to llms.txt, skipping commit"
           else
             git add llms.txt
-            git commit -m "Update llms.txt from Repomix"
+            git commit -m "docs: updated llms.txt"
             git push
           fi
