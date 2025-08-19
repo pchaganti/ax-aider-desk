@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added model selector to Agent profile in Settings
+- correctly using the selected model when compacting the conversation
 
 ## [0.27.0]
 
