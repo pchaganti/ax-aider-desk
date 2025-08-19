@@ -4,6 +4,7 @@
 
 - added model selector to Agent profile in Settings
 - correctly using the selected model when compacting the conversation
+- updated scrollbar style in agent selector when there is more profiles than fit
 
 ## [0.27.0]
 
