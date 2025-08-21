@@ -343,6 +343,7 @@ export interface SettingsData {
     autoCommits: boolean;
     cachingEnabled: boolean;
     watchFiles: boolean;
+    confirmBeforeEdit: boolean;
   };
   models: {
     aiderPreferred: string[];

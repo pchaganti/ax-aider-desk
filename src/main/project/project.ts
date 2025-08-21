@@ -362,6 +362,7 @@ export class Project {
       PYTHONUTF8: process.env.AIDER_DESK_OMIT_PYTHONUTF8 ? undefined : '1',
       BASE_DIR: this.baseDir,
       CONNECTOR_SERVER_URL: `http://localhost:${SERVER_PORT}`,
+      CONNECTOR_CONFIRM_BEFORE_EDIT: settings.aider.confirmBeforeEdit ? '1' : '0',
     };
 
     // Spawn without shell to have direct process control

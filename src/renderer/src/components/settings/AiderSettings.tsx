@@ -63,6 +63,19 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
               })
             }
           />
+          <Checkbox
+            label={t('settings.aider.confirmBeforeEdit')}
+            checked={settings.aider.confirmBeforeEdit}
+            onChange={(checked) =>
+              setSettings({
+                ...settings,
+                aider: {
+                  ...settings.aider,
+                  confirmBeforeEdit: checked,
+                },
+              })
+            }
+          />
           <Input
             className="mt-3"
             type="text"

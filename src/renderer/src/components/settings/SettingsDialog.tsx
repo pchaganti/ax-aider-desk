@@ -58,11 +58,19 @@ export const SettingsDialog = ({ onClose, initialTab = 0, initialAgentProfileId,
       const aiderAutoCommitsChanged = localSettings.aider.autoCommits !== originalSettings?.aider.autoCommits;
       const aiderWatchFilesChanged = localSettings.aider.watchFiles !== originalSettings?.aider.watchFiles;
       const aiderCachingEnabledChanged = localSettings.aider.cachingEnabled !== originalSettings?.aider.cachingEnabled;
+      const aiderConfirmBeforeEditChanged = localSettings.aider.confirmBeforeEdit !== originalSettings?.aider.confirmBeforeEdit;
       const startupModeChanged = localSettings.startupMode !== originalSettings?.startupMode;
 
       await saveSettings(localSettings);
 
-      if (aiderOptionsChanged || aiderAutoCommitsChanged || aiderWatchFilesChanged || aiderCachingEnabledChanged || startupModeChanged) {
+      if (
+        aiderOptionsChanged ||
+        aiderAutoCommitsChanged ||
+        aiderWatchFilesChanged ||
+        aiderCachingEnabledChanged ||
+        aiderConfirmBeforeEditChanged ||
+        startupModeChanged
+      ) {
         const openProjects = await window.api.getOpenProjects();
         openProjects.forEach((project) => {
           window.api.restartProject(project.baseDir, StartupMode.Last);

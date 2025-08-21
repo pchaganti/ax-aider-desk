@@ -620,11 +620,12 @@ def create_io(connector, coder, prompt_context=None):
   return io
 
 class Connector:
-  def __init__(self, base_dir, watch_files=False, server_url="http://localhost:24337", reasoning_effort=None, thinking_tokens=None):
+  def __init__(self, base_dir, watch_files=False, server_url="http://localhost:24337", reasoning_effort=None, thinking_tokens=None, confirm_before_edit=False):
     self.base_dir = base_dir
     self.server_url = server_url
     self.reasoning_effort = reasoning_effort
     self.thinking_tokens = thinking_tokens
+    self.confirm_before_edit = confirm_before_edit
 
     try:
       self.loop = asyncio.get_event_loop()
@@ -678,6 +679,22 @@ class Connector:
 
     # Replace the original lint_edited method with the patched version
     coder.lint_edited = types.MethodType(_patched_lint_edited, coder)
+
+    if self.confirm_before_edit:
+      # Monkey patch prepare_to_edit to add confirmation if enabled
+      original_prepare_to_edit = coder.prepare_to_edit
+      def _patched_prepare_to_edit(coder_instance, edits):
+        if len(edits) > 0:
+          if coder.io.confirm_ask("Do you accept the changes?"):
+            return original_prepare_to_edit(edits)
+          else:
+            coder.io.tool_output("Changes have been rejected.")
+            return []
+        else:
+          return original_prepare_to_edit(edits)
+
+      # Replace the original prepare_to_edit method with the patched version
+      coder.prepare_to_edit = types.MethodType(_patched_prepare_to_edit, coder)
 
     original_cmd_test = coder.commands.cmd_test
     def _patched_cmd_test(coder_commands_instance, args):
@@ -1229,11 +1246,13 @@ def main(argv=None):
     parser.add_argument("--watch-files", action="store_true", help="Watch files for changes")
     parser.add_argument("--reasoning-effort", type=str, default=None, help="Set the reasoning effort for the model")
     parser.add_argument("--thinking-tokens", type=str, default=None, help="Set the thinking tokens for the model")
+
     args, _ = parser.parse_known_args(argv) # Use parse_known_args to ignore unknown args
 
     # Get environment variables
     server_url = os.getenv("CONNECTOR_SERVER_URL", "http://localhost:24337")
     base_dir = os.getenv("BASE_DIR", os.getcwd())
+    confirm_before_edit = os.getenv("CONNECTOR_CONFIRM_BEFORE_EDIT", "0") == "1"
 
     # Telemetry
     setup_telemetry()
@@ -1244,7 +1263,8 @@ def main(argv=None):
       watch_files=args.watch_files,
       server_url=server_url,
       reasoning_effort=args.reasoning_effort,
-      thinking_tokens=args.thinking_tokens
+      thinking_tokens=args.thinking_tokens,
+      confirm_before_edit=confirm_before_edit
     )
 
     # Start the connector

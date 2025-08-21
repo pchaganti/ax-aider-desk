@@ -6,6 +6,7 @@
 - correctly using the selected model when compacting the conversation
 - updated scrollbar style in agent selector when there is more profiles than fit
 - implemented subagents functionality
+- added confirm before edit option for Aider coder
 
 ## [0.27.0]
 
