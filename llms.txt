@@ -1681,7 +1681,8 @@ File: src/common/locales/en.json
       "glob": "Find files matching pattern: {{pattern}}",
       "grep": "Search files matching '{{filePattern}}' for '{{searchTerm}}'",
       "bash": "Run command",
-      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'"
+      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'",
+      "fetch": "Fetch: {{url}}"
     },
     "subagents": {
       "groupRunning": "{{name}}: Subagent is working...",
@@ -2501,7 +2502,8 @@ File: src/common/locales/zh.json
       "glob": "查找匹配模式的文件: {{pattern}}",
       "grep": "在“{{filePattern}}”中搜索“{{searchTerm}}”",
       "bash": "运行命令",
-      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”"
+      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”",
+      "fetch": "获取: {{url}}"
     },
     "subagents": {
       "groupRunning": "{{name}}: 子代理正在工作...",
@@ -2709,6 +2711,7 @@ import {
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
   POWER_TOOL_BASH,
+  POWER_TOOL_FETCH,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE,
@@ -3423,6 +3426,8 @@ export const getLanguageFromPath = (path: string): string =>
 ⋮----
 return 'text'; // Default to plain text
 ⋮----
+export const isURL = (url: string): boolean =>
+⋮----
 export const getActiveAgentProfile = (settings: SettingsData | null, projectSettings: ProjectSettings | null) =>
 
 ================
@@ -3556,6 +3561,7 @@ import { AgentProfile, FileWriteMode, PromptContext, ToolApprovalState } from '@
 import {
   POWER_TOOL_BASH as TOOL_BASH,
   POWER_TOOL_DESCRIPTIONS,
+  POWER_TOOL_FETCH as TOOL_FETCH,
   POWER_TOOL_FILE_EDIT as TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ as TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE as TOOL_FILE_WRITE,
@@ -3566,12 +3572,13 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 import { isBinary } from 'istextorbinary';
+import { isURL } from '@common/utils';
 ⋮----
 import { ApprovalManager } from './approval-manager';
 ⋮----
 import { Project } from '@/project';
 import logger from '@/logger';
-import { isFileIgnored } from '@/utils';
+import { isFileIgnored, scrapeWeb } from '@/utils';
 ⋮----
 export const createPowerToolset = (project: Project, profile: AgentProfile, promptContext?: PromptContext): ToolSet =>
 ⋮----
@@ -5793,23 +5800,40 @@ export const getLatestPythonLibVersion = async (library: string): Promise<string
 ================
 File: src/main/utils/web-scrapper.ts
 ================
-import { chromium } from 'playwright-core';
+import { BrowserWindow } from 'electron';
 import Turndown from 'turndown';
-⋮----
-interface ScraperOptions {
-  verifySSL?: boolean;
-  printError?: (message: string) => void;
-}
 ⋮----
 export class WebScraper
 ⋮----
-constructor(options: ScraperOptions =
+async scrape(url: string, timeout: number = 60000): Promise<string>
 ⋮----
-async scrape(url: string): Promise<string>
+private async scrapeWithBrowserWindow(url: string, timeout: number = 60000): Promise<string>
 ⋮----
-private async scrapeWithPlaywright(url: string): Promise<string>
+// Create hidden BrowserWindow for scraping
+⋮----
+// Create timeout promise
+⋮----
+// Load the URL with timeout
+⋮----
+// Wait for page to load completely with timeout
+⋮----
+// Get page content with timeout
+⋮----
+// Get content type from headers with timeout
 ⋮----
 // If it's HTML, convert to markdown-like text
+⋮----
+// Cleanup window
+⋮----
+private async waitForPageLoad(): Promise<void>
+⋮----
+const checkLoadState = () =>
+⋮----
+// Additional wait for dynamic content to load
+⋮----
+private async getContentType(): Promise<string>
+⋮----
+private async cleanupWindow(): Promise<void>
 ⋮----
 private looksLikeHTML(content: string): boolean
 ⋮----
@@ -5819,7 +5843,7 @@ private cleanHtml(content: string): string
 ⋮----
 private htmlToMarkDown(content: string): string
 ⋮----
-export const scrapeWeb = async (url: string) =>
+export const scrapeWeb = async (url: string, timeout: number = 60000) =>
 
 ================
 File: src/main/versions/index.ts
@@ -7827,6 +7851,7 @@ import {
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
   POWER_TOOL_BASH,
+  POWER_TOOL_FETCH,
   POWER_TOOL_FILE_READ,
   POWER_TOOL_GLOB,
   POWER_TOOL_GREP,
@@ -9342,6 +9367,7 @@ import {
   POWER_TOOL_GREP,
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
+  POWER_TOOL_FETCH,
   TODO_TOOL_CLEAR_ITEMS,
   TODO_TOOL_DESCRIPTIONS,
   TODO_TOOL_GET_ITEMS,
@@ -12865,7 +12891,6 @@ File: package.json
     "@opentelemetry/auto-instrumentations-node": "^0.62.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
-    "@playwright/test": "^1.53.2",
     "@replit/codemirror-vim": "^6.3.0",
     "@requesty/ai-sdk": "^0.0.9",
     "@smithy/eventstream-codec": "^2.0.0",
@@ -12910,7 +12935,6 @@ File: package.json
     "ollama-ai-provider": "^1.2.0",
     "os-name": "^6.0.0",
     "patch-package": "^8.0.0",
-    "playwright-core": "^1.53.2",
     "posthog-node": "^4.18.0",
     "prismjs": "^1.29.0",
     "react-compiler-runtime": "^19.1.0-rc.2",
