@@ -624,7 +624,7 @@ io = ConnectorInputOutput(
 ⋮----
 class Connector
 ⋮----
-def __init__(self, base_dir, watch_files=False, server_url="http://localhost:24337", reasoning_effort=None, thinking_tokens=None)
+def __init__(self, base_dir, watch_files=False, server_url="http://localhost:24337", reasoning_effort=None, thinking_tokens=None, confirm_before_edit=False)
 ⋮----
 # Create initial coder for setup and non-prompt operations
 ⋮----
@@ -647,6 +647,12 @@ result = original_lint_edited(fnames)
 # Finish the loading message after linting
 ⋮----
 # Replace the original lint_edited method with the patched version
+⋮----
+# Monkey patch prepare_to_edit to add confirmation if enabled
+original_prepare_to_edit = coder.prepare_to_edit
+def _patched_prepare_to_edit(coder_instance, edits)
+⋮----
+# Replace the original prepare_to_edit method with the patched version
 ⋮----
 original_cmd_test = coder.commands.cmd_test
 def _patched_cmd_test(coder_commands_instance, args)
@@ -903,6 +909,7 @@ args, _ = parser.parse_known_args(argv) # Use parse_known_args to ignore unknown
 # Get environment variables
 server_url = os.getenv("CONNECTOR_SERVER_URL", "http://localhost:24337")
 base_dir = os.getenv("BASE_DIR", os.getcwd())
+confirm_before_edit = os.getenv("CONNECTOR_CONFIRM_BEFORE_EDIT", "0") == "1"
 ⋮----
 # Telemetry
 ⋮----
@@ -1366,7 +1373,8 @@ File: src/common/locales/en.json
       "optionsDocumentation": "Check the documentation for available options at",
       "envVarsDocumentation": "Check the documentation for environment variables at",
       "context": "Context",
-      "addRuleFiles": "Add rule files from project's <file>.aider-desk/rules</file> directory as read-only files."
+      "addRuleFiles": "Add rule files from project's <file>.aider-desk/rules</file> directory as read-only files.",
+      "confirmBeforeEdit": "Confirm before editing files"
     },
     "common": {
       "showSecrets": "Show Secrets",
@@ -2187,7 +2195,8 @@ File: src/common/locales/zh.json
       "envVarsPlaceholder": "#################\n# LLM 参数:\n#\n# 包含 xxx_API_KEY 参数和您的 LLM 所需的其他参数。\n# 详情请见 https://aider.chat/docs/llms.html\n\n## OpenAI\n#OPENAI_API_KEY=\n\n## Anthropic\n#ANTHROPIC_API_KEY=",
       "optionsDocumentation": "查看文档了解可用选项：https://aider.chat/docs/faq.html#how-can-i-pass-command-line-options-to-aider",
       "envVarsDocumentation": "查看文档了解环境变量：https://aider.chat/docs/llms.html",
-      "addRuleFiles": "将项目中的 `.aider-desk/rules` 目录下的规则文件添加为只读文件。"
+      "addRuleFiles": "将项目中的 `.aider-desk/rules` 目录下的规则文件添加为只读文件。",
+      "confirmBeforeEdit": "编辑文件前确认"
     },
     "common": {
       "showSecrets": "显示密钥",
@@ -3186,6 +3195,7 @@ export interface SettingsData {
     autoCommits: boolean;
     cachingEnabled: boolean;
     watchFiles: boolean;
+    confirmBeforeEdit: boolean;
   };
   models: {
     aiderPreferred: string[];
