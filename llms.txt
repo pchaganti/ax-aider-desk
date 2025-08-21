@@ -72,6 +72,7 @@ src/
         approval-manager.ts
         helpers.ts
         power.ts
+        subagents.ts
         todo.ts
       agent.ts
       index.ts
@@ -108,6 +109,7 @@ src/
       migrations/
         v0-to-v1.ts
         v1-to-v2.ts
+        v10-to-v11.ts
         v2-to-v3.ts
         v3-to-v4.ts
         v4-to-v5.ts
@@ -194,7 +196,6 @@ src/
           ContextFiles.tsx
           index.ts
         message/
-          AgentToolMessage.tsx
           CommandOutputMessageBlock.tsx
           CopyMessageButton.tsx
           CustomCommandBashBlock.tsx
@@ -209,6 +210,7 @@ src/
           Messages.tsx
           ReflectedMessageBlock.tsx
           ResponseMessageBlock.tsx
+          SubagentToolMessage.tsx
           ThinkingAnswerBlock.tsx
           ToolMessageBlock.tsx
           UserMessageBlock.tsx
@@ -1331,7 +1333,27 @@ File: src/common/locales/en.json
       "genericTools": "Tools",
       "noGenericToolsConfigured": "No tools configured.",
       "todoTools": "Todo tools",
-      "includeTodoToolsTooltip": "Allows the agent to manage a list of todo items, including setting, getting, updating, and clearing them."
+      "includeTodoToolsTooltip": "Allows the agent to manage a list of todo items, including setting, getting, updating, and clearing them.",
+      "subagent": {
+        "title": "Subagent",
+        "enableAsSubagent": "Enable as Subagent",
+        "enableAsSubagentInformation": "When enabled, this profile is available as a subagent to other agents.",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe this subagent's purpose, capabilities, and specialization and when this subagent should be invoked",
+        "systemPrompt": "System Prompt",
+        "systemPromptPlaceholder": "Your subagent's system prompt goes here. This can be multiple paragraphs and should clearly define the subagent's role, capabilities, and approach to solving problems.",
+        "invocationMode": "Invocation",
+        "invocationModeOnDemand": "On demand",
+        "invocationModeOnDemandInformation": "Subagent is only used when explicitly requested by the user.",
+        "invocationModeAutomatic": "Automatic",
+        "invocationModeAutomaticInformation": "Subagent can be automatically invoked when appropriate by the agent.",
+        "statusDisabled": "Disabled",
+        "statusOnDemand": "On-demand",
+        "statusAutomatic": "Automatic",
+        "descriptionRequiredForAutomatic": "Description needs to be set in order to use this subagent automatically, otherwise the subagent can only be used when explicitly requested by the user.",
+        "on-demand": "Used as subagent on user demand",
+        "automatic": "Used as subagent automatically"
+      }
     },
     "aider": {
       "options": "Options",
@@ -1651,12 +1673,14 @@ File: src/common/locales/en.json
       "glob": "Find files matching pattern: {{pattern}}",
       "grep": "Search files matching '{{filePattern}}' for '{{searchTerm}}'",
       "bash": "Run command",
-      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'",
-      "agent": {
-        "running": "Sub-agent is working...",
-        "completed": "Sub-agent finished the task.",
-        "prompt": "Prompt"
-      }
+      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'"
+    },
+    "subagents": {
+      "groupRunning": "{{name}}: Subagent is working...",
+      "groupCompleted": "{{name}}: Subagent finished the task.",
+      "running": "Subagent is working...",
+      "completed": "Subagent finished the task.",
+      "prompt": "Prompt"
     },
     "errors": {
       "noSuchTool": "Attempted to use unknown tool: {{toolName}}",
@@ -2131,7 +2155,27 @@ File: src/common/locales/zh.json
       "genericTools": "工具",
       "noGenericToolsConfigured": "未配置工具。",
       "todoTools": "待办工具",
-      "includeTodoToolsTooltip": "允许代理管理待办事项列表，包括设置、获取、更新和清除它们。"
+      "includeTodoToolsTooltip": "允许代理管理待办事项列表，包括设置、获取、更新和清除它们。",
+      "subagent": {
+        "title": "子代理",
+        "enableAsSubagent": "启用为子代理",
+        "enableAsSubagentInformation": "启用后，此配置可被其他代理用作子代理。",
+        "description": "描述",
+        "descriptionPlaceholder": "描述此子代理的目的、能力和专长...",
+        "systemPrompt": "系统提示",
+        "systemPromptPlaceholder": "输入此配置用作子代理时的自定义系统提示指令...",
+        "invocationMode": "调用方式",
+        "invocationModeOnDemand": "按需",
+        "invocationModeOnDemandInformation": "子代理仅在父代理明确请求时才使用。",
+        "invocationModeAutomatic": "自动",
+        "invocationModeAutomaticInformation": "子代理可由父代理在适当时自动调用。",
+        "statusDisabled": "已禁用",
+        "statusOnDemand": "按需",
+        "statusAutomatic": "自动",
+        "descriptionRequiredForAutomatic": "需要设置描述才能自动使用此子代理，否则只能在用户明确请求时使用该子代理。",
+        "on-demand": "仅在明确请求时按需使用",
+        "automatic": "在适当时自动使用"
+      }
     },
     "aider": {
       "options": "选项",
@@ -2448,12 +2492,14 @@ File: src/common/locales/zh.json
       "glob": "查找匹配模式的文件: {{pattern}}",
       "grep": "在“{{filePattern}}”中搜索“{{searchTerm}}”",
       "bash": "运行命令",
-      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”",
-      "agent": {
-        "running": "正在运行子代理...",
-        "completed": "子代理执行了以下查询:",
-        "prompt": "提示"
-      }
+      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”"
+    },
+    "subagents": {
+      "groupRunning": "{{name}}: 子代理正在工作...",
+      "groupCompleted": "{{name}}: 子代理已完成任务。",
+      "running": "正在运行子代理...",
+      "completed": "子代理执行了以下查询:",
+      "prompt": "提示"
     },
     "errors": {
       "noSuchTool": "尝试使用未知工具: {{toolName}}",
@@ -2646,14 +2692,13 @@ File: src/common/locales/zh.json
 ================
 File: src/common/agent.ts
 ================
-import { AgentProfile, ReasoningEffort, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, InvocationMode, ReasoningEffort, SettingsData, ToolApprovalState } from '@common/types';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
   AIDER_TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
-  POWER_TOOL_AGENT,
   POWER_TOOL_BASH,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
@@ -2662,6 +2707,8 @@ import {
   POWER_TOOL_GREP,
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
+  SUBAGENTS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_RUN_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 ⋮----
@@ -2807,11 +2854,15 @@ export type LlmProvider =
 ⋮----
 // power tools
 ⋮----
+// subagent tools
+⋮----
 export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: SettingsData | null): LlmProvider =>
 ⋮----
 region: 'us-east-1', // Default region
 ⋮----
 // For any other provider, create a base structure. This might need more specific handling if new providers are added.
+⋮----
+export const isSubagentEnabled = (agentProfile: AgentProfile, currentProfileId?: string): boolean =>
 
 ================
 File: src/common/tools.ts
@@ -2836,6 +2887,11 @@ import {
 ⋮----
 import type { AssistantContent, ToolContent, UserContent } from 'ai';
 import type { JsonSchema } from '@n8n/json-schema-to-zod';
+⋮----
+export type LocalizedString = {
+  key: string;
+  params?: Record<string, unknown>;
+};
 ⋮----
 export type Mode = 'code' | 'ask' | 'architect' | 'context' | 'agent';
 ⋮----
@@ -3064,10 +3120,22 @@ export interface PromptBehavior {
   useVimBindings: boolean;
 }
 ⋮----
+export enum InvocationMode {
+  OnDemand = 'on-demand',
+  Automatic = 'automatic',
+}
+⋮----
+export interface SubagentConfig {
+  enabled: boolean;
+  systemPrompt: string;
+  invocationMode: InvocationMode;
+  color: string;
+  description: string;
+}
+⋮----
 export interface AgentProfile {
   id: string;
   name: string;
-  description: string;
   provider: LlmProviderName;
   model: string;
   maxIterations: number;
@@ -3081,12 +3149,17 @@ export interface AgentProfile {
   usePowerTools: boolean;
   useAiderTools: boolean;
   useTodoTools: boolean;
+  useSubagents: boolean;
   customInstructions: string;
   autoApprove: boolean;
+  subagent: SubagentConfig;
+  isSubagent?: boolean; // flag to indicate if this profile is being used as a subagent
 }
 ⋮----
 minTimeBetweenToolCalls: number; // in milliseconds
 temperature: number; // 0-1 for controlling randomness/creativity
+⋮----
+isSubagent?: boolean; // flag to indicate if this profile is being used as a subagent
 ⋮----
 export interface EnvironmentVariable {
   value: string;
@@ -3138,7 +3211,7 @@ export interface SettingsData {
 ⋮----
 export interface Group {
   id: string;
-  name?: string;
+  name?: string | LocalizedString;
   color?: string;
   finished?: boolean;
 }
@@ -3469,12 +3542,8 @@ import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
 import { glob } from 'glob';
 import { search, searchSchema } from '@buger/probe';
-import { AgentProfile, ContextFile, FileWriteMode, ToolApprovalState, PromptContext } from '@common/types';
-import { v4 as uuidv4 } from 'uuid';
+import { AgentProfile, FileWriteMode, PromptContext, ToolApprovalState } from '@common/types';
 import {
-  POWER_TOOL_AGENT,
-  POWER_TOOL_AGENT as TOOL_AGENT,
-  POWER_TOOL_BASH,
   POWER_TOOL_BASH as TOOL_BASH,
   POWER_TOOL_DESCRIPTIONS,
   POWER_TOOL_FILE_EDIT as TOOL_FILE_EDIT,
@@ -3482,12 +3551,10 @@ import {
   POWER_TOOL_FILE_WRITE as TOOL_FILE_WRITE,
   POWER_TOOL_GLOB as TOOL_GLOB,
   POWER_TOOL_GREP as TOOL_GREP,
-  POWER_TOOL_GROUP_NAME,
   POWER_TOOL_GROUP_NAME as TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH as TOOL_SEMANTIC_SEARCH,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 import { isBinary } from 'istextorbinary';
 ⋮----
 import { ApprovalManager } from './approval-manager';
@@ -3495,9 +3562,8 @@ import { ApprovalManager } from './approval-manager';
 import { Project } from '@/project';
 import logger from '@/logger';
 import { isFileIgnored } from '@/utils';
-import { getSubAgentSystemPrompt } from '@/agent';
 ⋮----
-export const createPowerToolset = (project: Project, profile: AgentProfile, abortSignal?: AbortSignal, promptContext?: PromptContext): ToolSet =>
+export const createPowerToolset = (project: Project, profile: AgentProfile, promptContext?: PromptContext): ToolSet =>
 ⋮----
 // Sanitize escape characters from searchTerm and replacementText
 const sanitize = (str: string) =>
@@ -3526,28 +3592,37 @@ const searchRegex = new RegExp(searchTerm, caseSensitive ? undefined : 'i'); // 
 ⋮----
 // If path is "." or "./", use the project baseDir
 ⋮----
+// Filter out tools that are set to Never in toolApprovals
+
+================
+File: src/main/agent/tools/subagents.ts
+================
+import { tool, type ToolSet } from 'ai';
+import { z } from 'zod';
+import { AgentProfile, InvocationMode, PromptContext, SettingsData } from '@common/types';
+import { v4 as uuidv4 } from 'uuid';
+import { SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { DEFAULT_AGENT_PROFILE, isSubagentEnabled } from '@common/agent';
+⋮----
+import { Project } from '@/project';
+import logger from '@/logger';
+⋮----
+export const createSubagentsToolset = (settings: SettingsData, project: Project, profile: AgentProfile, abortSignal?: AbortSignal): ToolSet =>
+⋮----
+const generateSubagentsRunTaskDescription = (): string =>
+⋮----
+// Create a subagent profile based on the selected subagent
+⋮----
+useTodoTools: false, // Disable todo tools for simplicity,
+useSubagents: false, // Disable nested subagents
+⋮----
 // Create promptContext with working group
 ⋮----
-// Update promptContext to finished state with denied status
-⋮----
-// Create a sub-agent profile optimized for cost and focused context
-⋮----
-includeContextFiles: false, // Don't include full context
-includeRepoMap: false, // Don't include repo map for cost optimization
-usePowerTools: true, // Enable power tools for sub-agent
-useAiderTools: false, // Disable aider tools to prevent nested delegation
-useTodoTools: false, // Disable todo tools for simplicity
-enabledServers: [], // No MCP servers for sub-agent,
-⋮----
-// Set limited context if files are provided
-⋮----
-// Run the sub-agent with the focused context
+// Run the subagent with the focused context
 ⋮----
 // Update promptContext to finished state with success
 ⋮----
 // Update promptContext to finished state with error
-⋮----
-// Filter out tools that are set to Never in toolApprovals
 
 ================
 File: src/main/agent/tools/todo.ts
@@ -3639,6 +3714,7 @@ import { optimizeMessages } from '@/agent/optimizer';
 import { ModelInfoManager } from '@/models/model-info-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
+import { createSubagentsToolset } from '@/agent/tools/subagents';
 ⋮----
 export class Agent
 ⋮----
@@ -4030,12 +4106,12 @@ File: src/main/agent/optimizer.ts
 ================
 import { type AgentProfile } from '@common/types';
 import { cloneDeep } from 'lodash';
-import { type CoreUserMessage, type CoreMessage, type ToolContent, type ToolResultPart } from 'ai';
+import { type CoreMessage, type CoreUserMessage, type ToolContent, type ToolResultPart } from 'ai';
 import {
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
-  POWER_TOOL_AGENT,
-  POWER_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_RUN_TASK,
   TODO_TOOL_GET_ITEMS,
   TODO_TOOL_GROUP_NAME,
   TOOL_GROUP_NAME_SEPARATOR,
@@ -4059,9 +4135,9 @@ const optimizeAiderMessages = (messages: CoreMessage[]): CoreMessage[] =>
 // ignore
 ⋮----
 /**
- * For agent tool, which now returns an array of messages, we should replace this array with only the last message for LLM processing.
+ * For subagent tool, which now returns an array of messages, we should replace this array with only the last message for LLM processing.
  */
-const optimizeAgentMessages = (messages: CoreMessage[]): CoreMessage[] =>
+const optimizeSubagentMessages = (messages: CoreMessage[]): CoreMessage[] =>
 ⋮----
 // Check if result is an array of messages
 ⋮----
@@ -4124,7 +4200,6 @@ import {
   AIDER_TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
-  POWER_TOOL_AGENT,
   POWER_TOOL_BASH,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
@@ -4133,6 +4208,8 @@ import {
   POWER_TOOL_GREP,
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
+  SUBAGENTS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_RUN_TASK,
   TODO_TOOL_CLEAR_ITEMS,
   TODO_TOOL_GET_ITEMS,
   TODO_TOOL_GROUP_NAME,
@@ -4740,7 +4817,7 @@ public promptFinished(promptId?: string)
 ⋮----
 // Notify waiting prompts with collected responses
 ⋮----
-public processResponseMessage(message: ResponseMessage)
+public processResponseMessage(message: ResponseMessage, saveToDb = true)
 ⋮----
 // Collect the completed response
 ⋮----
@@ -4843,6 +4920,7 @@ public addToolMessage(
     response?: string,
     usageReport?: UsageReportData,
     promptContext?: PromptContext,
+    saveToDb = true,
 )
 ⋮----
 // Update total costs when adding the tool message
@@ -5031,7 +5109,7 @@ import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { ContextFile, ContextMessage, MessageRole, ResponseCompletedData, SessionData, UsageReportData } from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
-import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, POWER_TOOL_AGENT, POWER_TOOL_GROUP_NAME } from '@common/tools';
+import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK } from '@common/tools';
 ⋮----
 import { extractPromptContextFromToolResult, THINKING_RESPONSE_STAR_TAG, ANSWER_RESPONSE_START_TAG } from '@/agent/utils';
 import logger from '@/logger';
@@ -5154,7 +5232,7 @@ async loadMessages(contextMessages: ContextMessage[]): Promise<void>
 ⋮----
 // @ts-expect-error part.result.responses is expected to be in the result
 ⋮----
-// Handle agent tool results - process all messages from sub-agent
+// Handle agent tool results - process all messages from subagent
 ⋮----
 // @ts-expect-error part.result.messages is expected to be in the result
 ⋮----
@@ -5213,6 +5291,20 @@ import { DEFAULT_SETTINGS } from '../store';
 export const migrateSettingsV1toV2 = (settings: any): any => (
 ⋮----
 // @ts-expect-error the config has changed
+
+================
+File: src/main/store/migrations/v10-to-v11.ts
+================
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { SettingsData } from '@common/types';
+⋮----
+export const migrateV10ToV11 = (settings: any): SettingsData =>
+⋮----
+// If the profile has a description, move it to the subagent
+⋮----
+// Remove description from the main profile
+⋮----
+// Move description to subagent
 
 ================
 File: src/main/store/migrations/v2-to-v3.ts
@@ -5304,7 +5396,6 @@ import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, 
 import { normalizeBaseDir } from '@common/utils';
 import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProviderName } from '@common/agent';
 import {
-  POWER_TOOL_AGENT,
   POWER_TOOL_BASH,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ,
@@ -5313,16 +5404,17 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 ⋮----
-import { migrateSettingsV5toV6 } from './migrations/v5-to-v6';
-import { migrateV6ToV7 } from './migrations/v6-to-v7';
-import { migrateV7ToV8 } from './migrations/v7-to-v8';
-import { migrateV8ToV9 } from './migrations/v8-to-v9';
-import { migrateV9ToV10 } from './migrations/v9-to-v10';
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
 import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
 import { migrateSettingsV2toV3 } from './migrations/v2-to-v3';
 import { migrateOpenProjectsV3toV4, migrateSettingsV3toV4 } from './migrations/v3-to-v4';
 import { migrateSettingsV4toV5 } from './migrations/v4-to-v5';
+import { migrateSettingsV5toV6 } from './migrations/v5-to-v6';
+import { migrateV6ToV7 } from './migrations/v6-to-v7';
+import { migrateV7ToV8 } from './migrations/v7-to-v8';
+import { migrateV8ToV9 } from './migrations/v8-to-v9';
+import { migrateV9ToV10 } from './migrations/v9-to-v10';
+import { migrateV10ToV11 } from './migrations/v10-to-v11';
 ⋮----
 import { DEEPSEEK_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
 import { determineMainModel, determineWeakModel, determineAgentProvider } from '@/utils';
@@ -6748,7 +6840,7 @@ export const createTokens = (hunks: HunkData[], language: string) =>
 ================
 File: src/renderer/src/components/common/Accordion.tsx
 ================
-import { ReactNode, useState } from 'react';
+import { ReactNode, useRef, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import clsx from 'clsx';
 ⋮----
@@ -6762,9 +6854,12 @@ type Props = {
   isOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
   noMaxHeight?: boolean;
+  scrollToVisibleWhenExpanded?: boolean;
 };
 ⋮----
 const handleOpenChange = () =>
+⋮----
+// Scroll to visible when expanding
 ⋮----
 className=
 
@@ -7329,23 +7424,6 @@ File: src/renderer/src/components/ContextFiles/index.ts
 
 
 ================
-File: src/renderer/src/components/message/AgentToolMessage.tsx
-================
-import { useTranslation } from 'react-i18next';
-import { RiToolsFill } from 'react-icons/ri';
-import { CgSpinner } from 'react-icons/cg';
-⋮----
-import { ToolMessage } from '@/types/message';
-import { MessageBar } from '@/components/message/MessageBar';
-⋮----
-type Props = {
-  message: ToolMessage;
-  onRemove?: () => void;
-};
-⋮----
-const getToolName = (): string =>
-
-================
 File: src/renderer/src/components/message/CommandOutputMessageBlock.tsx
 ================
 import { BiTerminal } from 'react-icons/bi';
@@ -7447,6 +7525,7 @@ File: src/renderer/src/components/message/GroupMessageBlock.tsx
 ================
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { LocalizedString } from '@common/types';
 ⋮----
 import { MessageBlock } from './MessageBlock';
 ⋮----
@@ -7462,6 +7541,10 @@ type Props = {
   redo?: () => void;
   edit?: (content: string) => void;
 };
+⋮----
+const getGroupDisplayName = (name?: string | LocalizedString) =>
+⋮----
+// name is LocalizedString
 ⋮----
 {/* Color Bar */}
 ⋮----
@@ -7551,10 +7634,11 @@ import {
   HELPERS_TOOL_GROUP_NAME,
   HELPERS_TOOL_INVALID_TOOL_ARGUMENTS,
   HELPERS_TOOL_NO_SUCH_TOOL,
-  POWER_TOOL_AGENT,
   POWER_TOOL_FILE_EDIT,
   POWER_TOOL_FILE_WRITE,
   POWER_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_RUN_TASK,
 } from '@common/tools';
 ⋮----
 import { CommandOutputMessageBlock } from './CommandOutputMessageBlock';
@@ -7579,7 +7663,7 @@ import {
 import { ToolMessageBlock } from '@/components/message/ToolMessageBlock';
 import { FileWriteToolMessage } from '@/components/message/FileWriteToolMessage';
 import { EditFileToolMessage } from '@/components/message/EditFileToolMessage';
-import { AgentToolMessage } from '@/components/message/AgentToolMessage';
+import { SubagentToolMessage } from '@/components/message/SubagentToolMessage';
 ⋮----
 type Props = {
   baseDir: string;
@@ -7670,6 +7754,25 @@ type Props = {
   renderMarkdown: boolean;
   onRemove?: () => void;
 };
+
+================
+File: src/renderer/src/components/message/SubagentToolMessage.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { RiToolsFill } from 'react-icons/ri';
+import { CgSpinner } from 'react-icons/cg';
+⋮----
+import { ToolMessage } from '@/types/message';
+import { MessageBar } from '@/components/message/MessageBar';
+⋮----
+type Props = {
+  message: ToolMessage;
+  onRemove?: () => void;
+};
+⋮----
+export const SubagentToolMessage = (
+⋮----
+const getToolName = (): string =>
 
 ================
 File: src/renderer/src/components/message/ThinkingAnswerBlock.tsx
@@ -9175,6 +9278,8 @@ import { AgentProfile } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 ⋮----
+import { StyledTooltip } from '@/components/common/StyledTooltip';
+⋮----
 type Props = {
   profile: AgentProfile;
   isSelected: boolean;
@@ -9183,6 +9288,8 @@ type Props = {
 };
 ⋮----
 const handleClick = () =>
+⋮----
+<StyledTooltip id=
 
 ================
 File: src/renderer/src/components/settings/agent/AgentRules.tsx
@@ -9201,13 +9308,14 @@ type AgentRulesProps = {
 ================
 File: src/renderer/src/components/settings/agent/AgentSettings.tsx
 ================
-import { AgentProfile, GenericTool, McpServerConfig, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, GenericTool, InvocationMode, McpServerConfig, SettingsData, ToolApprovalState } from '@common/types';
 import React, { ReactNode, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
 import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 import { BiTrash } from 'react-icons/bi';
 import clsx from 'clsx';
+import Sketch from '@uiw/react-color-sketch';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DESCRIPTIONS,
@@ -9215,7 +9323,6 @@ import {
   AIDER_TOOL_GET_CONTEXT_FILES,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
-  POWER_TOOL_AGENT,
   POWER_TOOL_BASH,
   POWER_TOOL_DESCRIPTIONS,
   POWER_TOOL_FILE_EDIT,
@@ -9249,6 +9356,7 @@ import { InfoIcon } from '@/components/common/InfoIcon';
 import { Accordion } from '@/components/common/Accordion';
 import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
+import { Select } from '@/components/common/Select';
 import { TextArea } from '@/components/common/TextArea';
 ⋮----
 // Helper functions for accordion summaries
@@ -9259,6 +9367,8 @@ type Props = {
   setSettings: (settings: SettingsData) => void;
   initialProfileId?: string;
 };
+⋮----
+const getSubagentSummary = (profile: AgentProfile) =>
 ⋮----
 const handleCreateNewProfile = () =>
 ⋮----
@@ -9306,6 +9416,7 @@ const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: bo
       className="mb-2 border rounded-md border-border-default-dark"
       isOpen={open}
       onOpenChange={setOpen}
+      scrollToVisibleWhenExpanded={true}
     >
       <div className="p-4 pt-2">{children}</div>
     </Accordion>
@@ -9321,12 +9432,12 @@ label=
 ⋮----
 onChange=
 ⋮----
-placeholder=
-⋮----
 <span>
 ⋮----
 onRemove=
 onEdit=
+⋮----
+placeholder=
 
 ================
 File: src/renderer/src/components/settings/agent/GenericToolGroupItem.tsx
@@ -12755,6 +12866,7 @@ File: package.json
     "@types/express": "^5.0.0",
     "@uiw/codemirror-theme-github": "^4.23.12",
     "@uiw/react-codemirror": "4.23.12",
+    "@uiw/react-color-sketch": "^2.8.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
