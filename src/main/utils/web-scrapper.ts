@@ -1,34 +1,49 @@
-import { chromium } from 'playwright-core';
+import { BrowserWindow } from 'electron';
 import Turndown from 'turndown';
 import * as cheerio from 'cheerio';
 
-interface ScraperOptions {
-  verifySSL?: boolean;
-  printError?: (message: string) => void;
-}
-
 export class WebScraper {
-  private verifySSL: boolean;
+  private window: BrowserWindow | null = null;
 
-  constructor(options: ScraperOptions = {}) {
-    this.verifySSL = options.verifySSL ?? true;
+  async scrape(url: string, timeout: number = 60000): Promise<string> {
+    return await this.scrapeWithBrowserWindow(url, timeout);
   }
 
-  async scrape(url: string): Promise<string> {
-    return await this.scrapeWithPlaywright(url);
-  }
-
-  private async scrapeWithPlaywright(url: string): Promise<string> {
-    const browser = await chromium.launch();
-    const context = await browser.newContext({
-      ignoreHTTPSErrors: !this.verifySSL,
+  private async scrapeWithBrowserWindow(url: string, timeout: number = 60000): Promise<string> {
+    // Create hidden BrowserWindow for scraping
+    this.window = new BrowserWindow({
+      show: false,
+      width: 1024,
+      height: 768,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        webSecurity: true,
+      },
     });
-    const page = await context.newPage();
 
     try {
-      const response = await page.goto(url, { waitUntil: 'networkidle' });
-      const content = await page.content();
-      const contentType = response?.headers()['content-type'] ?? '';
+      // Create timeout promise
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error(`Scraping timeout after ${timeout}ms`)), timeout);
+      });
+
+      // Load the URL with timeout
+      await Promise.race([this.window.loadURL(url), timeoutPromise]);
+
+      // Wait for page to load completely with timeout
+      await Promise.race([this.waitForPageLoad(), timeoutPromise]);
+
+      // Get page content with timeout
+      const content = await Promise.race([
+        this.window.webContents.executeJavaScript(`
+          document.documentElement.outerHTML;
+        `),
+        timeoutPromise,
+      ]);
+
+      // Get content type from headers with timeout
+      const contentType = await Promise.race([this.getContentType(), timeoutPromise]);
 
       // If it's HTML, convert to markdown-like text
       if (contentType.includes('text/html') || this.looksLikeHTML(content)) {
@@ -37,8 +52,55 @@ export class WebScraper {
 
       return content;
     } finally {
-      await browser.close();
+      // Cleanup window
+      await this.cleanupWindow();
     }
+  }
+
+  private async waitForPageLoad(): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.window) {
+        return resolve();
+      }
+
+      const checkLoadState = () => {
+        if (this.window!.webContents.isLoading()) {
+          setTimeout(checkLoadState, 100);
+        } else {
+          // Additional wait for dynamic content to load
+          setTimeout(resolve, 1000);
+        }
+      };
+
+      checkLoadState();
+    });
+  }
+
+  private async getContentType(): Promise<string> {
+    if (!this.window) {
+      return '';
+    }
+
+    try {
+      const contentType = await this.window.webContents.executeJavaScript(`
+        (() => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('HEAD', window.location.href, false);
+          xhr.send();
+          return xhr.getResponseHeader('content-type') || '';
+        })()
+      `);
+      return contentType;
+    } catch {
+      return '';
+    }
+  }
+
+  private async cleanupWindow(): Promise<void> {
+    if (this.window && !this.window.isDestroyed()) {
+      this.window.close();
+    }
+    this.window = null;
   }
 
   private looksLikeHTML(content: string): boolean {
@@ -64,12 +126,12 @@ export class WebScraper {
   private htmlToMarkDown(content: string): string {
     const cleanedHtml = this.cleanHtml(content);
     const turndownService = new Turndown();
-    const markdown = turndownService.turndown(cleanedHtml);
-    return markdown;
+
+    return turndownService.turndown(cleanedHtml);
   }
 }
 
-export const scrapeWeb = async (url: string) => {
+export const scrapeWeb = async (url: string, timeout: number = 60000) => {
   const scraper = new WebScraper();
-  return await scraper.scrape(url);
+  return await scraper.scrape(url, timeout);
 };

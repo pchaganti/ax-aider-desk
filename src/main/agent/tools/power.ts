@@ -11,6 +11,7 @@ import { AgentProfile, FileWriteMode, PromptContext, ToolApprovalState } from '@
 import {
   POWER_TOOL_BASH as TOOL_BASH,
   POWER_TOOL_DESCRIPTIONS,
+  POWER_TOOL_FETCH as TOOL_FETCH,
   POWER_TOOL_FILE_EDIT as TOOL_FILE_EDIT,
   POWER_TOOL_FILE_READ as TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE as TOOL_FILE_WRITE,
@@ -21,12 +22,13 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 import { isBinary } from 'istextorbinary';
+import { isURL } from '@common/utils';
 
 import { ApprovalManager } from './approval-manager';
 
 import { Project } from '@/project';
 import logger from '@/logger';
-import { isFileIgnored } from '@/utils';
+import { isFileIgnored, scrapeWeb } from '@/utils';
 
 const execAsync = promisify(exec);
 
@@ -482,6 +484,49 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
     },
   });
 
+  const fetchTool = tool({
+    description: POWER_TOOL_DESCRIPTIONS[TOOL_FETCH],
+    parameters: z.object({
+      url: z.string().describe('The URL to fetch.'),
+      timeout: z.number().int().min(0).optional().default(60000).describe('Timeout for the fetch operation in milliseconds. Default: 60000 ms.'),
+    }),
+    execute: async ({ url, timeout }, { toolCallId }) => {
+      project.addToolMessage(
+        toolCallId,
+        TOOL_GROUP_NAME,
+        TOOL_FETCH,
+        {
+          url,
+          timeout,
+        },
+        undefined,
+        undefined,
+        promptContext,
+      );
+
+      const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FETCH}`;
+      const questionText = `Approve fetching content from URL '${url}'?`;
+      const questionSubject = `URL: ${url}\nTimeout: ${timeout}ms`;
+
+      const [isApproved, userInput] = await approvalManager.handleApproval(questionKey, questionText, questionSubject);
+
+      if (!isApproved) {
+        return `URL fetch from '${url}' denied by user. Reason: ${userInput}`;
+      }
+
+      if (!isURL(url)) {
+        return `Error: Invalid URL provided: ${url}. Please provide a valid URL.`;
+      }
+
+      try {
+        return await scrapeWeb(url, timeout);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return `Error: ${errorMessage}`;
+      }
+    },
+  });
+
   const searchTool = tool({
     description: POWER_TOOL_DESCRIPTIONS[TOOL_SEMANTIC_SEARCH],
     parameters: searchSchema,
@@ -537,6 +582,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_GREP}`]: grepTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`]: searchTool,
     [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_BASH}`]: bashTool,
+    [`${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FETCH}`]: fetchTool,
   };
 
   // Filter out tools that are set to Never in toolApprovals

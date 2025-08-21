@@ -149,6 +149,15 @@ export const getLanguageFromPath = (path: string): string => {
   }
 };
 
+export const isURL = (url: string): boolean => {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const getActiveAgentProfile = (settings: SettingsData | null, projectSettings: ProjectSettings | null) => {
   if (!settings || !projectSettings) {
     return null;

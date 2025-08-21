@@ -631,7 +631,8 @@
       "glob": "查找匹配模式的文件: {{pattern}}",
       "grep": "在“{{filePattern}}”中搜索“{{searchTerm}}”",
       "bash": "运行命令",
-      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”"
+      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”",
+      "fetch": "获取: {{url}}"
     },
     "subagents": {
       "groupRunning": "{{name}}: 子代理正在工作...",

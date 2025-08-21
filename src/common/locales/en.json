@@ -638,7 +638,8 @@
       "glob": "Find files matching pattern: {{pattern}}",
       "grep": "Search files matching '{{filePattern}}' for '{{searchTerm}}'",
       "bash": "Run command",
-      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'"
+      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'",
+      "fetch": "Fetch: {{url}}"
     },
     "subagents": {
       "groupRunning": "{{name}}: Subagent is working...",

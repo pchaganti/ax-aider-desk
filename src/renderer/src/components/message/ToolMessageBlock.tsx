@@ -11,6 +11,7 @@ import {
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
   POWER_TOOL_BASH,
+  POWER_TOOL_FETCH,
   POWER_TOOL_FILE_READ,
   POWER_TOOL_GLOB,
   POWER_TOOL_GREP,
@@ -121,6 +122,8 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
             );
           case POWER_TOOL_SEMANTIC_SEARCH:
             return t('toolMessage.power.semanticSearch', { query: message.args.searchQuery as string, path: (message.args.path as string) || '' });
+          case POWER_TOOL_FETCH:
+            return t('toolMessage.power.fetch', { url: message.args.url as string });
           default:
             return defaultLabel();
         }

@@ -7,6 +7,8 @@
 - updated scrollbar style in agent selector when there is more profiles than fit
 - implemented subagents functionality
 - added confirm before edit option for Aider coder
+- added fetch power tool
+- removed Playwright dependency for web scraping in favor of internal browser
 
 ## [0.27.0]
 

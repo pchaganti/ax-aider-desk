@@ -22,6 +22,7 @@ import {
   POWER_TOOL_GREP,
   POWER_TOOL_GROUP_NAME,
   POWER_TOOL_SEMANTIC_SEARCH,
+  POWER_TOOL_FETCH,
   TODO_TOOL_CLEAR_ITEMS,
   TODO_TOOL_DESCRIPTIONS,
   TODO_TOOL_GET_ITEMS,
@@ -107,6 +108,11 @@ const tools: Record<string, GenericTool[]> = {
       groupName: POWER_TOOL_GROUP_NAME,
       name: POWER_TOOL_BASH,
       description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_BASH],
+    },
+    {
+      groupName: POWER_TOOL_GROUP_NAME,
+      name: POWER_TOOL_FETCH,
+      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_FETCH],
     },
   ],
   [TODO_TOOL_GROUP_NAME]: [

@@ -18,9 +18,11 @@ export const POWER_TOOL_GLOB = 'glob';
 export const POWER_TOOL_GREP = 'grep';
 export const POWER_TOOL_SEMANTIC_SEARCH = 'semantic_search';
 export const POWER_TOOL_BASH = 'bash';
+export const POWER_TOOL_FETCH = 'fetch';
 
 export const SUBAGENTS_TOOL_GROUP_NAME = 'subagents';
 export const SUBAGENTS_TOOL_RUN_TASK = 'run_task';
+export const TOOL_FETCH = POWER_TOOL_FETCH;
 
 export const AIDER_TOOL_DESCRIPTIONS = {
   [AIDER_TOOL_GET_CONTEXT_FILES]: 'Get all files currently in the context for Aider to read or edit',
@@ -70,6 +72,8 @@ const myFunction = () => {
   [POWER_TOOL_SEMANTIC_SEARCH]:
     'Search code in the repository using Elasticsearch-like query syntax. Use this tool first for any code-related questions to find out relationships between files and what files need to be changed.',
   [POWER_TOOL_BASH]: 'Executes a shell command. For safety, commands may be sandboxed or require user approval (approval handled by Agent).',
+  [POWER_TOOL_FETCH]:
+    'Fetches and returns the content of a web page from a specified URL. Useful for retrieving web content, documentation, or external resources.',
   [SUBAGENTS_TOOL_RUN_TASK]: 'Description is generated dynamically based on enabled agent profiles with subagent functionality.',
 } as const;
 
