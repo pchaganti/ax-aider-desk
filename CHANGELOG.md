@@ -15,6 +15,7 @@
 - drag and drop external files to Context files
 - added scroll to bottom button to the message area
 - including AGENTS.md in the system prompt by default when using Agent mode
+- fixed issue with duplication in thinking section of message with some OpenRouter models
 
 ## [0.27.0]
 

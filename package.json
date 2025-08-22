@@ -29,9 +29,9 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "^2.2.10",
+    "@ai-sdk/amazon-bedrock": "^2.2.12",
     "@ai-sdk/anthropic": "^1.2.12",
-    "@ai-sdk/deepseek": "^0.2.14",
+    "@ai-sdk/deepseek": "^0.2.16",
     "@ai-sdk/google": "^1.2.22",
     "@ai-sdk/google-vertex": "^2.2.27",
     "@ai-sdk/groq": "^1.2.9",
@@ -50,7 +50,7 @@
     "@headlessui/react": "^2.2.0",
     "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
     "@n8n/json-schema-to-zod": "^1.1.0",
-    "@openrouter/ai-sdk-provider": "^0.7.1",
+    "@openrouter/ai-sdk-provider": "^0.7.5",
     "@opentelemetry/auto-instrumentations-node": "^0.62.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
