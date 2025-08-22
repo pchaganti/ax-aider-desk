@@ -1,12 +1,13 @@
 import { useRef, useState } from 'react';
-import { FaArrowRightFromBracket, FaArrowRightToBracket, FaDollarSign, FaEllipsisVertical, FaDownload, FaUpload } from 'react-icons/fa6';
 import { useTranslation } from 'react-i18next';
 import { UsageReportData } from '@common/types';
 import { MdDeleteForever, MdRedo, MdEdit } from 'react-icons/md';
+import { FaEllipsisVertical } from 'react-icons/fa6';
 
 import { IconButton } from '../common/IconButton';
 
 import { CopyMessageButton } from './CopyMessageButton';
+import { UsageInfo } from './UsageInfo';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
 
@@ -45,31 +46,7 @@ export const MessageBar = ({ content, usageReport, remove, redo, edit }: Props) 
 
   return (
     <div className="mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-border-dark-light px-1 relative">
-      {usageReport && (
-        <div className="mt-[4px] flex items-center gap-3 px-2 text-2xs text-text-muted group-hover:text-text-secondary transition-colors">
-          {usageReport.cacheWriteTokens && usageReport.cacheWriteTokens > 0 ? (
-            <span className="flex items-center gap-1" data-tooltip-id="usage-info-tooltip" data-tooltip-content={t('responseMessage.cacheWriteTokens')}>
-              <FaDownload className="w-2.5 h-2.5 mb-[3px] mr-0.5" /> {usageReport.cacheWriteTokens}
-            </span>
-          ) : null}
-          {usageReport.cacheReadTokens && usageReport.cacheReadTokens > 0 ? (
-            <span className="flex items-center gap-1" data-tooltip-id="usage-info-tooltip" data-tooltip-content={t('responseMessage.cacheReadTokens')}>
-              <FaUpload className="w-2.5 h-2.5 mb-[3px] mr-0.5" /> {usageReport.cacheReadTokens}
-            </span>
-          ) : null}
-          <span className="flex items-center gap-1" data-tooltip-id="usage-info-tooltip" data-tooltip-content={t('responseMessage.inputTokens')}>
-            <FaArrowRightToBracket className="w-2.5 h-2.5 mb-[3px] mr-0.5 rotate-90" /> {usageReport.sentTokens}
-          </span>
-          <span className="flex items-center gap-1" data-tooltip-id="usage-info-tooltip" data-tooltip-content={t('responseMessage.outputTokens')}>
-            <FaArrowRightFromBracket className="w-2.5 h-2.5 mb-[3px] mr-0.5 -rotate-90" /> {usageReport.receivedTokens}
-          </span>
-          {usageReport.messageCost > 0 && (
-            <span className="flex items-center gap-1">
-              <FaDollarSign className="w-2.5 h-2.5 mb-[3px]" /> {usageReport.messageCost.toFixed(5)}
-            </span>
-          )}
-        </div>
-      )}
+      {usageReport && <UsageInfo usageReport={usageReport} className="mt-[4px]" />}
       <CopyMessageButton content={content} className="transition-colors text-text-dark hover:text-text-primary" alwaysShow={true} />
       {(remove || redo || edit) && (
         <div ref={buttonRef}>

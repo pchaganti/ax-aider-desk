@@ -1,11 +1,12 @@
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { LocalizedString } from '@common/types';
+import { LocalizedString, UsageReportData } from '@common/types';
 
 import { MessageBlock } from './MessageBlock';
+import { UsageInfo } from './UsageInfo';
 
 import { Accordion } from '@/components/common/Accordion';
-import { GroupMessage, Message } from '@/types/message';
+import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage, isToolMessage } from '@/types/message';
 
 type Props = {
   baseDir: string;
@@ -19,6 +20,45 @@ type Props = {
 
 export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remove, redo, edit }: Props) => {
   const { t } = useTranslation();
+
+  const aggregateUsage = (messages: Message[]): UsageReportData | undefined => {
+    const messagesWithUsage: (ResponseMessage | ToolMessage)[] = [];
+    let lastMessageWithUsage: ResponseMessage | ToolMessage | undefined;
+
+    // Find all messages with usageReport and the last one
+    for (const msg of messages) {
+      if ((isResponseMessage(msg) || isToolMessage(msg)) && msg.usageReport) {
+        messagesWithUsage.push(msg);
+        lastMessageWithUsage = msg;
+      }
+    }
+
+    if (messagesWithUsage.length === 0) {
+      return undefined;
+    }
+
+    // Use tokens from the last message with usage
+    const lastUsage = lastMessageWithUsage!.usageReport!;
+
+    // Sum costs from all messages with usage
+    const totalCost = messagesWithUsage.reduce((sum, msg) => {
+      if (isResponseMessage(msg) || isToolMessage(msg)) {
+        return sum + (msg.usageReport?.messageCost || 0);
+      }
+      return sum;
+    }, 0);
+
+    return {
+      model: lastUsage.model,
+      sentTokens: lastUsage.sentTokens,
+      receivedTokens: lastUsage.receivedTokens,
+      messageCost: totalCost,
+      cacheWriteTokens: lastUsage.cacheWriteTokens,
+      cacheReadTokens: lastUsage.cacheReadTokens,
+    };
+  };
+
+  const aggregatedUsage = aggregateUsage(message.children);
 
   const getGroupDisplayName = (name?: string | LocalizedString) => {
     if (!name) {
@@ -34,8 +74,9 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
   };
 
   const header = (
-    <div className={clsx('w-full flex items-center pl-2 py-1', !message.group.finished && 'animate-pulse')}>
+    <div className={clsx('w-full flex items-center justify-between pl-2 py-1 group', !message.group.finished && 'animate-pulse')}>
       <span className="text-xs">{getGroupDisplayName(message.group.name)}</span>
+      {aggregatedUsage && <UsageInfo usageReport={aggregatedUsage} />}
     </div>
   );
 
