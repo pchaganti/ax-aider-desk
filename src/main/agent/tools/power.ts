@@ -59,6 +59,10 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       const { filePath, searchTerm, replacementText, isRegex, replaceAll } = args;
       project.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_FILE_EDIT, args, undefined, undefined, promptContext);
 
+      if (searchTerm === replacementText) {
+        return 'Already updated - no changes were needed.';
+      }
+
       // Sanitize escape characters from searchTerm and replacementText
       const sanitize = (str: string) => {
         // Check if string contains single escaped backslashes (like \n, \t, etc.)
