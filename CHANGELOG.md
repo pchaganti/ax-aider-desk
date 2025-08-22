@@ -14,6 +14,7 @@
 - gracefully handling no changes in file edit tool instead of erroring
 - drag and drop external files to Context files
 - added scroll to bottom button to the message area
+- including AGENTS.md in the system prompt by default when using Agent mode
 
 ## [0.27.0]
 

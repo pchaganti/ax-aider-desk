@@ -1,4 +1,4 @@
-# PROJECT.md
+# AGENTS.md
 This file provides guidance to AiderDesk when working with code in this repository.
 
 ## Common Commands
