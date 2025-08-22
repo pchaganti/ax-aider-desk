@@ -213,6 +213,7 @@ src/
           SubagentToolMessage.tsx
           ThinkingAnswerBlock.tsx
           ToolMessageBlock.tsx
+          UsageInfo.tsx
           UserMessageBlock.tsx
           utils.tsx
         onboarding/
@@ -4123,7 +4124,8 @@ private compareServerConfig(config: McpServerConfig, otherConfig: McpServerConfi
 ================
 File: src/main/agent/optimizer.ts
 ================
-import { type AgentProfile } from '@common/types';
+import { type AgentProfile, InvocationMode, type SettingsData } from '@common/types';
+import { isSubagentEnabled } from '@common/agent';
 import { cloneDeep } from 'lodash';
 import { type CoreMessage, type CoreUserMessage, type ToolContent, type ToolResultPart } from 'ai';
 import {
@@ -4142,9 +4144,17 @@ import { CacheControl } from '@/agent';
 /**
  * Optimizes the messages before sending them to the LLM. This should reduce the token count and improve the performance.
  */
-export const optimizeMessages = (profile: AgentProfile, userRequestMessageIndex: number, messages: CoreMessage[], cacheControl: CacheControl) =>
+export const optimizeMessages = (
+  profile: AgentProfile,
+  userRequestMessageIndex: number,
+  messages: CoreMessage[],
+  cacheControl: CacheControl,
+  settings: SettingsData,
+) =>
 ⋮----
-const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: number, messages: CoreMessage[]): CoreMessage[] =>
+const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: number, messages: CoreMessage[], settings: SettingsData): CoreMessage[] =>
+⋮----
+// Add reminder about automatic subagents
 ⋮----
 /**
  * For run_prompt tool, which returns `responses` array, we should replace this array with empty array.
@@ -7561,12 +7571,13 @@ File: src/renderer/src/components/message/GroupMessageBlock.tsx
 ================
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { LocalizedString } from '@common/types';
+import { LocalizedString, UsageReportData } from '@common/types';
 ⋮----
 import { MessageBlock } from './MessageBlock';
+import { UsageInfo } from './UsageInfo';
 ⋮----
 import { Accordion } from '@/components/common/Accordion';
-import { GroupMessage, Message } from '@/types/message';
+import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage, isToolMessage } from '@/types/message';
 ⋮----
 type Props = {
   baseDir: string;
@@ -7577,6 +7588,14 @@ type Props = {
   redo?: () => void;
   edit?: (content: string) => void;
 };
+⋮----
+const aggregateUsage = (messages: Message[]): UsageReportData | undefined =>
+⋮----
+// Find all messages with usageReport and the last one
+⋮----
+// Use tokens from the last message with usage
+⋮----
+// Sum costs from all messages with usage
 ⋮----
 const getGroupDisplayName = (name?: string | LocalizedString) =>
 ⋮----
@@ -7637,14 +7656,15 @@ tooltip=
 File: src/renderer/src/components/message/MessageBar.tsx
 ================
 import { useRef, useState } from 'react';
-import { FaArrowRightFromBracket, FaArrowRightToBracket, FaDollarSign, FaEllipsisVertical, FaDownload, FaUpload } from 'react-icons/fa6';
 import { useTranslation } from 'react-i18next';
 import { UsageReportData } from '@common/types';
 import { MdDeleteForever, MdRedo, MdEdit } from 'react-icons/md';
+import { FaEllipsisVertical } from 'react-icons/fa6';
 ⋮----
 import { IconButton } from '../common/IconButton';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
+import { UsageInfo } from './UsageInfo';
 ⋮----
 import { useClickOutside } from '@/hooks/useClickOutside';
 ⋮----
@@ -7922,6 +7942,18 @@ rawContentToCopy = JSON.stringify(parsedResult.json); // Copy raw JSON
 {/* Add relative positioning for the gradient overlay */}
 ⋮----
 {/* Gradient overlay for initial auto-expand */}
+
+================
+File: src/renderer/src/components/message/UsageInfo.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { FaArrowRightFromBracket, FaArrowRightToBracket, FaDollarSign, FaDownload, FaUpload } from 'react-icons/fa6';
+import { UsageReportData } from '@common/types';
+⋮----
+type Props = {
+  usageReport: UsageReportData;
+  className?: string;
+};
 
 ================
 File: src/renderer/src/components/message/UserMessageBlock.tsx
