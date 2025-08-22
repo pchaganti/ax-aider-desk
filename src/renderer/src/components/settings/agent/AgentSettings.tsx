@@ -483,8 +483,8 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                     </div>
                   }
                   min={0}
-                  max={1}
-                  step={0.1}
+                  max={2}
+                  step={0.05}
                   value={selectedProfile.temperature}
                   onChange={(value) => handleProfileSettingChange('temperature', value)}
                 />

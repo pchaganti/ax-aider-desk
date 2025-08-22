@@ -10,6 +10,7 @@
 - added fetch power tool
 - removed Playwright dependency for web scraping in favor of internal browser
 - fixed issue with getting stuck when dropping files
+- updated temperature range to 0-2 with 0.5 step
 
 ## [0.27.0]
 
