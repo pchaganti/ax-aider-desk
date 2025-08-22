@@ -788,6 +788,8 @@ valid_values = ['high', 'medium', 'low', 'none']
 ⋮----
 # Safely remove 'reasoning_effort' if it exists
 ⋮----
+# for /reset and /drop, we only need to send the initial context files
+⋮----
 # run the command
 ⋮----
 # reset flags
