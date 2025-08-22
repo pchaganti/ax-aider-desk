@@ -849,7 +849,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
               onClearAllTodos={handleClearAllTodos}
             />
           )}
-          <div className="overflow-hidden flex-grow">
+          <div className="overflow-hidden flex-grow relative">
             <Messages
               ref={messagesRef}
               baseDir={project.baseDir}

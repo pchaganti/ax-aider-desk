@@ -1,10 +1,13 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
+import { MdKeyboardArrowDown } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
 
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
 
 import { isGroupMessage, isUserMessage, Message } from '@/types/message';
+import { IconButton } from '@/components/common/IconButton';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { groupMessagesByPromptContext } from '@/components/message/utils';
 
@@ -26,6 +29,7 @@ type Props = {
 
 export const Messages = forwardRef<MessagesRef, Props>(
   ({ baseDir, messages, allFiles = [], renderMarkdown, removeMessage, redoLastUserPrompt, editLastUserMessage }, ref) => {
+    const { t } = useTranslation();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const [scrollingPaused, setScrollingPaused] = useState(false);
@@ -82,7 +86,7 @@ export const Messages = forwardRef<MessagesRef, Props>(
     return (
       <div
         ref={messagesContainerRef}
-        className="relative flex flex-col overflow-y-auto max-h-full p-4
+        className="flex flex-col overflow-y-auto max-h-full p-4
       scrollbar-thin
       scrollbar-track-bg-primary-light
       scrollbar-thumb-bg-tertiary
@@ -90,6 +94,18 @@ export const Messages = forwardRef<MessagesRef, Props>(
         onScroll={handleScroll}
       >
         <StyledTooltip id="usage-info-tooltip" />
+
+        {scrollingPaused && (
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10">
+            <IconButton
+              icon={<MdKeyboardArrowDown className="h-6 w-6" />}
+              onClick={scrollToBottom}
+              tooltip={t('messages.scrollToBottom')}
+              className="bg-bg-primary-light border border-border-default shadow-lg hover:bg-bg-secondary transition-colors duration-200"
+              aria-label={t('messages.scrollToBottom')}
+            />
+          </div>
+        )}
         {processedMessages.map((message, index) => {
           if (isGroupMessage(message)) {
             return (

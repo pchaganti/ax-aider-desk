@@ -411,7 +411,8 @@
     "edit": "编辑",
     "editingLastMessage": "正在编辑最后一条消息",
     "cancelEdit": "取消编辑",
-    "group": "分组"
+    "group": "分组",
+    "scrollToBottom": "滚动到底部"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
