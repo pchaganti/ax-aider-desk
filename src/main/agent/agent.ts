@@ -689,7 +689,7 @@ export class Agent {
             }),
           }),
           system: systemPrompt,
-          messages: optimizeMessages(profile, initialUserRequestMessageIndex, messages, cacheControl),
+          messages: optimizeMessages(profile, initialUserRequestMessageIndex, messages, cacheControl, settings),
           toolCallStreaming: true,
           tools: toolSet,
           abortSignal: effectiveAbortSignal,
@@ -949,7 +949,7 @@ export class Agent {
       const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
       const userRequestMessageIndex = lastUserIndex >= 0 ? lastUserIndex : 0;
 
-      const optimizedMessages = optimizeMessages(profile, userRequestMessageIndex, messages, cacheControl);
+      const optimizedMessages = optimizeMessages(profile, userRequestMessageIndex, messages, cacheControl, settings);
 
       // Format tools for the prompt
       const toolDefinitions = Object.entries(toolSet).map(([name, tool]) => ({

@@ -1,4 +1,5 @@
-import { type AgentProfile } from '@common/types';
+import { type AgentProfile, InvocationMode, type SettingsData } from '@common/types';
+import { isSubagentEnabled } from '@common/agent';
 import { cloneDeep } from 'lodash';
 import { type CoreMessage, type CoreUserMessage, type ToolContent, type ToolResultPart } from 'ai';
 import {
@@ -17,14 +18,20 @@ import { CacheControl } from '@/agent';
 /**
  * Optimizes the messages before sending them to the LLM. This should reduce the token count and improve the performance.
  */
-export const optimizeMessages = (profile: AgentProfile, userRequestMessageIndex: number, messages: CoreMessage[], cacheControl: CacheControl) => {
+export const optimizeMessages = (
+  profile: AgentProfile,
+  userRequestMessageIndex: number,
+  messages: CoreMessage[],
+  cacheControl: CacheControl,
+  settings: SettingsData,
+) => {
   if (messages.length === 0) {
     return [];
   }
 
   let optimizedMessages = cloneDeep(messages);
 
-  optimizedMessages = addImportantReminders(profile, userRequestMessageIndex, optimizedMessages);
+  optimizedMessages = addImportantReminders(profile, userRequestMessageIndex, optimizedMessages, settings);
   optimizedMessages = convertImageToolResults(optimizedMessages);
   optimizedMessages = removeDoubleToolCalls(optimizedMessages);
   optimizedMessages = optimizeAiderMessages(optimizedMessages);
@@ -53,7 +60,7 @@ export const optimizeMessages = (profile: AgentProfile, userRequestMessageIndex:
   return optimizedMessages;
 };
 
-const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: number, messages: CoreMessage[]): CoreMessage[] => {
+const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: number, messages: CoreMessage[], settings: SettingsData): CoreMessage[] => {
   const userRequestMessage = messages[userRequestMessageIndex] as CoreUserMessage;
   const dontForgets: string[] = [];
 
@@ -61,6 +68,19 @@ const addImportantReminders = (profile: AgentProfile, userRequestMessageIndex: n
     dontForgets.push(
       `Always use the TODO list tools to manage the tasks, even if small ones. Before any analyze use ${TODO_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TODO_TOOL_GET_ITEMS} to check the current list of tasks and in case it's related to the current request, resume the existing tasks.`,
     );
+  }
+
+  // Add reminder about automatic subagents
+  if (profile.useSubagents && settings.agentProfiles) {
+    const enabledSubagents = settings.agentProfiles.filter((agentProfile) => isSubagentEnabled(agentProfile, profile.id));
+    const automaticSubagents = enabledSubagents.filter(
+      (agentProfile) => agentProfile.subagent.invocationMode === InvocationMode.Automatic && agentProfile.subagent.description,
+    );
+
+    if (automaticSubagents.length > 0) {
+      const subagents = automaticSubagents.map((subagent) => `- ${subagent.name}`).join('\n');
+      dontForgets.push(`Use the following automatic subagents when appropriate based on their descriptions:\n${subagents}`);
+    }
   }
 
   if (!profile.autoApprove && !profile.isSubagent) {
