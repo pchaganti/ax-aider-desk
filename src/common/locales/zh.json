@@ -31,7 +31,8 @@
     "suffix.billion": "十亿",
     "suffix.million": "百万",
     "suffix.thousand": "千",
-    "ok": "确定"
+    "ok": "确定",
+    "collapse": "收起"
   },
   "search": {
     "placeholder": "查找...",

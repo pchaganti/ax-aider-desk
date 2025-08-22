@@ -31,7 +31,8 @@
     "suffix.billion": "B",
     "suffix.million": "M",
     "suffix.thousand": "K",
-    "ok": "OK"
+    "ok": "OK",
+    "collapse": "Collapse"
   },
   "search": {
     "placeholder": "Search...",

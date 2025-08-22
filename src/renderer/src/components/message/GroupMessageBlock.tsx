@@ -90,8 +90,8 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
         }}
       />
       {/* Content */}
-      <Accordion title={header} chevronPosition="right" noMaxHeight={true}>
-        <div className="p-2 pl-3 pb-0.5 bg-bg-primary-light rounded-b-md">
+      <Accordion title={header} chevronPosition="right" noMaxHeight={true} showCollapseButton={true}>
+        <div className="p-2 pl-3 pb-0.5 bg-bg-primary-light">
           {message.children.map((child, index) => (
             <MessageBlock
               key={child.id || index}
