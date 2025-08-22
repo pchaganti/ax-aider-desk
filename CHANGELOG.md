@@ -12,6 +12,7 @@
 - fixed issue with getting stuck when dropping files
 - updated temperature range to 0-2 with 0.5 step
 - gracefully handling no changes in file edit tool instead of erroring
+- drag and drop external files to Context files
 
 ## [0.27.0]
 

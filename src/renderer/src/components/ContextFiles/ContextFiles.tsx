@@ -1,8 +1,8 @@
 import { ContextFile, ContextFilesUpdatedData, OS } from '@common/types';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import objectHash from 'object-hash';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
-import { HiChevronDown, HiChevronRight, HiPlus, HiX, HiOutlineTrash } from 'react-icons/hi';
+import { HiChevronDown, HiChevronRight, HiOutlineTrash, HiPlus, HiX } from 'react-icons/hi';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
 import { LuFolderTree } from 'react-icons/lu';
 import { TbPencilOff } from 'react-icons/tb';
@@ -89,9 +89,35 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
   const [newlyAddedFiles, setNewlyAddedFiles] = useState<string[]>([]);
   const [showAllFiles, setShowAllFiles] = useState(false);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   const { t } = useTranslation();
   const os = useOS();
+
+  const handleFileDrop = useCallback(
+    async (event: React.DragEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      setIsDragging(false);
+
+      if (event.dataTransfer?.files) {
+        const files = Array.from(event.dataTransfer.files);
+        const droppedFilePaths = files.map((file) => window.api.getPathForFile(file));
+        for (let filePath of droppedFilePaths) {
+          const isValid = await window.api.isValidPath(baseDir, filePath);
+          if (!isValid) {
+            continue;
+          }
+
+          const isInsideProject = filePath.startsWith(baseDir + '/') || filePath === baseDir;
+          if (isInsideProject) {
+            filePath = filePath.slice(baseDir.length + 1);
+          }
+          window.api.addFile(baseDir, filePath, !isInsideProject);
+        }
+      }
+    },
+    [baseDir],
+  );
 
   const sortedFiles = useMemo(() => {
     return [...files].sort((a, b) => a.path.localeCompare(b.path));
@@ -179,11 +205,25 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
     window.api.runCommand(baseDir, 'drop');
   };
 
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setIsDragging(false);
+  };
+
   const dropFile = (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     const file = (item as TreeItem).file;
     if (file) {
-      window.api.dropFile(baseDir, file.path);
+      let pathToDrop = file.path;
+      if (pathToDrop.startsWith(baseDir + '/') || pathToDrop === baseDir) {
+        pathToDrop = pathToDrop.slice(baseDir.length + 1);
+      }
+      window.api.dropFile(baseDir, pathToDrop);
     } else if (item.isFolder) {
       window.api.dropFile(baseDir, item.index as string);
     }
@@ -206,7 +246,12 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
   };
 
   return (
-    <div className="context-files-root flex-grow w-full h-full flex flex-col pb-2 overflow-hidden">
+    <div
+      className={`context-files-root flex-grow w-full h-full flex flex-col pb-2 overflow-hidden ${isDragging ? 'drag-over' : ''}`}
+      onDrop={handleFileDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+    >
       <StyledTooltip id="context-files-tooltip" />
       <div className="flex items-center mb-2 flex-shrink-0 p-2">
         <h3 className="text-md font-semibold uppercase pl-1 flex-grow">{t('contextFiles.title')}</h3>
