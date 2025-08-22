@@ -9,6 +9,7 @@
 - added confirm before edit option for Aider coder
 - added fetch power tool
 - removed Playwright dependency for web scraping in favor of internal browser
+- fixed issue with getting stuck when dropping files
 
 ## [0.27.0]
 

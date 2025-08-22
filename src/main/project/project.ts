@@ -927,13 +927,13 @@ export class Project {
     if (addToHistory) {
       void this.addToInputHistory(`/${command}`);
     }
-    this.findMessageConnectors('run-command').forEach((connector) => connector.sendRunCommandMessage(command));
 
     if (command.trim() === 'reset') {
       this.sessionManager.clearMessages();
       this.mainWindow.webContents.send('clear-project', this.baseDir, true, false);
-      void this.updateContextInfo(true, true);
     }
+
+    this.findMessageConnectors('run-command').forEach((connector) => connector.sendRunCommandMessage(command));
   }
 
   public updateContextFiles(contextFiles: ContextFile[]) {

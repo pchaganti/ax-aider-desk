@@ -982,6 +982,10 @@ class Connector:
     elif command.startswith("/commit"):
       self.coder.io.processing_loading_message = True
       await self.send_log_message("loading", "Committing changes...")
+    elif command.startswith("/reset") or command.startswith("/drop"):
+      # for /reset and /drop, we only need to send the initial context files
+      await self.send_update_context_files()
+      return
 
     # run the command
     self.coder.commands.run(command)
@@ -1003,8 +1007,6 @@ class Connector:
           self.coder.main_model.extra_params.pop("thinking", None)
         self.thinking_tokens = None
       await self.send_current_models()
-    elif command.startswith("/reset") or command.startswith("/drop"):
-      await self.send_update_context_files()
 
   async def send_autocompletion(self, files):
     try:
