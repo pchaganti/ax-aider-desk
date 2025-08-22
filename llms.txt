@@ -1077,7 +1077,8 @@ File: src/common/locales/en.json
     "suffix.billion": "B",
     "suffix.million": "M",
     "suffix.thousand": "K",
-    "ok": "OK"
+    "ok": "OK",
+    "collapse": "Collapse"
   },
   "search": {
     "placeholder": "Search...",
@@ -1905,7 +1906,8 @@ File: src/common/locales/zh.json
     "suffix.billion": "十亿",
     "suffix.million": "百万",
     "suffix.thousand": "千",
-    "ok": "确定"
+    "ok": "确定",
+    "collapse": "收起"
   },
   "search": {
     "placeholder": "查找...",
@@ -6889,6 +6891,7 @@ File: src/renderer/src/components/common/Accordion.tsx
 import { ReactNode, useRef, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 ⋮----
 type Props = {
   title: ReactNode;
@@ -6901,6 +6904,7 @@ type Props = {
   onOpenChange?: (isOpen: boolean) => void;
   noMaxHeight?: boolean;
   scrollToVisibleWhenExpanded?: boolean;
+  showCollapseButton?: boolean;
 };
 ⋮----
 const handleOpenChange = () =>
