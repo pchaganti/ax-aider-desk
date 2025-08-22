@@ -2,10 +2,8 @@ name: Update llms.txt
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
-    paths:
-      - "src/**"
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   pack-repo:
