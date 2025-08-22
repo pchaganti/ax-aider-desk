@@ -7411,16 +7411,21 @@ File: src/renderer/src/components/ContextFiles/ContextFiles.css
 @apply text-text-muted;
 ⋮----
 body.theme-light .context-dimmed {
+⋮----
+.context-files-root.drag-over {
+⋮----
+@apply bg-bg-tertiary;
+⋮----
 @tailwind utilities;
 
 ================
 File: src/renderer/src/components/ContextFiles/ContextFiles.tsx
 ================
 import { ContextFile, ContextFilesUpdatedData, OS } from '@common/types';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import objectHash from 'object-hash';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
-import { HiChevronDown, HiChevronRight, HiPlus, HiX, HiOutlineTrash } from 'react-icons/hi';
+import { HiChevronDown, HiChevronRight, HiOutlineTrash, HiPlus, HiX } from 'react-icons/hi';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
 import { LuFolderTree } from 'react-icons/lu';
 import { TbPencilOff } from 'react-icons/tb';
@@ -7459,6 +7464,10 @@ const handleExpandAll = () =>
 const handleCollapseAll = () =>
 ⋮----
 const handleDropAllFiles = () =>
+⋮----
+const handleDragOver = (event: React.DragEvent<HTMLDivElement>) =>
+⋮----
+const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) =>
 ⋮----
 const dropFile = (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) =>
 ⋮----
