@@ -1482,7 +1482,8 @@ File: src/common/locales/en.json
     "edit": "Edit",
     "editingLastMessage": "Editing last message",
     "cancelEdit": "Cancel",
-    "group": "Group"
+    "group": "Group",
+    "scrollToBottom": "Scroll to bottom"
   },
   "errors": {
     "frozenTitle": "AIDER FROZEN?",
@@ -2286,7 +2287,8 @@ File: src/common/locales/zh.json
     "edit": "编辑",
     "editingLastMessage": "正在编辑最后一条消息",
     "cancelEdit": "取消编辑",
-    "group": "分组"
+    "group": "分组",
+    "scrollToBottom": "滚动到底部"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
@@ -4257,11 +4259,9 @@ export const getSystemPrompt = async (projectDir: string, agentProfile: AgentPro
 ⋮----
 // Check if any power tools are allowed
 ⋮----
-const getRuleFilesContent = (projectDir: string) =>
+const getRulesContent = (projectDir: string) =>
 ⋮----
 export const getInitProjectPrompt = () =>
-⋮----
-export const getSubAgentSystemPrompt = () =>
 ⋮----
 export const getCompactConversationPrompt = (customInstructions?: string) =>
 
@@ -7751,11 +7751,14 @@ File: src/renderer/src/components/message/Messages.tsx
 ================
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
+import { MdKeyboardArrowDown } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
 ⋮----
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
 ⋮----
 import { isGroupMessage, isUserMessage, Message } from '@/types/message';
+import { IconButton } from '@/components/common/IconButton';
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { groupMessagesByPromptContext } from '@/components/message/utils';
 ⋮----
@@ -7784,6 +7787,10 @@ const exportToImage = async () =>
 // eslint-disable-next-line no-console
 ⋮----
 const scrollToBottom = () =>
+⋮----
+tooltip=
+⋮----
+aria-label=
 ⋮----
 remove=
 
@@ -12913,9 +12920,9 @@ File: package.json
     "prepare": "husky"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "^2.2.10",
+    "@ai-sdk/amazon-bedrock": "^2.2.12",
     "@ai-sdk/anthropic": "^1.2.12",
-    "@ai-sdk/deepseek": "^0.2.14",
+    "@ai-sdk/deepseek": "^0.2.16",
     "@ai-sdk/google": "^1.2.22",
     "@ai-sdk/google-vertex": "^2.2.27",
     "@ai-sdk/groq": "^1.2.9",
@@ -12934,7 +12941,7 @@ File: package.json
     "@headlessui/react": "^2.2.0",
     "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
     "@n8n/json-schema-to-zod": "^1.1.0",
-    "@openrouter/ai-sdk-provider": "^0.7.1",
+    "@openrouter/ai-sdk-provider": "^0.7.5",
     "@opentelemetry/auto-instrumentations-node": "^0.62.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
