@@ -18,6 +18,7 @@
     "finish": "Finish",
     "loading": "Loading...",
     "startingUp": "Starting up...",
+    "loadingProjectSettings": "Loading project settings...",
     "error": "Error",
     "success": "Success",
     "warning": "Warning",

@@ -18,6 +18,7 @@
     "finish": "完成",
     "loading": "加载中...",
     "startingUp": "正在启动...",
+    "loadingProjectSettings": "正在加载项目设置...",
     "error": "错误",
     "success": "成功",
     "warning": "警告",
