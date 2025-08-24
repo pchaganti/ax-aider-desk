@@ -12,6 +12,7 @@ import uuid
 from typing import Dict, Optional, Any, Coroutine
 from aider import models
 from aider.coders import Coder
+from aider.commands import Commands
 from aider.io import InputOutput, AutoCompleter
 from aider.watch import FileWatcher
 from aider.main import main as cli_main
@@ -154,6 +155,8 @@ class PromptExecutor:
         self.connector,
         self.connector.coder,
         prompt_context,
+        messages,
+        files,
         edit_format=mode,
         main_model=running_model,
       )
@@ -162,26 +165,6 @@ class PromptExecutor:
     coder.io.add_command_to_context = False
 
     self.active_coders[prompt_context.id] = coder
-
-    if messages is not None:
-      # Set messages from the provided data
-      coder.done_messages = [dict(role=msg['role'], content=msg['content']) for msg in messages]
-      coder.cur_messages = []
-
-    if files is not None:
-      # Set files from the provided data
-      coder.abs_fnames = set()
-      coder.abs_read_only_fnames = set()
-
-      for file in files:
-        file_path = file['path']
-        if not file_path.startswith(self.connector.base_dir):
-          file_path = os.path.join(self.connector.base_dir, file_path)
-
-        if file.get('readOnly', False):
-          coder.abs_read_only_fnames.add(file_path)
-        else:
-          coder.abs_fnames.add(file_path)
 
     # we need to disable auto accept as this does not work properly with AiderDesk
     coder.auto_accept_architect=False
@@ -535,6 +518,7 @@ class ConnectorInputOutput(InputOutput):
       }))
 
       self.running_shell_command = False
+      self.processing_loading_message = False
       self.current_command = None
 
   def interrupt_input(self):
@@ -569,13 +553,34 @@ class ConnectorInputOutput(InputOutput):
         wait_for_async(self.connector, self.connector.send_log_message("loading", "Processing request...", False, prompt_context))
         self.connector.loop.create_task(process_changes())
 
-def clone_coder(connector, coder, prompt_context=None, **kwargs):
+def clone_coder(connector, coder, prompt_context=None, messages=None, files=None, **kwargs):
   kwargs["from_coder"] = coder
   kwargs["summarize_from_coder"] = False
 
   coder = Coder.create(**kwargs)
   create_io(connector, coder, prompt_context)
   connector.monkey_patch_coder_functions(coder)
+
+  if messages is not None:
+    # Set messages from the provided data
+    coder.done_messages = [dict(role=msg['role'], content=msg['content']) for msg in messages]
+    coder.cur_messages = []
+
+  if files is not None:
+    # Set files from the provided data
+    coder.abs_fnames = set()
+    coder.abs_read_only_fnames = set()
+
+    for file in files:
+      file_path = file['path']
+      if not file_path.startswith(connector.base_dir):
+        file_path = os.path.join(connector.base_dir, file_path)
+
+      if file.get('readOnly', False):
+        coder.abs_read_only_fnames.add(file_path)
+      else:
+        coder.abs_fnames.add(file_path)
+
 
   return coder
 
@@ -899,10 +904,12 @@ class Connector:
 
       elif action == "run-command":
         command = message.get('command')
+        messages = message.get('messages', [])
+        files = message.get('files', [])
         if not command:
           return
 
-        await self.run_command(command)
+        await self.run_command(command, messages, files)
 
       elif action == "interrupt-response":
         # Interrupt all active prompts
@@ -937,9 +944,6 @@ class Connector:
       self.coder.io.tool_error(f"Exception in connector: {str(e)}")
       return
 
-  def reset_before_action(self):
-    self.coder.io.reset_state(False)
-
   async def update_environment_variables(self, environment_variables):
     """Update environment variables for the Aider process"""
     try:
@@ -950,9 +954,12 @@ class Connector:
     except Exception as e:
       await self.send_log_message("error", f"Failed to update environment variables: {str(e)}")
 
-  async def run_command(self, command):
+  async def run_command(self, command, messages, files):
+    command_coder = clone_coder(self, self.coder, messages=messages, files=files)
+    command_coder.io = self.coder.io
+
     if command.strip() == "/map":
-      repo_map = self.coder.repo_map.get_repo_map(set(), self.coder.get_all_abs_files()) if self.coder.repo_map else None
+      repo_map = command_coder.repo_map.get_repo_map(set(), command_coder.get_all_abs_files()) if command_coder.repo_map else None
       if repo_map:
         await self.send_log_message("info", repo_map)
       else:
@@ -974,13 +981,13 @@ class Connector:
       self.reasoning_effort = parts[1]
 
     if command.startswith("/test ") or command.startswith("/run "):
-      self.coder.io.running_shell_command = True
-      self.coder.io.tool_output("Running " + command.split(" ", 1)[1])
+      command_coder.io.running_shell_command = True
+      command_coder.io.tool_output("Running " + command.split(" ", 1)[1])
     elif command.startswith("/tokens"):
-      self.coder.io.running_shell_command = True
-      self.coder.io.tool_output("Running /tokens")
+      command_coder.io.running_shell_command = True
+      command_coder.io.tool_output("Running /tokens")
     elif command.startswith("/commit"):
-      self.coder.io.processing_loading_message = True
+      command_coder.io.processing_loading_message = True
       await self.send_log_message("loading", "Committing changes...")
     elif command.startswith("/reset") or command.startswith("/drop"):
       # for /reset and /drop, we only need to send the initial context files
@@ -988,16 +995,16 @@ class Connector:
       return
 
     # run the command
-    self.coder.commands.run(command)
+    command_coder.commands.run(command)
 
     # reset flags
-    self.coder.io.running_shell_command = False
-    self.coder.io.processing_loading_message = False
+    command_coder.io.reset_state(False)
 
     if command.startswith("/map-refresh"):
       await self.send_log_message("info", "The repo map has been refreshed.")
       await self.send_repo_map()
     elif command.startswith("/reasoning-effort"):
+      self.coder.commands.run(command)
       await self.send_current_models()
     elif command.startswith("/think-tokens"):
       self.coder.commands.run(command)

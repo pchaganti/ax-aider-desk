@@ -16,6 +16,7 @@
 - added scroll to bottom button to the message area
 - including AGENTS.md in the system prompt by default when using Agent mode
 - fixed issue with duplication in thinking section of message with some OpenRouter models
+- properly using context messages and files when using context aware commands (e.g. /tokens)
 
 ## [0.27.0]
 

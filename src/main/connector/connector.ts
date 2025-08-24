@@ -101,10 +101,12 @@ export class Connector {
     this.sendMessage(message);
   }
 
-  public sendRunCommandMessage(command: string): void {
+  public sendRunCommandMessage(command: string, messages: { role: MessageRole; content: string }[] = [], files: ContextFile[] = []): void {
     const message: RunCommandMessage = {
       action: 'run-command',
       command: `/${command}`,
+      messages,
+      files,
     };
     this.sendMessage(message);
   }
