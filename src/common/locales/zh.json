@@ -18,6 +18,7 @@
     "finish": "完成",
     "loading": "加载中...",
     "startingUp": "正在启动...",
+    "loadingProjectSettings": "正在加载项目设置...",
     "error": "错误",
     "success": "成功",
     "warning": "警告",
@@ -40,8 +41,8 @@
     "nextResult": "下一个结果 (F3)"
   },
   "onboarding": {
-    "title": "欢迎使用 Aider Desk",
-    "description": "Aider Desk 是您的 AI 辅助编程桌面伴侣。本应用将 Aider 的 AI 编程助手功能带到用户友好的界面中，帮助您：",
+    "title": "欢迎使用 AiderDesk",
+    "description": "AiderDesk 是您的 AI 辅助编程桌面伴侣。本应用将 Aider 的 AI 编程助手功能带到用户友好的界面中，帮助您：",
     "skipForNow": "暂时跳过",
     "finish": "完成设置",
     "features": {
@@ -83,7 +84,7 @@
       "description": "配置您的 LLM 提供商以在 Aider 和 Agent 模式中使用。您可以为各种提供商设置 API 密钥和其他设置。",
       "configureLater": "如果您愿意，可以稍后在设置中配置这些。",
       "connectTitle": "连接您的AI模型",
-      "connectDescription": "Aider Desk 支持多个AI提供商，包括OpenAI、Anthropic、Google Gemini等。您的API密钥安全存储在本地机器上，绝不会被共享。",
+      "connectDescription": "AiderDesk 支持多个AI提供商，包括OpenAI、Anthropic、Google Gemini等。您的API密钥安全存储在本地机器上，绝不会被共享。",
       "advancedUsersNote": "高级用户：您也可以在下一步的Aider配置部分使用环境变量配置提供商。",
       "advancedSettings": "高级设置",
       "order": "排序",
@@ -105,7 +106,7 @@
     },
     "agent": {
       "title": "认识您的AI代理",
-      "description": "通过 Aider Desk 的代理模式发现自主AI辅助的强大功能。您的AI代理可以独立工作来完成复杂任务。",
+      "description": "通过 AiderDesk 的代理模式发现自主AI辅助的强大功能。您的AI代理可以独立工作来完成复杂任务。",
       "capabilities": "代理功能：",
       "autonomousPlanning": "自主任务规划：",
       "autonomousPlanningDesc": "将复杂请求分解为可管理的步骤并系统性地执行它们。",
@@ -120,9 +121,9 @@
     },
     "complete": {
       "title": "设置完成！",
-      "description": "恭喜！您已成功设置 Aider Desk。现在您可以开始使用 AI 辅助编程了。",
+      "description": "恭喜！您已成功设置 AiderDesk。现在您可以开始使用 AI 辅助编程了。",
       "ready": "点击'完成设置'开始您的编程之旅。",
-      "success": "引导完成成功！欢迎使用 Aider Desk。"
+      "success": "引导完成成功！欢迎使用 AiderDesk。"
     },
     "errors": {
       "navigationFailed": "导航失败。请重试。",

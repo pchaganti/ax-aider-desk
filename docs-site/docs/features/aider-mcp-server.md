@@ -1,6 +1,6 @@
 ---
-title: Aider Desk as MCP Server
-description: Learn how to use Aider Desk as a Model Context Protocol (MCP) server to integrate with other MCP-compatible clients.
+title: AiderDesk as MCP Server
+description: Learn how to use AiderDesk as a Model Context Protocol (MCP) server to integrate with other MCP-compatible clients.
 ---
 
 AiderDesk includes a built-in MCP server, allowing other MCP-compatible clients (like Claude Desktop, Cursor, etc.) to interact with AiderDesk's core functionalities.
