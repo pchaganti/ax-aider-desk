@@ -1064,6 +1064,7 @@ File: src/common/locales/en.json
     "finish": "Finish",
     "loading": "Loading...",
     "startingUp": "Starting up...",
+    "loadingProjectSettings": "Loading project settings...",
     "error": "Error",
     "success": "Success",
     "warning": "Warning",
@@ -1086,8 +1087,8 @@ File: src/common/locales/en.json
     "nextResult": "Next result (F3)"
   },
   "onboarding": {
-    "title": "Welcome to Aider Desk",
-    "description": "Aider Desk is your desktop companion for AI-assisted coding. This application brings the power of Aider's AI coding assistant to a user-friendly interface, helping you:",
+    "title": "Welcome to AiderDesk",
+    "description": "AiderDesk is your desktop companion for AI-assisted coding. This application brings the power of Aider's AI coding assistant to a user-friendly interface, helping you:",
     "skipForNow": "Skip for now",
     "finish": "Finish Setup",
     "features": {
@@ -1129,7 +1130,7 @@ File: src/common/locales/en.json
       "description": "Configure your LLM providers for use with both Aider and Agent modes. You can set up API keys and additional settings for various providers.",
       "configureLater": "You can configure these later in the Settings if you prefer.",
       "connectTitle": "Connect Your AI Model",
-      "connectDescription": "Aider Desk supports multiple AI providers including OpenAI, Anthropic, Google Gemini, and more. Your API keys are stored securely on your local machine and never shared.",
+      "connectDescription": "AiderDesk supports multiple AI providers including OpenAI, Anthropic, Google Gemini, and more. Your API keys are stored securely on your local machine and never shared.",
       "advancedUsersNote": "Advanced users: You can also configure providers using environment variables in the next step's Aider configuration section.",
       "advancedSettings": "Advanced settings",
       "order": "Order",
@@ -1151,7 +1152,7 @@ File: src/common/locales/en.json
     },
     "agent": {
       "title": "Meet Your AI Agent",
-      "description": "Discover the power of autonomous AI assistance with Aider Desk's Agent mode. Your AI agent can work independently to complete complex tasks.",
+      "description": "Discover the power of autonomous AI assistance with AiderDesk's Agent mode. Your AI agent can work independently to complete complex tasks.",
       "capabilities": "Agent Capabilities:",
       "autonomousPlanning": "Autonomous Task Planning:",
       "autonomousPlanningDesc": "Breaks down complex requests into manageable steps and executes them systematically.",
@@ -1166,9 +1167,9 @@ File: src/common/locales/en.json
     },
     "complete": {
       "title": "Setup Complete!",
-      "description": "Congratulations! You've successfully set up Aider Desk. You're now ready to start coding with AI assistance.",
+      "description": "Congratulations! You've successfully set up AiderDesk. You're now ready to start coding with AI assistance.",
       "ready": "Click 'Finish Setup' to begin your coding journey.",
-      "success": "Onboarding completed successfully! Welcome to Aider Desk."
+      "success": "Onboarding completed successfully! Welcome to AiderDesk."
     },
     "errors": {
       "navigationFailed": "Navigation failed. Please try again.",
@@ -1894,6 +1895,7 @@ File: src/common/locales/zh.json
     "finish": "完成",
     "loading": "加载中...",
     "startingUp": "正在启动...",
+    "loadingProjectSettings": "正在加载项目设置...",
     "error": "错误",
     "success": "成功",
     "warning": "警告",
@@ -1916,8 +1918,8 @@ File: src/common/locales/zh.json
     "nextResult": "下一个结果 (F3)"
   },
   "onboarding": {
-    "title": "欢迎使用 Aider Desk",
-    "description": "Aider Desk 是您的 AI 辅助编程桌面伴侣。本应用将 Aider 的 AI 编程助手功能带到用户友好的界面中，帮助您：",
+    "title": "欢迎使用 AiderDesk",
+    "description": "AiderDesk 是您的 AI 辅助编程桌面伴侣。本应用将 Aider 的 AI 编程助手功能带到用户友好的界面中，帮助您：",
     "skipForNow": "暂时跳过",
     "finish": "完成设置",
     "features": {
@@ -1959,7 +1961,7 @@ File: src/common/locales/zh.json
       "description": "配置您的 LLM 提供商以在 Aider 和 Agent 模式中使用。您可以为各种提供商设置 API 密钥和其他设置。",
       "configureLater": "如果您愿意，可以稍后在设置中配置这些。",
       "connectTitle": "连接您的AI模型",
-      "connectDescription": "Aider Desk 支持多个AI提供商，包括OpenAI、Anthropic、Google Gemini等。您的API密钥安全存储在本地机器上，绝不会被共享。",
+      "connectDescription": "AiderDesk 支持多个AI提供商，包括OpenAI、Anthropic、Google Gemini等。您的API密钥安全存储在本地机器上，绝不会被共享。",
       "advancedUsersNote": "高级用户：您也可以在下一步的Aider配置部分使用环境变量配置提供商。",
       "advancedSettings": "高级设置",
       "order": "排序",
@@ -1981,7 +1983,7 @@ File: src/common/locales/zh.json
     },
     "agent": {
       "title": "认识您的AI代理",
-      "description": "通过 Aider Desk 的代理模式发现自主AI辅助的强大功能。您的AI代理可以独立工作来完成复杂任务。",
+      "description": "通过 AiderDesk 的代理模式发现自主AI辅助的强大功能。您的AI代理可以独立工作来完成复杂任务。",
       "capabilities": "代理功能：",
       "autonomousPlanning": "自主任务规划：",
       "autonomousPlanningDesc": "将复杂请求分解为可管理的步骤并系统性地执行它们。",
@@ -1996,9 +1998,9 @@ File: src/common/locales/zh.json
     },
     "complete": {
       "title": "设置完成！",
-      "description": "恭喜！您已成功设置 Aider Desk。现在您可以开始使用 AI 辅助编程了。",
+      "description": "恭喜！您已成功设置 AiderDesk。现在您可以开始使用 AI 辅助编程了。",
       "ready": "点击'完成设置'开始您的编程之旅。",
-      "success": "引导完成成功！欢迎使用 Aider Desk。"
+      "success": "引导完成成功！欢迎使用 AiderDesk。"
     },
     "errors": {
       "navigationFailed": "导航失败。请重试。",
@@ -13096,6 +13098,7 @@ return Object.keys(colorObj).reduce((vars, colorKey) => {
 ⋮----
 addBase({
 ':root': extractColorVars(theme('colors')),
+
 
 
 
