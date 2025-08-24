@@ -4,7 +4,7 @@ import { OpenAiProvider } from '@common/agent';
 import { ReasoningEffort } from '@common/types';
 
 import { Input } from '@/components/common/Input';
-import { RadioButton } from '@/components/common/RadioButton';
+import { Select, Option } from '@/components/common/Select';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
 type Props = {
@@ -16,7 +16,14 @@ export const OpenAiParameters = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
 
   const apiKey = provider.apiKey || '';
-  const reasoningEffort = provider.reasoningEffort || 'medium';
+  const reasoningEffort = provider.reasoningEffort || ReasoningEffort.Medium;
+
+  const reasoningOptions: Option[] = [
+    { value: ReasoningEffort.Minimal, label: t('openai.reasoningEffortMinimal') },
+    { value: ReasoningEffort.Low, label: t('openai.reasoningEffortLow') },
+    { value: ReasoningEffort.Medium, label: t('openai.reasoningEffortMedium') },
+    { value: ReasoningEffort.High, label: t('openai.reasoningEffortHigh') },
+  ];
 
   const { environmentVariable: openAiApiKeyEnv } = useEffectiveEnvironmentVariable('OPENAI_API_KEY');
 
@@ -25,7 +32,7 @@ export const OpenAiParameters = ({ provider, onChange }: Props) => {
   };
 
   const handleReasoningEffortChange = (value: string) => {
-    onChange({ ...provider, reasoningEffort: value as typeof reasoningEffort });
+    onChange({ ...provider, reasoningEffort: value as ReasoningEffort });
   };
 
   return (
@@ -37,39 +44,17 @@ export const OpenAiParameters = ({ provider, onChange }: Props) => {
         onChange={handleApiKeyChange}
         placeholder={
           openAiApiKeyEnv
-            ? t('settings.agent.envVarFoundPlaceholder', { source: openAiApiKeyEnv.source })
-            : t('settings.agent.envVarPlaceholder', { envVar: 'OPENAI_API_KEY' })
+            ? t('settings.agent.envVarFoundPlaceholder', {
+                source: openAiApiKeyEnv.source,
+              })
+            : t('settings.agent.envVarPlaceholder', {
+                envVar: 'OPENAI_API_KEY',
+              })
         }
       />
 
-      <div>
-        <div className="mb-1 text-sm font-medium">{t('openai.reasoningEffort')}</div>
-        <div className="flex items-center space-x-4">
-          <RadioButton
-            id="reasoning-effort-low"
-            name="reasoning-effort"
-            label={t('openai.reasoningEffortLow')}
-            value={ReasoningEffort.Low}
-            checked={reasoningEffort === ReasoningEffort.Low}
-            onChange={handleReasoningEffortChange}
-          />
-          <RadioButton
-            id="reasoning-effort-medium"
-            name="reasoning-effort"
-            label={t('openai.reasoningEffortMedium')}
-            value={ReasoningEffort.Medium}
-            checked={reasoningEffort === ReasoningEffort.Medium}
-            onChange={handleReasoningEffortChange}
-          />
-          <RadioButton
-            id="reasoning-effort-high"
-            name="reasoning-effort"
-            label={t('openai.reasoningEffortHigh')}
-            value={ReasoningEffort.High}
-            checked={reasoningEffort === ReasoningEffort.High}
-            onChange={handleReasoningEffortChange}
-          />
-        </div>
+      <div className="grid grid-cols-2 gap-x-10">
+        <Select label={t('openai.reasoningEffort')} value={reasoningEffort} onChange={handleReasoningEffortChange} options={reasoningOptions} />
       </div>
     </div>
   );

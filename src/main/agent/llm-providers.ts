@@ -56,7 +56,7 @@ export const createLlm = (provider: LlmProvider, model: string, env: Record<stri
     });
     return openAIProvider(model, {
       structuredOutputs: false,
-      reasoningEffort: provider.reasoningEffort,
+      reasoningEffort: provider.reasoningEffort as 'low' | 'medium' | 'high' | undefined,
     });
   } else if (isGeminiProvider(provider)) {
     const apiKey = provider.apiKey || env['GEMINI_API_KEY'];

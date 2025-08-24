@@ -967,7 +967,7 @@ class Connector:
       return
     elif command.startswith("/reasoning-effort"):
       parts = command.split()
-      valid_values = ['high', 'medium', 'low', 'none']
+      valid_values = ['high', 'medium', 'low', 'minimal', 'none']
       if len(parts) != 2 or parts[1] not in valid_values:
         await self.send_log_message("error", "Invalid reasoning effort value. Use '/reasoning-effort [high|medium|low|none]'.")
         return

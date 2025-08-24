@@ -17,6 +17,7 @@
 - including AGENTS.md in the system prompt by default when using Agent mode
 - fixed issue with duplication in thinking section of message with some OpenRouter models
 - properly using context messages and files when using context aware commands (e.g. /tokens)
+- added support for 'minimal' reasoning effort (for GPT-5 model)
 
 ## [0.27.0]
 
