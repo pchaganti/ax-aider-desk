@@ -51,24 +51,20 @@ Subagents enable strategic model selection for different tasks, significantly re
 
 1. **Open Agent Settings**
    - Navigate to **Settings > Agent** in the AiderDesk interface
-   - ![Agent settings navigation](../images/agent-settings-navigation.png)
 
 2. **Create or Edit a Profile**
    - Create a new agent profile or edit an existing one
    - Enable the **"Enable as Subagent"** option in the profile's Subagent section
-   - ![Subagent configuration interface](../images/subagent-configuration.png)
 
 3. **Configure Subagent Settings**
    - **System Prompt**: Define the subagent's role, capabilities, and approach
    - **Invocation Mode**: Choose between Automatic or On-demand
    - **Color**: Select a visual identifier for the subagent
    - **Description**: For automatic subagents, describe when this subagent should be used
-   - ![Subagent settings panel](../images/subagent-settings-panel.png)
 
 4. **Save and Use**
    - Your subagent is now available and will be used according to its invocation mode
    - Subagents appear with color-coded indicators in the interface
-   - ![Subagent in action](../images/subagent-in-action.gif)
 
 ## Subagent Configuration
 
