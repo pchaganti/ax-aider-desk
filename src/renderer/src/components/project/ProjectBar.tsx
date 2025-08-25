@@ -53,6 +53,7 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
     }, [projectSettings?.agentProfileId, settings?.agentProfiles]);
     const [sessionPopupVisible, showSessionPopup, hideSessionPopup] = useBooleanState(false);
     const sessionPopupRef = useRef<HTMLDivElement>(null);
+    const showAiderInfo = mode !== 'agent' || activeAgentProfile?.useAiderTools === true;
 
     useImperativeHandle(ref, () => ({
       openMainModelSelector: (model) => {
@@ -273,100 +274,127 @@ export const ProjectBar = React.forwardRef<ProjectTopBarRef, Props>(
       void saveSettings(updatedSettings);
     };
 
+    const isTwoRowLayout = mode === 'agent' && showAiderInfo;
+    const renderAiderInfo = (showLabel = false) => {
+      return (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+          {showLabel && <span className="text-2xs font-semibold text-text-primary uppercase">{t('projectBar.aider')}:</span>}
+          <div className="flex items-center space-x-1">
+            <CgTerminal className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="main-model-tooltip" />
+            <StyledTooltip id="main-model-tooltip" content={renderModelInfo(t('modelSelector.mainModel'), modelsData?.info)} />
+            <ModelSelector
+              ref={mainModelSelectorRef}
+              models={allModels}
+              selectedModel={modelsData?.mainModel}
+              onChange={updateMainModel}
+              preferredModels={settings?.models.aiderPreferred || []}
+              removePreferredModel={handleRemovePreferredModel}
+            />
+          </div>
+          <div className="h-3 w-px bg-bg-fourth"></div>
+          <div className="flex items-center space-x-1">
+            <BsFilter className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="weak-model-tooltip" data-tooltip-content={t('modelSelector.weakModel')} />
+            <StyledTooltip id="weak-model-tooltip" />
+            <ModelSelector
+              models={allModels}
+              selectedModel={modelsData?.weakModel || modelsData?.mainModel}
+              onChange={updateWeakModel}
+              preferredModels={settings?.models.aiderPreferred || []}
+              removePreferredModel={handleRemovePreferredModel}
+            />
+          </div>
+          {modelsData?.editFormat && (
+            <>
+              <div className="h-3 w-px bg-bg-fourth"></div>
+              <div className="flex items-center space-x-1">
+                <BsCodeSlash className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="edit-format-tooltip" />
+                <StyledTooltip id="edit-format-tooltip" content={t('projectBar.editFormatTooltip')} />
+                <EditFormatSelector currentFormat={modelsData.editFormat} onFormatChange={updateEditFormat} />
+              </div>
+            </>
+          )}
+          {modelsData?.reasoningEffort && modelsData.reasoningEffort !== 'none' && (
+            <>
+              <div className="h-3 w-px bg-bg-fourth"></div>
+              <div className="flex items-center space-x-1 group/reasoning">
+                <span className="text-xs text-text-muted-light">{t('modelSelector.reasoning')}:</span>
+                <span className="text-text-primary text-xs">{modelsData.reasoningEffort}</span>
+                <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('reasoning-effort none')} className="ml-0.5" />
+              </div>
+            </>
+          )}
+          {modelsData?.thinkingTokens && modelsData?.thinkingTokens !== '0' && (
+            <>
+              <div className="h-3 w-px bg-bg-fourth"></div>
+              <div className="flex items-center space-x-1 group/thinking">
+                <span className="text-xs text-text-muted-light">{t('modelSelector.thinkingTokens')}:</span>
+                <span className="text-text-primary text-xs">{modelsData.thinkingTokens}</span>
+                <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('think-tokens 0')} className="ml-0.5" />
+              </div>
+            </>
+          )}
+        </div>
+      );
+    };
+
     return (
-      <div className="relative group h-[40px] px-4 py-2 pr-1 border-b border-border-dark-light bg-bg-primary-light">
+      <div className="relative group px-4 py-2 pr-1 border-b border-border-dark-light bg-bg-primary-light">
         <div className="flex items-center h-full">
-          <div className="flex-grow flex items-center space-x-3">
-            {mode === 'agent' ? (
-              <>
-                <div className="flex items-center space-x-1">
-                  <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="agent-tooltip" />
-                  <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
-                  <AgentModelSelector ref={agentModelSelectorRef} settings={settings} agentProfile={activeAgentProfile} saveSettings={saveSettings} />
+          <div className="flex-grow">
+            {isTwoRowLayout ? (
+              // Two-row layout for Agent mode with Aider tools
+              <div className="flex flex-wrap gap-x-5 gap-y-2">
+                {/* Row 1: AGENT */}
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
+                    <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="agent-tooltip" />
+                    <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
+                    <AgentModelSelector ref={agentModelSelectorRef} settings={settings} agentProfile={activeAgentProfile} saveSettings={saveSettings} />
+                  </div>
                 </div>
-                <div className="h-3 w-px bg-bg-fourth"></div>
-              </>
+
+                {/* Row 2: AIDER */}
+                {renderAiderInfo(true)}
+              </div>
             ) : (
-              <>
-                {mode === 'architect' && (
+              // Original horizontal layout for other modes
+              <div className="flex items-center space-x-3">
+                {mode === 'agent' ? (
                   <>
                     <div className="flex items-center space-x-1">
-                      <GoProjectRoadmap
-                        className="w-4 h-4 text-text-primary mr-1"
-                        data-tooltip-id="architect-model-tooltip"
-                        data-tooltip-content={t('modelSelector.architectModel')}
-                      />
-                      <StyledTooltip id="architect-model-tooltip" />
-                      <ModelSelector
-                        ref={architectModelSelectorRef}
-                        models={allModels}
-                        selectedModel={modelsData?.architectModel || modelsData?.mainModel}
-                        onChange={updateArchitectModel}
-                        preferredModels={settings?.models.aiderPreferred || []}
-                        removePreferredModel={handleRemovePreferredModel}
-                      />
+                      <RiRobot2Line className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="agent-tooltip" />
+                      <StyledTooltip id="agent-tooltip" content={t('modelSelector.agentModel')} />
+                      <AgentModelSelector ref={agentModelSelectorRef} settings={settings} agentProfile={activeAgentProfile} saveSettings={saveSettings} />
                     </div>
-                    <div className="h-3 w-px bg-bg-fourth"></div>
+                    {showAiderInfo && <div className="h-3 w-px bg-bg-fourth"></div>}
+                  </>
+                ) : (
+                  <>
+                    {mode === 'architect' && (
+                      <>
+                        <div className="flex items-center space-x-1">
+                          <GoProjectRoadmap
+                            className="w-4 h-4 text-text-primary mr-1"
+                            data-tooltip-id="architect-model-tooltip"
+                            data-tooltip-content={t('modelSelector.architectModel')}
+                          />
+                          <StyledTooltip id="architect-model-tooltip" />
+                          <ModelSelector
+                            ref={architectModelSelectorRef}
+                            models={allModels}
+                            selectedModel={modelsData?.architectModel || modelsData?.mainModel}
+                            onChange={updateArchitectModel}
+                            preferredModels={settings?.models.aiderPreferred || []}
+                            removePreferredModel={handleRemovePreferredModel}
+                          />
+                        </div>
+                        <div className="h-3 w-px bg-bg-fourth"></div>
+                      </>
+                    )}
                   </>
                 )}
-              </>
-            )}
-            <div className="flex items-center space-x-1">
-              <CgTerminal className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="main-model-tooltip" />
-              <StyledTooltip
-                id="main-model-tooltip"
-                content={renderModelInfo(t(mode === 'architect' ? 'modelSelector.editorModel' : 'modelSelector.mainModel'), modelsData?.info)}
-              />
-              <ModelSelector
-                ref={mainModelSelectorRef}
-                models={allModels}
-                selectedModel={modelsData?.mainModel}
-                onChange={updateMainModel}
-                preferredModels={settings?.models.aiderPreferred || []}
-                removePreferredModel={handleRemovePreferredModel}
-              />
-            </div>
-            <div className="h-3 w-px bg-bg-fourth"></div>
-            <div className="flex items-center space-x-1">
-              <BsFilter className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="weak-model-tooltip" data-tooltip-content={t('modelSelector.weakModel')} />
-              <StyledTooltip id="weak-model-tooltip" />
-              <ModelSelector
-                models={allModels}
-                selectedModel={modelsData?.weakModel || modelsData?.mainModel}
-                onChange={updateWeakModel}
-                preferredModels={settings?.models.aiderPreferred || []}
-                removePreferredModel={handleRemovePreferredModel}
-              />
-            </div>
-            {modelsData?.editFormat && (
-              <>
-                <div className="h-3 w-px bg-bg-fourth"></div>
-                <div className="flex items-center space-x-1">
-                  <BsCodeSlash className="w-4 h-4 text-text-primary mr-1" data-tooltip-id="edit-format-tooltip" />
-                  <StyledTooltip id="edit-format-tooltip" content={t('projectBar.editFormatTooltip')} />
-                  <EditFormatSelector currentFormat={modelsData.editFormat} onFormatChange={updateEditFormat} />
-                </div>
-              </>
-            )}
-            {modelsData?.reasoningEffort && modelsData.reasoningEffort !== 'none' && (
-              <>
-                <div className="h-3 w-px bg-bg-fourth"></div>
-                <div className="flex items-center space-x-1 group/reasoning">
-                  <span className="text-xs text-text-muted-light">{t('modelSelector.reasoning')}:</span>
-                  <span className="text-text-primary text-xs">{modelsData.reasoningEffort}</span>
-                  <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('reasoning-effort none')} className="ml-0.5" />
-                </div>
-              </>
-            )}
-            {modelsData?.thinkingTokens && modelsData?.thinkingTokens !== '0' && (
-              <>
-                <div className="h-3 w-px bg-bg-fourth"></div>
-                <div className="flex items-center space-x-1 group/thinking">
-                  <span className="text-xs text-text-muted-light">{t('modelSelector.thinkingTokens')}:</span>
-                  <span className="text-text-primary text-xs">{modelsData.thinkingTokens}</span>
-                  <IconButton icon={<IoMdClose className="w-3 h-3" />} onClick={() => runCommand('think-tokens 0')} className="ml-0.5" />
-                </div>
-              </>
+                {showAiderInfo && renderAiderInfo()}
+              </div>
             )}
           </div>
           <div className="flex items-center space-x-1 mr-2">

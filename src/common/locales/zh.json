@@ -167,6 +167,7 @@
     "modelName": "模型",
     "baseUrlPlaceholder": "例如 http://localhost:8080/v1",
     "reasoningEffort": "推理努力",
+    "reasoningEffortMinimal": "最小",
     "reasoningEffortLow": "低",
     "reasoningEffortMedium": "中",
     "reasoningEffortHigh": "高"
@@ -706,7 +707,8 @@
   },
   "projectBar": {
     "toggleMarkdown": "Markdown 渲染",
-    "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。"
+    "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。",
+    "aider": "Aider"
   },
   "reasoningEffort": {
     "label": "推理",

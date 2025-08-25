@@ -114,6 +114,8 @@ export const isDropFileMessage = (message: Message): message is DropFileMessage 
 export interface RunCommandMessage extends Message {
   action: 'run-command';
   command: string;
+  messages?: { role: MessageRole; content: string }[];
+  files?: ContextFile[];
 }
 
 export interface UpdateAutocompletionMessage extends Message {

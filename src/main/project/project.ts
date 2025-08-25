@@ -933,7 +933,9 @@ export class Project {
       this.mainWindow.webContents.send('clear-project', this.baseDir, true, false);
     }
 
-    this.findMessageConnectors('run-command').forEach((connector) => connector.sendRunCommandMessage(command));
+    this.findMessageConnectors('run-command').forEach((connector) =>
+      connector.sendRunCommandMessage(command, this.sessionManager.toConnectorMessages(), this.sessionManager.getContextFiles()),
+    );
   }
 
   public updateContextFiles(contextFiles: ContextFile[]) {
