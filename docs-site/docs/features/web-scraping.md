@@ -20,7 +20,7 @@ To use the web scraper, simply use the `/web` command followed by the URL you wa
 
 When you execute the `/web` command, AiderDesk performs the following steps in the background:
 
-1.  **Launch Playwright**: A headless browser instance is launched using [Playwright](https://playwright.dev/). This allows AiderDesk to render JavaScript-heavy websites, ensuring it gets the full content just as a user would see it.
+1.  **Launch Internal Browser**: A hidden browser instance is launched using Electron's built-in BrowserWindow. This allows AiderDesk to render JavaScript-heavy websites, ensuring it gets the full content just as a user would see it, without requiring external dependencies.
 2.  **Navigate and Extract**: The browser navigates to the specified URL and waits for the page to fully load. It then extracts the raw HTML of the page.
 3.  **Clean and Convert**: The raw HTML is processed using [Cheerio](https://cheerio.js.org/). Unnecessary elements like images, SVGs, and scripts are removed. The remaining structured content (headings, paragraphs, lists, etc.) is converted into a clean, markdown-like text format.
 4.  **Add to Context**: The cleaned text is saved to a temporary file within your project's `.aider-desk/tmp` directory. This file is then automatically added to your chat context as a **read-only** file.

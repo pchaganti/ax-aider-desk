@@ -48,6 +48,7 @@ const sidebars: SidebarsConfig = {
         'agent-mode/agent-mode',
         'agent-mode/how-to-use',
         'agent-mode/agent-profiles',
+        'agent-mode/subagents',
         'agent-mode/aider-tools',
         'agent-mode/power-tools',
         'agent-mode/mcp-servers',
