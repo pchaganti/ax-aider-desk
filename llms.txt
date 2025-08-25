@@ -438,14 +438,6 @@ coder = clone_coder(
 ⋮----
 # we are sending all the additional messages after the prompt finishes
 ⋮----
-# Set messages from the provided data
-⋮----
-# Set files from the provided data
-⋮----
-file_path = file['path']
-⋮----
-file_path = os.path.join(self.connector.base_dir, file_path)
-⋮----
 # we need to disable auto accept as this does not work properly with AiderDesk
 ⋮----
 # setting usage report to None to avoid no attribute error
@@ -611,9 +603,17 @@ changed_files = ", ".join(sorted(self.connector.file_watcher.changed_files))
 group = {
 prompt_context = PromptContext(str(uuid.uuid4()), group)
 ⋮----
-def clone_coder(connector, coder, prompt_context=None, **kwargs)
+def clone_coder(connector, coder, prompt_context=None, messages=None, files=None, **kwargs)
 ⋮----
 coder = Coder.create(**kwargs)
+⋮----
+# Set messages from the provided data
+⋮----
+# Set files from the provided data
+⋮----
+file_path = file['path']
+⋮----
+file_path = os.path.join(connector.base_dir, file_path)
 ⋮----
 def create_base_coder(connector)
 ⋮----
@@ -772,20 +772,20 @@ main_model = models.Model(self.coder.main_model.name, weak_model=self.coder.main
 messages = message.get('messages')
 files = message.get('files')
 ⋮----
-def reset_before_action(self)
-⋮----
 async def update_environment_variables(self, environment_variables)
 ⋮----
 """Update environment variables for the Aider process"""
 ⋮----
 # Update the environment variables in the current process
 ⋮----
-async def run_command(self, command)
+async def run_command(self, command, messages, files)
 ⋮----
-repo_map = self.coder.repo_map.get_repo_map(set(), self.coder.get_all_abs_files()) if self.coder.repo_map else None
+command_coder = clone_coder(self, self.coder, messages=messages, files=files)
+⋮----
+repo_map = command_coder.repo_map.get_repo_map(set(), command_coder.get_all_abs_files()) if command_coder.repo_map else None
 ⋮----
 parts = command.split()
-valid_values = ['high', 'medium', 'low', 'none']
+valid_values = ['high', 'medium', 'low', 'minimal', 'none']
 ⋮----
 # Safely remove 'reasoning_effort' if it exists
 ⋮----
@@ -1214,6 +1214,7 @@ File: src/common/locales/en.json
     "modelName": "Model Name",
     "baseUrlPlaceholder": "e.g. http://localhost:8080/v1",
     "reasoningEffort": "Reasoning Effort",
+    "reasoningEffortMinimal": "Minimal",
     "reasoningEffortLow": "Low",
     "reasoningEffortMedium": "Medium",
     "reasoningEffortHigh": "High"
@@ -1759,7 +1760,8 @@ File: src/common/locales/en.json
   },
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",
-    "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected."
+    "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",
+    "aider": "Aider"
   },
   "reasoningEffort": {
     "label": "Reasoning",
@@ -1791,7 +1793,7 @@ File: src/common/locales/en.json
     "model": "Open the model selector",
     "read-only": "Add files to the chat that are for reference only, or turn added files to read-only",
     "redo": "Redoes the last user prompt.",
-    "reasoning-effort": "Set the reasoning effort level (values: number or low/medium/high depending on model)",
+    "reasoning-effort": "Set the reasoning effort level (values: minimal/low/medium/high depending on model)",
     "reset": "Drop all files and clear the chat history",
     "run": "Run a shell command and optionally add the output to the chat",
     "test": "Run a predefined test command and add the output to the chat on non-zero exit code",
@@ -2044,6 +2046,7 @@ File: src/common/locales/zh.json
     "modelName": "模型",
     "baseUrlPlaceholder": "例如 http://localhost:8080/v1",
     "reasoningEffort": "推理努力",
+    "reasoningEffortMinimal": "最小",
     "reasoningEffortLow": "低",
     "reasoningEffortMedium": "中",
     "reasoningEffortHigh": "高"
@@ -2583,7 +2586,8 @@ File: src/common/locales/zh.json
   },
   "projectBar": {
     "toggleMarkdown": "Markdown 渲染",
-    "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。"
+    "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。",
+    "aider": "Aider"
   },
   "reasoningEffort": {
     "label": "推理",
@@ -2759,7 +2763,7 @@ export interface OllamaProvider extends LlmProviderBase {
 export interface OpenAiProvider extends LlmProviderBase {
   name: 'openai';
   apiKey: string;
-  reasoningEffort?: 'low' | 'medium' | 'high';
+  reasoningEffort?: ReasoningEffort;
 }
 export const isOpenAiProvider = (provider: LlmProviderBase): provider is OpenAiProvider
 ⋮----
@@ -2922,6 +2926,7 @@ export enum ReasoningEffort {
   High = 'high',
   Medium = 'medium',
   Low = 'low',
+  Minimal = 'minimal',
   None = 'none',
 }
 ⋮----
@@ -4368,7 +4373,7 @@ public sendPromptMessage(
 ⋮----
 public sendSetModelsMessage(mainModel: string, weakModel: string | null, editFormat: EditFormat): void
 ⋮----
-public sendRunCommandMessage(command: string): void
+public sendRunCommandMessage(command: string, messages:
 ⋮----
 public sendAddMessageMessage(role: MessageRole = MessageRole.User, content: string, acknowledge = true)
 ⋮----
@@ -6182,6 +6187,8 @@ export const isDropFileMessage = (message: Message): message is DropFileMessage 
 export interface RunCommandMessage extends Message {
   action: 'run-command';
   command: string;
+  messages?: { role: MessageRole; content: string }[];
+  files?: ContextFile[];
 }
 ⋮----
 export interface UpdateAutocompletionMessage extends Message {
@@ -8360,6 +8367,14 @@ type Props = {
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+// Two-row layout for Agent mode with Aider tools
+⋮----
+{/* Row 1: AGENT */}
+⋮----
+{/* Row 2: AIDER */}
+⋮----
+// Original horizontal layout for other modes
+⋮----
 data-tooltip-content=
 
 ================
@@ -9149,13 +9164,15 @@ import { OpenAiProvider } from '@common/agent';
 import { ReasoningEffort } from '@common/types';
 ⋮----
 import { Input } from '@/components/common/Input';
-import { RadioButton } from '@/components/common/RadioButton';
+import { Select, Option } from '@/components/common/Select';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 ⋮----
 type Props = {
   provider: OpenAiProvider;
   onChange: (updated: OpenAiProvider) => void;
 };
+⋮----
+export const OpenAiParameters = (
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -9164,6 +9181,8 @@ const handleReasoningEffortChange = (value: string) =>
 label=
 ⋮----
 ? t('settings.agent.envVarFoundPlaceholder',
+⋮----
+<Select label=
 
 ================
 File: src/renderer/src/components/settings/agent/providers/OpenRouterAdvancedSettings.tsx
