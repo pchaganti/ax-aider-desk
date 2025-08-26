@@ -627,6 +627,7 @@ export class Project {
       }
     }
 
+    this.sendRequestContextInfo();
     this.notifyIfEnabled('Prompt finished', 'Your Aider task has finished.');
 
     return responses;

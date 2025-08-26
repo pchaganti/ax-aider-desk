@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- updating the context info after Aider mode requests
+
 ## [0.28.0]
 
 - added model selector to Agent profile in Settings
