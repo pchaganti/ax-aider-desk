@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - updating the context info after Aider mode requests
+- showing message when generating commit message after modifications
 
 ## [0.28.0]
 
