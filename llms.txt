@@ -454,6 +454,7 @@ response_data = {
 ⋮----
 # Add diff if there was a commit
 commits = f"{coder.last_aider_commit_hash}~1"
+⋮----
 diff = coder.repo.diff_commits(
 ⋮----
 # Check for reflections
@@ -633,7 +634,7 @@ def __init__(self, base_dir, watch_files=False, server_url="http://localhost:243
 ⋮----
 ignores = []
 ⋮----
-def monkey_patch_coder_functions(self, coder)
+def monkey_patch_coder_functions(self, coder, prompt_context=None)
 ⋮----
 # self here is the Connector instance
 # coder is the Coder instance
@@ -675,6 +676,15 @@ result = original_run_shell_commands()
 # Store the result in command_outputs list
 ⋮----
 # Replace the original run_shell_commands method with the patched version
+⋮----
+def monkey_patch_repo_functions(self, repo, prompt_context=None)
+⋮----
+# patch repo.get_commit_message to send a loading message while generating commit message
+original_get_commit_message = repo.get_commit_message
+⋮----
+def _patched_get_commit_message(repo_instance, diffs, context, user_language=None)
+⋮----
+result = original_get_commit_message(diffs, context, user_language)
 ⋮----
 def _register_events(self)
 ⋮----
