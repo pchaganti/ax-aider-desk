@@ -79,6 +79,7 @@ import { Store } from '@/store';
 import { DEFAULT_MAIN_MODEL } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
 import { getLangfuseEnvironmentVariables, TelemetryManager } from '@/telemetry';
+import { EventManager } from '@/events';
 
 export class Project {
   private process: ChildProcessWithoutNullStreams | null = null;
@@ -114,6 +115,7 @@ export class Project {
     private readonly agent: Agent,
     private readonly telemetryManager: TelemetryManager,
     private readonly dataManager: DataManager,
+    private readonly eventManager: EventManager,
   ) {
     this.git = simpleGit(this.baseDir);
     this.customCommandManager = new CustomCommandManager(this);
@@ -152,10 +154,7 @@ export class Project {
     this.sessionManager.enableAutosave();
 
     this.sessionManager.getContextFiles().forEach((contextFile) => {
-      this.mainWindow.webContents.send('file-added', {
-        baseDir: this.baseDir,
-        file: contextFile,
-      });
+      this.eventManager.sendFileAdded(this.baseDir, contextFile);
     });
 
     this.agentTotalCost = 0;
@@ -170,7 +169,7 @@ export class Project {
     await Promise.all([this.startAider(), this.sendInputHistoryUpdatedEvent(), this.updateContextInfo()]);
 
     this.sendContextFilesUpdated();
-    this.mainWindow.webContents.send('project-started', this.baseDir);
+    this.eventManager.sendProjectStarted(this.baseDir);
   }
 
   public addConnector(connector: Connector) {
@@ -460,7 +459,7 @@ export class Project {
   public async close() {
     logger.info('Closing project...', { baseDir: this.baseDir });
     if (!this.mainWindow.isDestroyed()) {
-      this.mainWindow.webContents.send('clear-project', this.baseDir, true, true);
+      this.eventManager.sendClearProject(this.baseDir, true, true);
     }
     await this.killAider();
     this.customCommandManager.dispose();
@@ -707,7 +706,7 @@ export class Project {
     }
 
     if (this.currentResponseMessageId) {
-      this.mainWindow.webContents.send('response-completed', {
+      this.eventManager.sendResponseCompleted({
         messageId: this.currentResponseMessageId,
         baseDir: this.baseDir,
         content: '',
@@ -739,7 +738,7 @@ export class Project {
         reflectedMessage: message.reflectedMessage,
         promptContext: message.promptContext,
       };
-      this.mainWindow.webContents.send('response-chunk', data);
+      this.eventManager.sendResponseChunk(data);
     } else {
       logger.info(`Sending response completed to ${this.baseDir}`);
       logger.debug(`Message data: ${JSON.stringify(message)}`);
@@ -784,7 +783,7 @@ export class Project {
   }
 
   sendResponseCompleted(data: ResponseCompletedData) {
-    this.mainWindow.webContents.send('response-completed', data);
+    this.eventManager.sendResponseCompleted(data);
   }
 
   private notifyIfEnabled(title: string, text: string) {
@@ -912,10 +911,7 @@ export class Project {
   }
 
   private sendContextFilesUpdated() {
-    this.mainWindow.webContents.send('context-files-updated', {
-      baseDir: this.baseDir,
-      files: this.sessionManager.getContextFiles(),
-    });
+    this.eventManager.sendContextFilesUpdated(this.baseDir, this.sessionManager.getContextFiles());
   }
 
   public runCommand(command: string, addToHistory = true) {
@@ -931,7 +927,7 @@ export class Project {
 
     if (command.trim() === 'reset') {
       this.sessionManager.clearMessages();
-      this.mainWindow.webContents.send('clear-project', this.baseDir, true, false);
+      this.eventManager.sendClearProject(this.baseDir, true, false);
     }
 
     this.findMessageConnectors('run-command').forEach((connector) =>
@@ -1011,7 +1007,7 @@ export class Project {
       baseDir: this.baseDir,
       messages: history,
     };
-    this.mainWindow.webContents.send('input-history-updated', inputHistoryData);
+    this.eventManager.sendInputHistoryUpdated(inputHistoryData);
   }
 
   public async askQuestion(questionData: QuestionData, awaitAnswer = true): Promise<[string, string | undefined]> {
@@ -1067,15 +1063,17 @@ export class Project {
       if (awaitAnswer) {
         this.currentQuestionResolves.push(resolve);
       }
-      this.mainWindow.webContents.send('ask-question', questionData);
+      this.eventManager.sendAskQuestion(questionData);
       if (!awaitAnswer) {
         resolve(['', undefined]);
       }
     });
   }
 
-  public setAllTrackedFiles(files: string[]) {
-    this.allTrackedFiles = files;
+  public updateAutocompletionData(words: string[], allFiles: string[], models: string[]) {
+    this.allTrackedFiles = allFiles;
+
+    this.eventManager.sendUpdateAutocompletion(this.baseDir, words, allFiles, models);
   }
 
   public updateAiderModels(modelsData: ModelsData) {
@@ -1091,7 +1089,7 @@ export class Project {
       ...modelsData,
       architectModel: modelsData.architectModel !== undefined ? modelsData.architectModel : this.getArchitectModel(),
     };
-    this.mainWindow.webContents.send('update-aider-models', this.aiderModels);
+    this.eventManager.sendUpdateAiderModels(this.aiderModels);
   }
 
   public updateModels(mainModel: string, weakModel: string | null, editFormat: EditFormat = 'diff') {
@@ -1160,11 +1158,7 @@ export class Project {
     const prev = this.commandOutputs.get(command) || '';
     this.commandOutputs.set(command, prev + output);
 
-    this.mainWindow.webContents.send('command-output', {
-      baseDir: this.baseDir,
-      command,
-      output,
-    });
+    this.eventManager.sendCommandOutput(this.baseDir, command, output);
   }
 
   public closeCommandOutput(addToContext = true) {
@@ -1193,7 +1187,7 @@ export class Project {
       promptContext,
     };
 
-    this.mainWindow.webContents.send('log', data);
+    this.eventManager.sendLog(data);
   }
 
   public getContextMessages() {
@@ -1230,7 +1224,7 @@ export class Project {
 
     this.sessionManager.clearMessages();
     this.runCommand('clear', addToHistory);
-    this.mainWindow.webContents.send('clear-project', this.baseDir, true, false);
+    this.eventManager.sendClearProject(this.baseDir, true, false);
 
     if (updateContextInfo) {
       void this.updateContextInfo();
@@ -1298,7 +1292,7 @@ export class Project {
       this.updateTotalCosts(usageReport);
     }
 
-    this.mainWindow.webContents.send('tool', data);
+    this.eventManager.sendTool(data);
   }
 
   private updateTotalCosts(usageReport: UsageReportData) {
@@ -1331,7 +1325,7 @@ export class Project {
       promptContext,
     };
 
-    this.mainWindow.webContents.send('user-message', data);
+    this.eventManager.sendUserMessage(data);
   }
 
   public async removeLastMessage() {
@@ -1474,7 +1468,7 @@ export class Project {
       ...data,
     };
 
-    this.mainWindow.webContents.send('update-tokens-info', this.tokensInfo);
+    this.eventManager.sendUpdateTokensInfo(this.tokensInfo);
   }
 
   async updateContextInfo(checkContextFilesIncluded = false, checkRepoMapIncluded = false) {
@@ -1770,20 +1764,14 @@ export class Project {
   }
 
   public sendCustomCommandsUpdated(commands: CustomCommand[]) {
-    this.mainWindow.webContents.send('custom-commands-updated', {
-      baseDir: this.baseDir,
-      commands,
-    });
+    this.eventManager.sendCustomCommandsUpdated(this.baseDir, commands);
   }
 
   public async runCustomCommand(commandName: string, args: string[], mode: Mode = 'agent'): Promise<void> {
     const command = this.customCommandManager.getCommand(commandName);
     if (!command) {
       this.addLogMessage('error', `Custom command '${commandName}' not found.`);
-      this.mainWindow.webContents.send('custom-command-error', {
-        baseDir: this.baseDir,
-        error: `Invalid command: ${commandName}`,
-      });
+      this.eventManager.sendCustomCommandError(this.baseDir, `Invalid command: ${commandName}`);
       return;
     }
 
@@ -1795,10 +1783,7 @@ export class Project {
         'error',
         `Not enough arguments for command '${commandName}'. Expected arguments:\n${command.arguments.map((arg, idx) => `${idx + 1}: ${arg.description}${arg.required === false ? ' (optional)' : ''}`).join('\n')}`,
       );
-      this.mainWindow.webContents.send('custom-command-error', {
-        baseDir: this.baseDir,
-        error: `Argument mismatch for command: ${commandName}`,
-      });
+      this.eventManager.sendCustomCommandError(this.baseDir, `Argument mismatch for command: ${commandName}`);
       return;
     }
 

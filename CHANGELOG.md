@@ -6,6 +6,7 @@
 - showing message when generating commit message after modifications
 - added 'Can use subagents' configuration to Agent profile
 - extended Rest API with more endpoints
+- added events manager layer and support for Socket.IO event updates
 
 ## [0.28.0]
 

@@ -33,7 +33,9 @@ export type MessageAction =
   | 'compact-conversation'
   | 'update-repo-map'
   | 'update-env-vars'
-  | 'request-context-info';
+  | 'request-context-info'
+  | 'subscribe-events'
+  | 'unsubscribe-events';
 
 export interface Message {
   action: MessageAction;
@@ -254,4 +256,22 @@ export interface RequestContextInfoMessage extends Message {
 
 export const isRequestContextInfoMessage = (message: Message): message is RequestContextInfoMessage => {
   return message.action === 'request-context-info';
+};
+
+export interface SubscribeEventsMessage extends Message {
+  action: 'subscribe-events';
+  eventTypes?: string[];
+  baseDirs?: string[];
+}
+
+export const isSubscribeEventsMessage = (message: Message): message is SubscribeEventsMessage => {
+  return message.action === 'subscribe-events';
+};
+
+export interface UnsubscribeEventsMessage extends Message {
+  action: 'unsubscribe-events';
+}
+
+export const isUnsubscribeEventsMessage = (message: Message): message is UnsubscribeEventsMessage => {
+  return message.action === 'unsubscribe-events';
 };

@@ -21,10 +21,13 @@ import {
   LogMessage,
   Message,
   isAddMessageMessage,
+  isSubscribeEventsMessage,
+  isUnsubscribeEventsMessage,
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
 import { SERVER_PORT } from '@/constants';
+import { EventManager } from '@/events';
 
 export class ConnectorManager {
   private io: Server | null = null;
@@ -34,6 +37,7 @@ export class ConnectorManager {
     private readonly mainWindow: BrowserWindow,
     private readonly projectManager: ProjectManager,
     httpServer: HttpServer,
+    private readonly eventManager: EventManager,
   ) {
     this.init(httpServer);
   }
@@ -60,6 +64,7 @@ export class ConnectorManager {
         logger.info('Socket.IO client disconnected', {
           baseDir: connector?.baseDir,
         });
+        this.eventManager.handleEventUnsubscription(socket);
         this.removeConnector(socket);
       });
     });
@@ -127,13 +132,7 @@ export class ConnectorManager {
         }
 
         logger.debug('Updating autocompletion', { baseDir: connector.baseDir });
-        this.mainWindow.webContents.send('update-autocompletion', {
-          baseDir: connector.baseDir,
-          words: message.words,
-          allFiles: message.allFiles,
-          models: message.models,
-        });
-        this.projectManager.getProject(connector.baseDir).setAllTrackedFiles(message.allFiles);
+        this.projectManager.getProject(connector.baseDir).updateAutocompletionData(message.words, message.allFiles, message.models);
       } else if (isAskQuestionMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
         if (!connector) {
@@ -211,6 +210,13 @@ export class ConnectorManager {
           return;
         }
         void this.projectManager.getProject(connector.baseDir).addContextMessage(message.role, message.content, message.usageReport);
+      } else if (isSubscribeEventsMessage(message)) {
+        this.eventManager.handleEventSubscription(socket, {
+          eventTypes: message.eventTypes,
+          baseDirs: message.baseDirs,
+        });
+      } else if (isUnsubscribeEventsMessage(message)) {
+        this.eventManager.handleEventUnsubscription(socket);
       } else {
         logger.warn('Unknown message type: ', message);
       }

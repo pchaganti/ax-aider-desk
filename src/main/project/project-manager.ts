@@ -8,9 +8,11 @@ import { DataManager } from '@/data-manager';
 import logger from '@/logger';
 import { Project } from '@/project';
 import { Store } from '@/store';
+import { EventManager } from '@/events';
 
 export class ProjectManager {
   private projects: Project[] = [];
+  private readonly eventManager: EventManager;
 
   constructor(
     private readonly mainWindow: BrowserWindow,
@@ -22,6 +24,7 @@ export class ProjectManager {
     this.mainWindow = mainWindow;
     this.store = store;
     this.agent = agent;
+    this.eventManager = new EventManager(mainWindow);
   }
 
   private findProject(baseDir: string): Project | undefined {
@@ -30,7 +33,7 @@ export class ProjectManager {
 
   private createProject(baseDir: string) {
     logger.info('Creating new project', { baseDir });
-    const project = new Project(this.mainWindow, baseDir, this.store, this.agent, this.telemetryManager, this.dataManager);
+    const project = new Project(this.mainWindow, baseDir, this.store, this.agent, this.telemetryManager, this.dataManager, this.eventManager);
     this.projects.push(project);
     return project;
   }

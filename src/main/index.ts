@@ -19,6 +19,7 @@ import { Store, getDefaultProjectSettings } from '@/store';
 import { VersionsManager } from '@/versions';
 import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
+import { EventManager } from '@/events';
 import { ModelInfoManager } from '@/models';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
@@ -196,6 +197,9 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   // Initialize project manager
   const projectManager = new ProjectManager(mainWindow, store, agent, telemetryManager, dataManager);
 
+  // Initialize event manager
+  const eventManager = new EventManager(mainWindow);
+
   // Initialize terminal manager
   const terminalManager = new TerminalManager(mainWindow, telemetryManager);
 
@@ -209,10 +213,7 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   const restApiController = new RestApiController(projectManager, httpServer, store, modelInfoManager, mcpManager);
 
   // Initialize connector manager with the server
-  const connectorManager = new ConnectorManager(mainWindow, projectManager, httpServer);
-
-  // Initialize Versions Manager (this also sets up listeners)
-  const versionsManager = new VersionsManager(mainWindow, store);
+  const connectorManager = new ConnectorManager(mainWindow, projectManager, httpServer, eventManager);
 
   // Initialize IPC handlers
   setupIpcHandlers(mainWindow, projectManager, store, mcpManager, agent, versionsManager, modelInfoManager, telemetryManager, dataManager, terminalManager);
