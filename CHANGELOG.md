@@ -5,6 +5,7 @@
 - updating the context info after Aider mode requests
 - showing message when generating commit message after modifications
 - added 'Can use subagents' configuration to Agent profile
+- extended Rest API with more endpoints
 
 ## [0.28.0]
 

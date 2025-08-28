@@ -21,7 +21,7 @@ import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
 import { ModelInfoManager } from '@/models';
 import { DataManager } from '@/data-manager';
-import { TerminalManager } from '@/terminal/terminal-manager';
+import { TerminalManager } from '@/terminal';
 
 const setupCustomMenu = (): void => {
   const menuTemplate: Electron.MenuItemConstructorOptions[] = [
@@ -199,11 +199,14 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   // Initialize terminal manager
   const terminalManager = new TerminalManager(mainWindow, telemetryManager);
 
+  // Initialize Versions Manager (this also sets up listeners)
+  const versionsManager = new VersionsManager(mainWindow, store);
+
   // Create HTTP server
   const httpServer = createServer();
 
   // Create and initialize REST API controller
-  const restApiController = new RestApiController(projectManager, httpServer);
+  const restApiController = new RestApiController(projectManager, httpServer, store, modelInfoManager, mcpManager);
 
   // Initialize connector manager with the server
   const connectorManager = new ConnectorManager(mainWindow, projectManager, httpServer);
