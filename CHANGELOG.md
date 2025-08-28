@@ -4,6 +4,7 @@
 
 - updating the context info after Aider mode requests
 - showing message when generating commit message after modifications
+- added 'Can use subagents' configuration to Agent profile
 
 ## [0.28.0]
 

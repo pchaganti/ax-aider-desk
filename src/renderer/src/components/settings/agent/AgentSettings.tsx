@@ -661,6 +661,18 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
             {renderSectionAccordion(
               t('settings.agent.subagent.title'),
               <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Checkbox
+                    label={
+                      <div className="flex items-center">
+                        <span>{t('settings.agent.subagent.canUseSubagents')}</span>
+                        <InfoIcon className="ml-2" tooltip={t('settings.agent.subagent.canUseSubagentsInformation')} />
+                      </div>
+                    }
+                    checked={selectedProfile.useSubagents}
+                    onChange={(checked) => handleProfileSettingChange('useSubagents', checked)}
+                  />
+                </div>
                 <div className="flex items-center justify-between">
                   <Checkbox
                     label={

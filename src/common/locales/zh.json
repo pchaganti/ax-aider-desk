@@ -301,6 +301,8 @@
         "title": "子代理",
         "enableAsSubagent": "启用为子代理",
         "enableAsSubagentInformation": "启用后，此配置可被其他代理用作子代理。",
+        "canUseSubagents": "可以使用子代理",
+        "canUseSubagentsInformation": "启用后，此代理可以使用其他代理作为子代理。",
         "description": "描述",
         "descriptionPlaceholder": "描述此子代理的目的、能力和专长...",
         "systemPrompt": "系统提示",
