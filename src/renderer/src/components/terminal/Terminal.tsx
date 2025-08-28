@@ -4,7 +4,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { IpcRendererEvent } from 'electron';
 import { TerminalData, TerminalExitData } from '@common/types';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import '@xterm/xterm/css/xterm.css';
 import './Terminal.scss';
@@ -192,14 +192,14 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, visible, clas
       }
     };
 
-    const terminalDataListenerId = window.api.addTerminalDataListener(baseDir, handleTerminalData);
-    const terminalExitListenerId = window.api.addTerminalExitListener(baseDir, handleTerminalExit);
+    const removeTerminalDataListener = window.api.addTerminalDataListener(baseDir, handleTerminalData);
+    const removeTerminalExitListener = window.api.addTerminalExitListener(baseDir, handleTerminalExit);
 
     return () => {
-      window.api.removeTerminalDataListener(terminalDataListenerId);
-      window.api.removeTerminalExitListener(terminalExitListenerId);
+      removeTerminalDataListener();
+      removeTerminalExitListener();
     };
-  }, [baseDir, terminalId]);
+  }, [terminalId, baseDir]);
 
   // Handle resize when visibility changes
   useEffect(() => {

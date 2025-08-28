@@ -109,62 +109,24 @@ export interface ApplicationAPI {
   queryUsageData: (from: string, to: string) => Promise<UsageDataRow[]>;
   getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => Promise<EnvironmentVariable | undefined>;
 
-  addResponseChunkListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void) => string;
-  removeResponseChunkListener: (listenerId: string) => void;
-
-  addResponseCompletedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseCompletedData) => void) => string;
-  removeResponseCompletedListener: (listenerId: string) => void;
-
-  addLogListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: LogData) => void) => string;
-  removeLogListener: (listenerId: string) => void;
-
-  addContextFilesUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ContextFilesUpdatedData) => void) => string;
-  addCustomCommandsUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => void) => string;
-  removeContextFilesUpdatedListener: (listenerId: string) => void;
-  removeCustomCommandsUpdatedListener: (listenerId: string) => void;
-
-  addUpdateAutocompletionListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: AutocompletionData) => void) => string;
-  removeUpdateAutocompletionListener: (listenerId: string) => void;
-
-  addAskQuestionListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: QuestionData) => void) => string;
-  removeAskQuestionListener: (listenerId: string) => void;
-
-  addUpdateAiderModelsListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ModelsData) => void) => string;
-  removeAiderModelsListener: (listenerId: string) => void;
-
-  addCommandOutputListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: CommandOutputData) => void) => string;
-  removeCommandOutputListener: (listenerId: string) => void;
-
-  addTokensInfoListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TokensInfoData) => void) => string;
-  removeTokensInfoListener: (listenerId: string) => void;
-
-  addToolListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ToolData) => void) => string;
-  removeToolListener: (listenerId: string) => void;
-
-  addUserMessageListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: UserMessageData) => void) => string;
-  removeUserMessageListener: (listenerId: string) => void;
-
-  addInputHistoryUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: InputHistoryData) => void) => string;
-  removeInputHistoryUpdatedListener: (listenerId: string) => void;
-
-  addInputHistoryUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: InputHistoryData) => void) => string;
-  removeInputHistoryUpdatedListener: (listenerId: string) => void;
-
-  addClearProjectListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, clearMessages: boolean, clearSession: boolean) => void) => string;
-  removeClearProjectListener: (listenerId: string) => void;
-
-  addProjectStartedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, baseDir: string) => void) => string;
-  removeProjectStartedListener: (listenerId: string) => void;
-
-  addVersionsInfoUpdatedListener: (callback: (event: Electron.IpcRendererEvent, data: VersionsInfo) => void) => string;
-  removeVersionsInfoUpdatedListener: (listenerId: string) => void;
-
-  addTerminalDataListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalData) => void) => string;
-  removeTerminalDataListener: (listenerId: string) => void;
-
-  addTerminalExitListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalExitData) => void) => string;
-  removeTerminalExitListener: (listenerId: string) => void;
-
+  addResponseChunkListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void) => () => void;
+  addResponseCompletedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseCompletedData) => void) => () => void;
+  addLogListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: LogData) => void) => () => void;
+  addContextFilesUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ContextFilesUpdatedData) => void) => () => void;
+  addCustomCommandsUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => void) => () => void;
+  addUpdateAutocompletionListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: AutocompletionData) => void) => () => void;
+  addAskQuestionListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: QuestionData) => void) => () => void;
+  addUpdateAiderModelsListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ModelsData) => void) => () => void;
+  addCommandOutputListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: CommandOutputData) => void) => () => void;
+  addTokensInfoListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TokensInfoData) => void) => () => void;
+  addToolListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ToolData) => void) => () => void;
+  addUserMessageListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: UserMessageData) => void) => () => void;
+  addInputHistoryUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: InputHistoryData) => void) => () => void;
+  addClearProjectListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, clearMessages: boolean, clearSession: boolean) => void) => () => void;
+  addProjectStartedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, baseDir: string) => void) => () => void;
+  addVersionsInfoUpdatedListener: (callback: (event: Electron.IpcRendererEvent, data: VersionsInfo) => void) => () => void;
+  addTerminalDataListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalData) => void) => () => void;
+  addTerminalExitListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalExitData) => void) => () => void;
   addContextMenuListener: (callback: (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => void) => () => void;
   addOpenSettingsListener: (callback: (event: Electron.IpcRendererEvent, tabIndex: number) => void) => () => void;
 

@@ -9,12 +9,12 @@ export const useCustomCommands = (baseDir: string) => {
     window.api.getCustomCommands(baseDir).then(setCustomCommands);
 
     // Listen for commands updates
-    const listenerId = window.api.addCustomCommandsUpdatedListener(baseDir, (_, data) => {
+    const removeListener = window.api.addCustomCommandsUpdatedListener(baseDir, (_, data) => {
       setCustomCommands(data.commands);
     });
 
     return () => {
-      window.api.removeCustomCommandsUpdatedListener(listenerId);
+      removeListener();
     };
   }, [baseDir]);
 

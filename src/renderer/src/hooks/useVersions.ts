@@ -24,12 +24,12 @@ export const useVersions = () => {
   useEffect(() => {
     void loadVersions();
 
-    const listenerId = window.api.addVersionsInfoUpdatedListener((_event, data) => {
+    const removeListener = window.api.addVersionsInfoUpdatedListener((_event, data) => {
       setVersions(data);
     });
 
     return () => {
-      window.api.removeVersionsInfoUpdatedListener(listenerId);
+      removeListener();
     };
   }, [loadVersions]);
 

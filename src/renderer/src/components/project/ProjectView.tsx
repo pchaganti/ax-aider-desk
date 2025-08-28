@@ -21,7 +21,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { ResizableBox } from 'react-resizable';
 import { v4 as uuidv4 } from 'uuid';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { getActiveAgentProfile } from '@common/utils';
 import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION } from '@common/tools';
 
@@ -119,7 +119,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     const handleProjectStarted = () => {
       setLoading(false);
     };
-    const projectStartedListenerId = window.api.addProjectStartedListener(project.baseDir, handleProjectStarted);
+    const removeProjectStartedListener = window.api.addProjectStartedListener(project.baseDir, handleProjectStarted);
 
     // Load existing todos
     const loadTodos = async () => {
@@ -136,7 +136,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     void loadTodos();
 
     return () => {
-      window.api.removeProjectStartedListener(projectStartedListenerId);
+      removeProjectStartedListener();
       window.api.stopProject(project.baseDir);
     };
   }, [project.baseDir]);
@@ -514,32 +514,32 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
       }
     };
 
-    const autocompletionListenerId = window.api.addUpdateAutocompletionListener(project.baseDir, handleUpdateAutocompletion);
-    const updateAiderModelsListenerId = window.api.addUpdateAiderModelsListener(project.baseDir, handleUpdateAiderModels);
-    const commandOutputListenerId = window.api.addCommandOutputListener(project.baseDir, handleCommandOutput);
-    const responseChunkListenerId = window.api.addResponseChunkListener(project.baseDir, handleResponseChunk);
-    const responseCompletedListenerId = window.api.addResponseCompletedListener(project.baseDir, handleResponseCompleted);
-    const logListenerId = window.api.addLogListener(project.baseDir, handleLog);
-    const tokensInfoListenerId = window.api.addTokensInfoListener(project.baseDir, handleTokensInfo);
-    const questionListenerId = window.api.addAskQuestionListener(project.baseDir, handleQuestion);
-    const toolListenerId = window.api.addToolListener(project.baseDir, handleTool);
-    const inputHistoryListenerId = window.api.addInputHistoryUpdatedListener(project.baseDir, handleInputHistoryUpdate);
-    const userMessageListenerId = window.api.addUserMessageListener(project.baseDir, handleUserMessage);
-    const clearProjectListenerId = window.api.addClearProjectListener(project.baseDir, handleClearProject);
+    const removeAutocompletionListener = window.api.addUpdateAutocompletionListener(project.baseDir, handleUpdateAutocompletion);
+    const removeUpdateAiderModelsListener = window.api.addUpdateAiderModelsListener(project.baseDir, handleUpdateAiderModels);
+    const removeCommandOutputListener = window.api.addCommandOutputListener(project.baseDir, handleCommandOutput);
+    const removeResponseChunkListener = window.api.addResponseChunkListener(project.baseDir, handleResponseChunk);
+    const removeResponseCompletedListener = window.api.addResponseCompletedListener(project.baseDir, handleResponseCompleted);
+    const removeLogListener = window.api.addLogListener(project.baseDir, handleLog);
+    const removeTokensInfoListener = window.api.addTokensInfoListener(project.baseDir, handleTokensInfo);
+    const removeQuestionListener = window.api.addAskQuestionListener(project.baseDir, handleQuestion);
+    const removeToolListener = window.api.addToolListener(project.baseDir, handleTool);
+    const removeInputHistoryListener = window.api.addInputHistoryUpdatedListener(project.baseDir, handleInputHistoryUpdate);
+    const removeUserMessageListener = window.api.addUserMessageListener(project.baseDir, handleUserMessage);
+    const removeClearProjectListener = window.api.addClearProjectListener(project.baseDir, handleClearProject);
 
     return () => {
-      window.api.removeUpdateAutocompletionListener(autocompletionListenerId);
-      window.api.removeAiderModelsListener(updateAiderModelsListenerId);
-      window.api.removeCommandOutputListener(commandOutputListenerId);
-      window.api.removeResponseChunkListener(responseChunkListenerId);
-      window.api.removeResponseCompletedListener(responseCompletedListenerId);
-      window.api.removeLogListener(logListenerId);
-      window.api.removeTokensInfoListener(tokensInfoListenerId);
-      window.api.removeAskQuestionListener(questionListenerId);
-      window.api.removeToolListener(toolListenerId);
-      window.api.removeInputHistoryUpdatedListener(inputHistoryListenerId);
-      window.api.removeUserMessageListener(userMessageListenerId);
-      window.api.removeClearProjectListener(clearProjectListenerId);
+      removeAutocompletionListener();
+      removeUpdateAiderModelsListener();
+      removeCommandOutputListener();
+      removeResponseChunkListener();
+      removeResponseCompletedListener();
+      removeLogListener();
+      removeTokensInfoListener();
+      removeQuestionListener();
+      removeToolListener();
+      removeInputHistoryListener();
+      removeUserMessageListener();
+      removeClearProjectListener();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.baseDir]);

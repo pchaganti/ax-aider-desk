@@ -128,7 +128,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
   }, [allFiles]);
 
   useEffect(() => {
-    const listenerId = window.api.addContextFilesUpdatedListener(baseDir, (_, { files: updatedFiles }: ContextFilesUpdatedData) => {
+    const removeListener = window.api.addContextFilesUpdatedListener(baseDir, (_, { files: updatedFiles }: ContextFilesUpdatedData) => {
       setFiles(updatedFiles);
 
       // Handle highlighting of new files
@@ -142,7 +142,7 @@ export const ContextFiles = ({ baseDir, allFiles, showFileDialog }: Props) => {
     });
 
     return () => {
-      window.api.removeContextFilesUpdatedListener(listenerId);
+      removeListener();
     };
   }, [baseDir, files]);
 
