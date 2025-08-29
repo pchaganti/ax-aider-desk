@@ -91,6 +91,9 @@ src/
     data-manager/
       data-manager.ts
       index.ts
+    events/
+      event-manager.ts
+      index.ts
     models/
       index.ts
       model-info-manager.ts
@@ -100,8 +103,14 @@ src/
       project-manager.ts
       project.ts
     rest-api/
+      base-api.ts
+      commands-api.ts
+      context-api.ts
       index.ts
+      project-api.ts
+      prompt-api.ts
       rest-api-controller.ts
+      settings-api.ts
     session/
       index.ts
       session-manager.ts
@@ -129,6 +138,7 @@ src/
       open-telemetry.ts
       telemetry-manager.ts
     terminal/
+      index.ts
       terminal-manager.ts
     utils/
       environment.ts
@@ -1361,6 +1371,8 @@ File: src/common/locales/en.json
         "title": "Subagent",
         "enableAsSubagent": "Enable as Subagent",
         "enableAsSubagentInformation": "When enabled, this profile is available as a subagent to other agents.",
+        "canUseSubagents": "Can use Subagents",
+        "canUseSubagentsInformation": "When enabled, this agent can use subagents.",
         "description": "Description",
         "descriptionPlaceholder": "Describe this subagent's purpose, capabilities, and specialization and when this subagent should be invoked",
         "systemPrompt": "System Prompt",
@@ -2190,6 +2202,8 @@ File: src/common/locales/zh.json
         "title": "子代理",
         "enableAsSubagent": "启用为子代理",
         "enableAsSubagentInformation": "启用后，此配置可被其他代理用作子代理。",
+        "canUseSubagents": "可以使用子代理",
+        "canUseSubagentsInformation": "启用后，此代理可以使用其他代理作为子代理。",
         "description": "描述",
         "descriptionPlaceholder": "描述此子代理的目的、能力和专长...",
         "systemPrompt": "系统提示",
@@ -3577,10 +3591,10 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 ⋮----
+import { is } from '@electron-toolkit/utils';
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
 import { glob } from 'glob';
-import { search, searchSchema } from '@buger/probe';
 import { AgentProfile, FileWriteMode, PromptContext, ToolApprovalState } from '@common/types';
 import {
   POWER_TOOL_BASH as TOOL_BASH,
@@ -3597,9 +3611,11 @@ import {
 } from '@common/tools';
 import { isBinary } from 'istextorbinary';
 import { isURL } from '@common/utils';
+import { search, searchSchema } from '@buger/probe';
 ⋮----
 import { ApprovalManager } from './approval-manager';
 ⋮----
+import { PROBE_BINARY_PATH } from '@/constants';
 import { Project } from '@/project';
 import logger from '@/logger';
 import { isFileIgnored, scrapeWeb } from '@/utils';
@@ -3632,6 +3648,8 @@ const searchRegex = new RegExp(searchTerm, caseSensitive ? undefined : 'i'); // 
 // Use parameter maxTokens if provided, otherwise use the default
 ⋮----
 // If path is "." or "./", use the project baseDir
+⋮----
+// we need to set the PROBE_PATH env variable for production asar.unpacked, as the binary is not determined correctly inside the probe package
 ⋮----
 // Filter out tools that are set to Never in toolApprovals
 
@@ -4320,10 +4338,13 @@ import {
   LogMessage,
   Message,
   isAddMessageMessage,
+  isSubscribeEventsMessage,
+  isUnsubscribeEventsMessage,
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
 import { SERVER_PORT } from '@/constants';
+import { EventManager } from '@/events';
 ⋮----
 export class ConnectorManager
 ⋮----
@@ -4331,6 +4352,7 @@ constructor(
     private readonly mainWindow: BrowserWindow,
     private readonly projectManager: ProjectManager,
     httpServer: HttpServer,
+    private readonly eventManager: EventManager,
 )
 ⋮----
 public init(httpServer: HttpServer): void
@@ -4564,6 +4586,99 @@ File: src/main/data-manager/index.ts
 
 
 ================
+File: src/main/events/event-manager.ts
+================
+import { BrowserWindow } from 'electron';
+import { Socket } from 'socket.io';
+import {
+  ContextFile,
+  CustomCommand,
+  InputHistoryData,
+  LogData,
+  ModelsData,
+  QuestionData,
+  ResponseChunkData,
+  ResponseCompletedData,
+  ToolData,
+  TokensInfoData,
+  UserMessageData,
+} from '@common/types';
+⋮----
+export interface EventConnector {
+  socket: Socket;
+  eventTypes?: string[];
+  baseDirs?: string[];
+}
+⋮----
+export class EventManager
+⋮----
+constructor(private readonly mainWindow: BrowserWindow)
+⋮----
+// Project lifecycle events
+sendProjectStarted(baseDir: string): void
+⋮----
+sendClearProject(baseDir: string, clearMessages: boolean, clearFiles: boolean): void
+⋮----
+// File management events
+sendFileAdded(baseDir: string, file: ContextFile): void
+⋮----
+sendContextFilesUpdated(baseDir: string, files: ContextFile[]): void
+⋮----
+// Response events
+sendResponseChunk(data: ResponseChunkData): void
+⋮----
+sendResponseCompleted(data: ResponseCompletedData): void
+⋮----
+// Question events
+sendAskQuestion(questionData: QuestionData): void
+⋮----
+// Autocompletion events
+sendUpdateAutocompletion(baseDir: string, words: string[], allFiles: string[], models: string[]): void
+⋮----
+// Aider models events
+sendUpdateAiderModels(modelsData: ModelsData): void
+⋮----
+// Command events
+sendCommandOutput(baseDir: string, command: string, output: string): void
+⋮----
+// Log events
+sendLog(data: LogData): void
+⋮----
+// Tool events
+sendTool(data: ToolData): void
+⋮----
+// User message events
+sendUserMessage(data: UserMessageData): void
+⋮----
+// Tokens info events
+sendUpdateTokensInfo(tokensInfo: TokensInfoData): void
+⋮----
+// Input history events
+sendInputHistoryUpdated(inputHistoryData: InputHistoryData): void
+⋮----
+// Custom commands events
+sendCustomCommandsUpdated(baseDir: string, commands: CustomCommand[]): void
+⋮----
+sendCustomCommandError(baseDir: string, error: string): void
+⋮----
+handleEventSubscription(socket: Socket, config:
+⋮----
+handleEventUnsubscription(socket: Socket): void
+⋮----
+private broadcastToEventConnectors(eventType: string, data: unknown): void
+⋮----
+// Filter by event types if specified
+⋮----
+// Filter by base directories if specified
+⋮----
+// Remove disconnected sockets
+
+================
+File: src/main/events/index.ts
+================
+
+
+================
 File: src/main/models/index.ts
 ================
 
@@ -4628,6 +4743,7 @@ import { DataManager } from '@/data-manager';
 import logger from '@/logger';
 import { Project } from '@/project';
 import { Store } from '@/store';
+import { EventManager } from '@/events';
 ⋮----
 export class ProjectManager
 ⋮----
@@ -4741,6 +4857,7 @@ import { Store } from '@/store';
 import { DEFAULT_MAIN_MODEL } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
 import { getLangfuseEnvironmentVariables, TelemetryManager } from '@/telemetry';
+import { EventManager } from '@/events';
 ⋮----
 export class Project
 ⋮----
@@ -4751,6 +4868,7 @@ constructor(
     private readonly agent: Agent,
     private readonly telemetryManager: TelemetryManager,
     private readonly dataManager: DataManager,
+    private readonly eventManager: EventManager,
 )
 ⋮----
 public async start(startupMode?: StartupMode)
@@ -4918,7 +5036,7 @@ public async askQuestion(questionData: QuestionData, awaitAnswer = true): Promis
 ⋮----
 // Store the resolve function for the promise
 ⋮----
-public setAllTrackedFiles(files: string[])
+public updateAutocompletionData(words: string[], allFiles: string[], models: string[])
 ⋮----
 public updateAiderModels(modelsData: ModelsData)
 ⋮----
@@ -5078,40 +5196,68 @@ public async runCustomCommand(commandName: string, args: string[], mode: Mode = 
 // Clear loading message after execution completes (success or failure)
 
 ================
-File: src/main/rest-api/index.ts
+File: src/main/rest-api/base-api.ts
 ================
-
-
-================
-File: src/main/rest-api/rest-api-controller.ts
-================
-import { Server } from 'http';
+import { Request, Response, Router } from 'express';
 ⋮----
-import express, { Response } from 'express';
-import cors from 'cors';
+import { Project } from '@/project';
+⋮----
+export abstract class BaseApi
+⋮----
+protected constructor()
+⋮----
+/**
+   * Finds a project by directory path and validates it exists and is started
+   * Returns null if project not found or not started, and sends appropriate error response
+   */
+protected findProject(project: Project | undefined, projectDir: string, res: Response): Project | null
+⋮----
+/**
+   * Generic request handler wrapper with consistent error handling
+   */
+protected handleRequest<T>(handler: (req: Request, res: Response) => Promise<T>)
+⋮----
+/**
+   * Abstract method for registering routes - each API module must implement this
+   */
+abstract registerRoutes(router: Router): void;
+
+================
+File: src/main/rest-api/commands-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { ProjectManager } from '@/project';
+⋮----
+export class CommandsApi extends BaseApi
+⋮----
+constructor(private readonly projectManager: ProjectManager)
+⋮----
+registerRoutes(router: Router): void
+⋮----
+// Get custom commands
+⋮----
+// Run custom command
+
+================
+File: src/main/rest-api/context-api.ts
+================
+import { Router } from 'express';
 import { z } from 'zod';
 import { delay } from '@common/utils';
 ⋮----
-import logger from '@/logger';
-import { Project, ProjectManager } from '@/project';
-import { SERVER_PORT } from '@/constants';
+import { BaseApi } from './base-api';
 ⋮----
-const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+import { ProjectManager } from '@/project';
 ⋮----
-export class RestApiController
+export class ContextApi extends BaseApi
 ⋮----
-constructor(
-    private readonly projectManager: ProjectManager,
-    private readonly server: Server,
-)
+constructor(private readonly projectManager: ProjectManager)
 ⋮----
-// Configure Express
-⋮----
-// Set timeout for all requests
-⋮----
-private findProject(projectDir: string, res: Response): Project | null
-⋮----
-private setupRoutes(): void
+registerRoutes(router: Router): void
 ⋮----
 // Add context file
 ⋮----
@@ -5123,15 +5269,118 @@ private setupRoutes(): void
 ⋮----
 // Get context files
 ⋮----
-// Get context files from project (you'll need to add a getContextFiles method to Project class)
-⋮----
 // Get addable files
+
+================
+File: src/main/rest-api/index.ts
+================
+// Export main controller
 ⋮----
-// Validate request body
+// Export API modules
+
+================
+File: src/main/rest-api/project-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+import { StartupMode } from '@common/types';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { ProjectManager } from '@/project';
+import { Store } from '@/store';
+⋮----
+// Other fields are optional as it's Partial<ProjectSettings>
+⋮----
+export class ProjectApi extends BaseApi
+⋮----
+constructor(
+    private readonly projectManager: ProjectManager,
+    private readonly store: Store,
+)
+⋮----
+registerRoutes(router: Router): void
+⋮----
+// Get projects
+⋮----
+// Restart project
+⋮----
+// Get project settings
+⋮----
+// Update project settings
+⋮----
+// Interrupt project
+⋮----
+// Clear project context
+⋮----
+// Answer project question
+
+================
+File: src/main/rest-api/prompt-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { ProjectManager } from '@/project';
+⋮----
+export class PromptApi extends BaseApi
+⋮----
+constructor(private readonly projectManager: ProjectManager)
+⋮----
+registerRoutes(router: Router): void
 ⋮----
 // Check if another prompt is already running
 ⋮----
 // Clear the running flag even if there's an error
+
+================
+File: src/main/rest-api/rest-api-controller.ts
+================
+import { Server } from 'http';
+⋮----
+import express from 'express';
+import cors from 'cors';
+⋮----
+import { ContextApi } from './context-api';
+import { PromptApi } from './prompt-api';
+import { SettingsApi } from './settings-api';
+import { ProjectApi } from './project-api';
+import { CommandsApi } from './commands-api';
+⋮----
+import { SERVER_PORT } from '@/constants';
+import logger from '@/logger';
+import { McpManager } from '@/agent';
+import { ModelInfoManager } from '@/models';
+import { ProjectManager } from '@/project';
+import { Store } from '@/store';
+⋮----
+// Import API modules
+⋮----
+const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+⋮----
+export class RestApiController
+⋮----
+constructor(
+    private readonly projectManager: ProjectManager,
+    private readonly server: Server,
+    private readonly store: Store,
+    private readonly modelInfoManager: ModelInfoManager,
+    private readonly mcpManager: McpManager,
+)
+⋮----
+// Configure Express
+⋮----
+// Set timeout for all requests
+⋮----
+private setupRoutes(): void
+⋮----
+// Create API router
+⋮----
+// Register all API modules
+⋮----
+// Mount the API router globally under /api
 ⋮----
 private init()
 ⋮----
@@ -5141,6 +5390,39 @@ private init()
 async close()
 ⋮----
 // nothing for now
+
+================
+File: src/main/rest-api/settings-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+import { SettingsData } from '@common/types';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { McpManager } from '@/agent';
+import { ModelInfoManager } from '@/models';
+import { Store } from '@/store';
+⋮----
+const SettingsDataSchema = z.any(); // Placeholder - can be refined based on SettingsData type
+⋮----
+export class SettingsApi extends BaseApi
+⋮----
+constructor(
+    private readonly store: Store,
+    private readonly modelInfoManager: ModelInfoManager,
+    private readonly mcpManager: McpManager,
+)
+⋮----
+registerRoutes(router: Router): void
+⋮----
+// Get settings
+⋮----
+// Update settings
+⋮----
+// Note: agent and telemetryManager are not available here, as per original code
+⋮----
+// Get models
 
 ================
 File: src/main/session/index.ts
@@ -5648,6 +5930,11 @@ captureCustomCommand(commandName: string, argsCount: number, mode: Mode)
 captureTerminalCreated()
 
 ================
+File: src/main/terminal/index.ts
+================
+
+
+================
 File: src/main/terminal/terminal-manager.ts
 ================
 import { BrowserWindow } from 'electron';
@@ -5970,9 +6257,10 @@ import { Store, getDefaultProjectSettings } from '@/store';
 import { VersionsManager } from '@/versions';
 import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
+import { EventManager } from '@/events';
 import { ModelInfoManager } from '@/models';
 import { DataManager } from '@/data-manager';
-import { TerminalManager } from '@/terminal/terminal-manager';
+import { TerminalManager } from '@/terminal';
 ⋮----
 const setupCustomMenu = (): void =>
 ⋮----
@@ -6000,15 +6288,17 @@ const saveWindowState = (): void =>
 ⋮----
 // Initialize project manager
 ⋮----
+// Initialize event manager
+⋮----
 // Initialize terminal manager
+⋮----
+// Initialize Versions Manager (this also sets up listeners)
 ⋮----
 // Create HTTP server
 ⋮----
 // Create and initialize REST API controller
 ⋮----
 // Initialize connector manager with the server
-⋮----
-// Initialize Versions Manager (this also sets up listeners)
 ⋮----
 // Initialize IPC handlers
 ⋮----
@@ -6124,7 +6414,9 @@ export type MessageAction =
   | 'compact-conversation'
   | 'update-repo-map'
   | 'update-env-vars'
-  | 'request-context-info';
+  | 'request-context-info'
+  | 'subscribe-events'
+  | 'unsubscribe-events';
 ⋮----
 export interface Message {
   action: MessageAction;
@@ -6316,6 +6608,20 @@ export interface RequestContextInfoMessage extends Message {
 }
 ⋮----
 export const isRequestContextInfoMessage = (message: Message): message is RequestContextInfoMessage =>
+⋮----
+export interface SubscribeEventsMessage extends Message {
+  action: 'subscribe-events';
+  eventTypes?: string[];
+  baseDirs?: string[];
+}
+⋮----
+export const isSubscribeEventsMessage = (message: Message): message is SubscribeEventsMessage =>
+⋮----
+export interface UnsubscribeEventsMessage extends Message {
+  action: 'unsubscribe-events';
+}
+⋮----
+export const isUnsubscribeEventsMessage = (message: Message): message is UnsubscribeEventsMessage =>
 
 ================
 File: src/main/progress-window.ts
@@ -6551,62 +6857,24 @@ export interface ApplicationAPI {
   queryUsageData: (from: string, to: string) => Promise<UsageDataRow[]>;
   getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => Promise<EnvironmentVariable | undefined>;
 
-  addResponseChunkListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void) => string;
-  removeResponseChunkListener: (listenerId: string) => void;
-
-  addResponseCompletedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseCompletedData) => void) => string;
-  removeResponseCompletedListener: (listenerId: string) => void;
-
-  addLogListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: LogData) => void) => string;
-  removeLogListener: (listenerId: string) => void;
-
-  addContextFilesUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ContextFilesUpdatedData) => void) => string;
-  addCustomCommandsUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => void) => string;
-  removeContextFilesUpdatedListener: (listenerId: string) => void;
-  removeCustomCommandsUpdatedListener: (listenerId: string) => void;
-
-  addUpdateAutocompletionListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: AutocompletionData) => void) => string;
-  removeUpdateAutocompletionListener: (listenerId: string) => void;
-
-  addAskQuestionListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: QuestionData) => void) => string;
-  removeAskQuestionListener: (listenerId: string) => void;
-
-  addUpdateAiderModelsListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ModelsData) => void) => string;
-  removeAiderModelsListener: (listenerId: string) => void;
-
-  addCommandOutputListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: CommandOutputData) => void) => string;
-  removeCommandOutputListener: (listenerId: string) => void;
-
-  addTokensInfoListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TokensInfoData) => void) => string;
-  removeTokensInfoListener: (listenerId: string) => void;
-
-  addToolListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ToolData) => void) => string;
-  removeToolListener: (listenerId: string) => void;
-
-  addUserMessageListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: UserMessageData) => void) => string;
-  removeUserMessageListener: (listenerId: string) => void;
-
-  addInputHistoryUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: InputHistoryData) => void) => string;
-  removeInputHistoryUpdatedListener: (listenerId: string) => void;
-
-  addInputHistoryUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: InputHistoryData) => void) => string;
-  removeInputHistoryUpdatedListener: (listenerId: string) => void;
-
-  addClearProjectListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, clearMessages: boolean, clearSession: boolean) => void) => string;
-  removeClearProjectListener: (listenerId: string) => void;
-
-  addProjectStartedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, baseDir: string) => void) => string;
-  removeProjectStartedListener: (listenerId: string) => void;
-
-  addVersionsInfoUpdatedListener: (callback: (event: Electron.IpcRendererEvent, data: VersionsInfo) => void) => string;
-  removeVersionsInfoUpdatedListener: (listenerId: string) => void;
-
-  addTerminalDataListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalData) => void) => string;
-  removeTerminalDataListener: (listenerId: string) => void;
-
-  addTerminalExitListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalExitData) => void) => string;
-  removeTerminalExitListener: (listenerId: string) => void;
-
+  addResponseChunkListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void) => () => void;
+  addResponseCompletedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ResponseCompletedData) => void) => () => void;
+  addLogListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: LogData) => void) => () => void;
+  addContextFilesUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ContextFilesUpdatedData) => void) => () => void;
+  addCustomCommandsUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => void) => () => void;
+  addUpdateAutocompletionListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: AutocompletionData) => void) => () => void;
+  addAskQuestionListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: QuestionData) => void) => () => void;
+  addUpdateAiderModelsListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ModelsData) => void) => () => void;
+  addCommandOutputListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: CommandOutputData) => void) => () => void;
+  addTokensInfoListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TokensInfoData) => void) => () => void;
+  addToolListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: ToolData) => void) => () => void;
+  addUserMessageListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: UserMessageData) => void) => () => void;
+  addInputHistoryUpdatedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: InputHistoryData) => void) => () => void;
+  addClearProjectListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, clearMessages: boolean, clearSession: boolean) => void) => () => void;
+  addProjectStartedListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, baseDir: string) => void) => () => void;
+  addVersionsInfoUpdatedListener: (callback: (event: Electron.IpcRendererEvent, data: VersionsInfo) => void) => () => void;
+  addTerminalDataListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalData) => void) => () => void;
+  addTerminalExitListener: (baseDir: string, callback: (event: Electron.IpcRendererEvent, data: TerminalExitData) => void) => () => void;
   addContextMenuListener: (callback: (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => void) => () => void;
   addOpenSettingsListener: (callback: (event: Electron.IpcRendererEvent, tabIndex: number) => void) => () => void;
 
@@ -6637,7 +6905,6 @@ File: src/preload/index.ts
 import {
   AutocompletionData,
   CommandOutputData,
-  ContextFile,
   ContextFilesUpdatedData,
   CustomCommandsUpdatedData,
   FileEdit,
@@ -6659,13 +6926,12 @@ import {
 import { normalizeBaseDir } from '@common/utils';
 import { electronAPI } from '@electron-toolkit/preload';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import { v4 as uuidv4 } from 'uuid';
 ⋮----
 import { ApplicationAPI } from './index.d';
 ⋮----
 const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean =>
 ⋮----
-const listener = (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams)
+const listener = (event: Electron.IpcRendererEvent, data: ResponseChunkData) =>
 ⋮----
 // Terminal operations
 ⋮----
@@ -8452,7 +8718,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { ResizableBox } from 'react-resizable';
 import { v4 as uuidv4 } from 'uuid';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { getActiveAgentProfile } from '@common/utils';
 import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION } from '@common/tools';
 ⋮----
@@ -10012,7 +10278,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { IpcRendererEvent } from 'electron';
 import { TerminalData, TerminalExitData } from '@common/types';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 export type TerminalRef = {
   focus: () => void;
@@ -12848,8 +13114,6 @@ extraResources:
     to: mcp-server
     filter:
       - '**/*'
-asarUnpack:
-  - resources/**
 beforePack: scripts/before-pack.js
 win:
   executableName: aider-desk
@@ -12962,7 +13226,7 @@ File: package.json
     "@aws-sdk/credential-provider-node": "^3.772.0",
     "@aws-sdk/credential-providers": "^3.782.0",
     "@aws-sdk/types": "^3.540.0",
-    "@buger/probe": "^0.6.0-rc10",
+    "@buger/probe": "^0.6.0-rc53",
     "@codemirror/autocomplete": "^6.18.6",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
