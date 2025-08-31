@@ -257,6 +257,7 @@ export enum InvocationMode {
 
 export interface SubagentConfig {
   enabled: boolean;
+  hasContextMemory: boolean;
   systemPrompt: string;
   invocationMode: InvocationMode;
   color: string;

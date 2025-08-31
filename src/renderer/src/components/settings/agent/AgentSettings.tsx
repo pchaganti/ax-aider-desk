@@ -696,6 +696,21 @@ export const AgentSettings = ({ settings, setSettings, initialProfileId }: Props
                 </div>
 
                 {selectedProfile.subagent.enabled && (
+                  <div className="flex items-center justify-between mt-2">
+                    <Checkbox
+                      label={
+                        <div className="flex items-center">
+                          <span>{t('settings.agent.subagent.hasContextMemory')}</span>
+                          <InfoIcon className="ml-2" tooltip={t('settings.agent.subagent.hasContextMemoryTooltip')} />
+                        </div>
+                      }
+                      checked={selectedProfile.subagent.hasContextMemory}
+                      onChange={(checked) => handleProfileSettingChange('subagent', { ...selectedProfile.subagent, hasContextMemory: checked })}
+                    />
+                  </div>
+                )}
+
+                {selectedProfile.subagent.enabled && (
                   <div className="mt-4 space-y-1">
                     <TextArea
                       label={<label className="text-xs font-medium text-text-primary">{t('settings.agent.subagent.systemPrompt')}</label>}

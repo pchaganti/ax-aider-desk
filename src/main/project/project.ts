@@ -653,15 +653,16 @@ export class Project {
     return [];
   }
 
-  public async runSubAgent(
+  public async runSubagent(
     profile: AgentProfile,
     prompt: string,
+    contextMessages: ContextMessage[],
     contextFiles: ContextFile[],
     systemPrompt?: string,
     abortSignal?: AbortSignal,
     promptContext?: PromptContext,
   ): Promise<ContextMessage[]> {
-    return await this.agent.runAgent(this, profile, prompt, promptContext, [], contextFiles, systemPrompt, abortSignal);
+    return await this.agent.runAgent(this, profile, prompt, promptContext, contextMessages, contextFiles, systemPrompt, abortSignal);
   }
 
   public sendPrompt(
