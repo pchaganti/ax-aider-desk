@@ -18,8 +18,6 @@ extraResources:
     to: mcp-server
     filter:
       - '**/*'
-asarUnpack:
-  - resources/**
 beforePack: scripts/before-pack.js
 win:
   executableName: aider-desk

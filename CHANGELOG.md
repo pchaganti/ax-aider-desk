@@ -2,6 +2,16 @@
 
 ## [UNRELEASED]
 
+- updating the context info after Aider mode requests
+- showing message when generating commit message after modifications
+- added 'Can use subagents' configuration to Agent profile
+- added events manager layer and support for Socket.IO event updates
+- added headless mode with AIDER_DESK_HEADLESS=true environment variable
+- added full API layer for external clients
+- added context memory option to Subagents to preserve context within the same conversation
+
+## [0.28.0]
+
 - added model selector to Agent profile in Settings
 - correctly using the selected model when compacting the conversation
 - updated scrollbar style in agent selector when there is more profiles than fit

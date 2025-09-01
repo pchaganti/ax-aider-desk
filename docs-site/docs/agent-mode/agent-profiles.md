@@ -80,6 +80,21 @@ You are always in the driver's seat. For every tool, you can decide if the agent
   - **Always**: Auto-approve without prompting
   - **Never**: Disable the tool completely
 
+### Subagent Configuration
+
+Any agent profile can be configured to act as a subagent—a specialized AI assistant that can be delegated specific tasks by other agents. This enables you to create specialized experts for particular types of work.
+
+When editing an agent profile, you can enable the **"Enable as Subagent"** option, which reveals additional subagent-specific settings:
+
+- **System Prompt**: Define the specialized behavior and expertise of this subagent
+- **Invocation Mode**: Choose whether the subagent runs automatically or only when explicitly requested
+- **Color**: Select a visual identifier for the subagent in the interface
+- **Description**: For automatic subagents, describe when this subagent should be used
+
+Subagents can be used by any agent profile that has **"Use Subagents"** enabled in their tool groups. This allows for flexible delegation of tasks to specialized AI assistants.
+
+Learn more about creating, configuring, and using subagents in the [Subagents](./subagents.md) documentation.
+
 ### Best Practices
 
 1. **Create specialized profiles** for different types of tasks:

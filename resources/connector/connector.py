@@ -201,12 +201,13 @@ class PromptExecutor:
       })
       # Add diff if there was a commit
       commits = f"{coder.last_aider_commit_hash}~1"
-      diff = coder.repo.diff_commits(
-        coder.pretty,
-        commits,
-        coder.last_aider_commit_hash,
-      )
-      response_data["diff"] = diff
+      if coder.repo:
+        diff = coder.repo.diff_commits(
+          coder.pretty,
+          commits,
+          coder.last_aider_commit_hash,
+        )
+        response_data["diff"] = diff
 
     if whole_content or not self.is_prompt_interrupted(prompt_context.id):
       await self.connector.send_action(response_data)
@@ -561,6 +562,9 @@ def clone_coder(connector, coder, prompt_context=None, messages=None, files=None
   create_io(connector, coder, prompt_context)
   connector.monkey_patch_coder_functions(coder)
 
+  if coder.repo:
+    connector.monkey_patch_repo_functions(coder.repo, prompt_context)
+
   if messages is not None:
     # Set messages from the provided data
     coder.done_messages = [dict(role=msg['role'], content=msg['content']) for msg in messages]
@@ -668,18 +672,18 @@ class Connector:
     self.sio = socketio.AsyncClient()
     self._register_events()
 
-  def monkey_patch_coder_functions(self, coder):
+  def monkey_patch_coder_functions(self, coder, prompt_context=None):
     # self here is the Connector instance
     # coder is the Coder instance
 
     original_lint_edited = coder.lint_edited
     def _patched_lint_edited(coder_instance, fnames):
       # Add loading message before linting
-      wait_for_async(self, self.send_log_message("loading", "Linting...", False, coder.io.prompt_context))
+      wait_for_async(self, self.send_log_message("loading", "Linting...", False, prompt_context))
       # Call the original Coder.lint_edited logic
       result = original_lint_edited(fnames)
       # Finish the loading message after linting
-      wait_for_async(self, self.send_log_message("loading", "Linting...", True, coder.io.prompt_context))
+      wait_for_async(self, self.send_log_message("loading", "Linting...", True, prompt_context))
       return result
 
     # Replace the original lint_edited method with the patched version
@@ -731,6 +735,22 @@ class Connector:
 
     # Replace the original run_shell_commands method with the patched version
     coder.run_shell_commands = types.MethodType(_patched_run_shell_commands, coder)
+
+  def monkey_patch_repo_functions(self, repo, prompt_context=None):
+    if not repo:
+      return
+
+    # patch repo.get_commit_message to send a loading message while generating commit message
+    original_get_commit_message = repo.get_commit_message
+
+    def _patched_get_commit_message(repo_instance, diffs, context, user_language=None):
+      wait_for_async(self, self.send_log_message("loading", "Generating commit message...", False, prompt_context))
+      result = original_get_commit_message(diffs, context, user_language)
+      wait_for_async(self, self.send_log_message("loading", "Generating commit message...", True, prompt_context))
+
+      return result
+
+    repo.get_commit_message = types.MethodType(_patched_get_commit_message, repo)
 
   def _register_events(self):
     @self.sio.event

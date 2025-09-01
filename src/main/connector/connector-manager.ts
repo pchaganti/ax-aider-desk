@@ -1,7 +1,6 @@
 import { Server as HttpServer } from 'http';
 
 import { ModelsData, QuestionData, TokensInfoData } from '@common/types';
-import { BrowserWindow } from 'electron';
 import { Server, Socket } from 'socket.io';
 
 import logger from '@/logger';
@@ -21,19 +20,22 @@ import {
   LogMessage,
   Message,
   isAddMessageMessage,
+  isSubscribeEventsMessage,
+  isUnsubscribeEventsMessage,
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
 import { SERVER_PORT } from '@/constants';
+import { EventManager } from '@/events';
 
 export class ConnectorManager {
   private io: Server | null = null;
   private connectors: Connector[] = [];
 
   constructor(
-    private readonly mainWindow: BrowserWindow,
     private readonly projectManager: ProjectManager,
     httpServer: HttpServer,
+    private readonly eventManager: EventManager,
   ) {
     this.init(httpServer);
   }
@@ -60,6 +62,7 @@ export class ConnectorManager {
         logger.info('Socket.IO client disconnected', {
           baseDir: connector?.baseDir,
         });
+        this.eventManager.unsubscribe(socket);
         this.removeConnector(socket);
       });
     });
@@ -127,13 +130,7 @@ export class ConnectorManager {
         }
 
         logger.debug('Updating autocompletion', { baseDir: connector.baseDir });
-        this.mainWindow.webContents.send('update-autocompletion', {
-          baseDir: connector.baseDir,
-          words: message.words,
-          allFiles: message.allFiles,
-          models: message.models,
-        });
-        this.projectManager.getProject(connector.baseDir).setAllTrackedFiles(message.allFiles);
+        this.projectManager.getProject(connector.baseDir).updateAutocompletionData(message.words, message.allFiles, message.models);
       } else if (isAskQuestionMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
         if (!connector) {
@@ -168,7 +165,7 @@ export class ConnectorManager {
         logger.info('Use command output', { ...message });
 
         const connector = this.findConnectorBySocket(socket);
-        if (!connector || !this.mainWindow) {
+        if (!connector) {
           return;
         }
         const project = this.projectManager.getProject(connector.baseDir);
@@ -179,7 +176,7 @@ export class ConnectorManager {
         }
       } else if (isTokensInfoMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
-        if (!connector || !this.mainWindow) {
+        if (!connector) {
           return;
         }
 
@@ -211,6 +208,15 @@ export class ConnectorManager {
           return;
         }
         void this.projectManager.getProject(connector.baseDir).addContextMessage(message.role, message.content, message.usageReport);
+      } else if (isSubscribeEventsMessage(message)) {
+        logger.info('Subscribing to events', { eventTypes: message.eventTypes, baseDirs: message.baseDirs });
+        this.eventManager.subscribe(socket, {
+          eventTypes: message.eventTypes,
+          baseDirs: message.baseDirs,
+        });
+      } else if (isUnsubscribeEventsMessage(message)) {
+        logger.info('Unsubscribing from events');
+        this.eventManager.unsubscribe(socket);
       } else {
         logger.warn('Unknown message type: ', message);
       }
@@ -221,7 +227,7 @@ export class ConnectorManager {
 
   private processLogMessage = (socket: Socket, message: LogMessage) => {
     const connector = this.findConnectorBySocket(socket);
-    if (!connector || !this.mainWindow) {
+    if (!connector) {
       return;
     }
 

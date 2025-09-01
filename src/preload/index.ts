@@ -1,7 +1,7 @@
 import {
   AutocompletionData,
+  ClearProjectData,
   CommandOutputData,
-  ContextFile,
   ContextFilesUpdatedData,
   CustomCommandsUpdatedData,
   FileEdit,
@@ -10,6 +10,7 @@ import {
   McpServerConfig,
   ModelsData,
   OS,
+  ProjectStartedData,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -20,51 +21,16 @@ import {
   UserMessageData,
   VersionsInfo,
 } from '@common/types';
-import { normalizeBaseDir } from '@common/utils';
 import { electronAPI } from '@electron-toolkit/preload';
+import * as Electron from 'electron';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
-import { v4 as uuidv4 } from 'uuid';
+import { ApplicationAPI } from '@common/api';
+import { compareBaseDirs } from '@common/utils';
 
-import { ApplicationAPI } from './index.d';
-
-const compareBaseDirs = (baseDir1: string, baseDir2: string): boolean => {
-  return normalizeBaseDir(baseDir1) === normalizeBaseDir(baseDir2);
-};
-
-const responseChunkListeners: Record<string, (event: Electron.IpcRendererEvent, data: ResponseChunkData) => void> = {};
-const responseFinishedListeners: Record<string, (event: Electron.IpcRendererEvent, data: ResponseCompletedData) => void> = {};
-const contextFilesUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: { baseDir: string; files: ContextFile[] }) => void> = {};
-const customCommandsUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => void> = {};
-const updateAutocompletionListeners: Record<string, (event: Electron.IpcRendererEvent, data: AutocompletionData) => void> = {};
-const askQuestionListeners: Record<string, (event: Electron.IpcRendererEvent, data: QuestionData) => void> = {};
-const updateAiderModelsListeners: Record<string, (event: Electron.IpcRendererEvent, data: ModelsData & { baseDir: string }) => void> = {};
-const commandOutputListeners: Record<string, (event: Electron.IpcRendererEvent, data: CommandOutputData) => void> = {};
-const logListeners: Record<string, (event: Electron.IpcRendererEvent, data: LogData) => void> = {};
-const tokensInfoListeners: Record<string, (event: Electron.IpcRendererEvent, data: TokensInfoData) => void> = {};
-const toolListeners: Record<string, (event: Electron.IpcRendererEvent, data: ToolData) => void> = {};
-const inputHistoryUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: InputHistoryData) => void> = {};
-const userMessageListeners: Record<string, (event: Electron.IpcRendererEvent, data: UserMessageData) => void> = {};
-const clearProjectListeners: Record<string, (event: Electron.IpcRendererEvent, baseDir: string, clearMessages: boolean, clearSession: boolean) => void> = {};
-const projectStartedListeners: Record<string, (event: Electron.IpcRendererEvent, baseDir: string) => void> = {};
-const versionsInfoUpdatedListeners: Record<string, (event: Electron.IpcRendererEvent, data: VersionsInfo) => void> = {};
-const terminalDataListeners: Record<string, (event: Electron.IpcRendererEvent, data: TerminalData) => void> = {};
-const terminalExitListeners: Record<string, (event: Electron.IpcRendererEvent, data: TerminalExitData) => void> = {};
+import './index.d';
 
 const api: ApplicationAPI = {
-  addContextMenuListener: (callback) => {
-    const listener = (event: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => callback(event, params);
-    ipcRenderer.on('context-menu', listener);
-    return () => {
-      ipcRenderer.removeListener('context-menu', listener);
-    };
-  },
-  addOpenSettingsListener: (callback) => {
-    const listener = (event: Electron.IpcRendererEvent, tabIndex: number) => callback(event, tabIndex);
-    ipcRenderer.on('open-settings', listener);
-    return () => {
-      ipcRenderer.removeListener('open-settings', listener);
-    };
-  },
+  isOpenLogsDirectorySupported: () => true,
   openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
@@ -77,9 +43,8 @@ const api: ApplicationAPI = {
   redoLastUserPrompt: (baseDir, mode, updatedPrompt?) => ipcRenderer.send('redo-last-user-prompt', baseDir, mode, updatedPrompt),
   answerQuestion: (baseDir, answer) => ipcRenderer.send('answer-question', baseDir, answer),
   loadInputHistory: (baseDir) => ipcRenderer.invoke('load-input-history', baseDir),
-  dialog: {
-    showOpenDialog: (options: Electron.OpenDialogSyncOptions) => ipcRenderer.invoke('show-open-dialog', options),
-  },
+  isOpenDialogSupported: () => true,
+  showOpenDialog: (options: Electron.OpenDialogSyncOptions) => ipcRenderer.invoke('show-open-dialog', options),
   getPathForFile: (file) => webUtils.getPathForFile(file),
   getOpenProjects: () => ipcRenderer.invoke('get-open-projects'),
   addOpenProject: (baseDir) => ipcRenderer.invoke('add-open-project', baseDir),
@@ -138,349 +103,257 @@ const api: ApplicationAPI = {
   getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => ipcRenderer.invoke('get-effective-environment-variable', key, baseDir),
 
   addResponseChunkListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    responseChunkListeners[listenerId] = (event: Electron.IpcRendererEvent, data: ResponseChunkData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ResponseChunkData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('response-chunk', responseChunkListeners[listenerId]);
-    return listenerId;
-  },
-  removeResponseChunkListener: (listenerId) => {
-    const callback = responseChunkListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('response-chunk', callback);
-      delete responseChunkListeners[listenerId];
-    }
+    ipcRenderer.on('response-chunk', listener);
+    return () => {
+      ipcRenderer.removeListener('response-chunk', listener);
+    };
   },
 
   addResponseCompletedListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    responseFinishedListeners[listenerId] = (event: Electron.IpcRendererEvent, data: ResponseCompletedData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ResponseCompletedData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('response-completed', responseFinishedListeners[listenerId]);
-    return listenerId;
-  },
-  removeResponseCompletedListener: (listenerId) => {
-    const callback = responseFinishedListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('response-completed', callback);
-      delete responseFinishedListeners[listenerId];
-    }
+    ipcRenderer.on('response-completed', listener);
+    return () => {
+      ipcRenderer.removeListener('response-completed', listener);
+    };
   },
 
   addContextFilesUpdatedListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    contextFilesUpdatedListeners[listenerId] = (event: Electron.IpcRendererEvent, data: ContextFilesUpdatedData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ContextFilesUpdatedData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('context-files-updated', contextFilesUpdatedListeners[listenerId]);
-    return listenerId;
-  },
-  removeContextFilesUpdatedListener: (listenerId) => {
-    const callback = contextFilesUpdatedListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('context-files-updated', callback);
-      delete contextFilesUpdatedListeners[listenerId];
-    }
+    ipcRenderer.on('context-files-updated', listener);
+    return () => {
+      ipcRenderer.removeListener('context-files-updated', listener);
+    };
   },
 
   addCustomCommandsUpdatedListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    customCommandsUpdatedListeners[listenerId] = (event: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: CustomCommandsUpdatedData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('custom-commands-updated', customCommandsUpdatedListeners[listenerId]);
-    return listenerId;
-  },
-  removeCustomCommandsUpdatedListener: (listenerId) => {
-    const callback = customCommandsUpdatedListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('custom-commands-updated', callback);
-      delete customCommandsUpdatedListeners[listenerId];
-    }
+    ipcRenderer.on('custom-commands-updated', listener);
+    return () => {
+      ipcRenderer.removeListener('custom-commands-updated', listener);
+    };
   },
 
   addUpdateAutocompletionListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    updateAutocompletionListeners[listenerId] = (event: Electron.IpcRendererEvent, data: AutocompletionData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: AutocompletionData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('update-autocompletion', updateAutocompletionListeners[listenerId]);
-    return listenerId;
-  },
-  removeUpdateAutocompletionListener: (listenerId) => {
-    const callback = updateAutocompletionListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('update-autocompletion', callback);
-      delete updateAutocompletionListeners[listenerId];
-    }
+    ipcRenderer.on('update-autocompletion', listener);
+    return () => {
+      ipcRenderer.removeListener('update-autocompletion', listener);
+    };
   },
 
   addAskQuestionListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    askQuestionListeners[listenerId] = (event: Electron.IpcRendererEvent, data: QuestionData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: QuestionData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('ask-question', askQuestionListeners[listenerId]);
-    return listenerId;
-  },
-  removeAskQuestionListener: (listenerId) => {
-    const callback = askQuestionListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('ask-question', callback);
-      delete askQuestionListeners[listenerId];
-    }
+    ipcRenderer.on('ask-question', listener);
+    return () => {
+      ipcRenderer.removeListener('ask-question', listener);
+    };
   },
 
   addUpdateAiderModelsListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    updateAiderModelsListeners[listenerId] = (event: Electron.IpcRendererEvent, data: ModelsData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ModelsData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('update-aider-models', updateAiderModelsListeners[listenerId]);
-    return listenerId;
-  },
-  removeAiderModelsListener: (listenerId) => {
-    const callback = updateAiderModelsListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('update-aider-models', callback);
-      delete updateAiderModelsListeners[listenerId];
-    }
+    ipcRenderer.on('update-aider-models', listener);
+    return () => {
+      ipcRenderer.removeListener('update-aider-models', listener);
+    };
   },
 
   addCommandOutputListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    commandOutputListeners[listenerId] = (event: Electron.IpcRendererEvent, data: CommandOutputData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: CommandOutputData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('command-output', commandOutputListeners[listenerId]);
-    return listenerId;
-  },
-  removeCommandOutputListener: (listenerId) => {
-    const callback = commandOutputListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('command-output', callback);
-      delete commandOutputListeners[listenerId];
-    }
+    ipcRenderer.on('command-output', listener);
+    return () => {
+      ipcRenderer.removeListener('command-output', listener);
+    };
   },
 
   addLogListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    logListeners[listenerId] = (event: Electron.IpcRendererEvent, data: LogData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: LogData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('log', logListeners[listenerId]);
-    return listenerId;
-  },
-  removeLogListener: (listenerId) => {
-    const callback = logListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('log', callback);
-      delete logListeners[listenerId];
-    }
+    ipcRenderer.on('log', listener);
+    return () => {
+      ipcRenderer.removeListener('log', listener);
+    };
   },
 
   addTokensInfoListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    tokensInfoListeners[listenerId] = (event: Electron.IpcRendererEvent, data: TokensInfoData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: TokensInfoData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('update-tokens-info', tokensInfoListeners[listenerId]);
-    return listenerId;
-  },
-
-  removeTokensInfoListener: (listenerId) => {
-    const callback = tokensInfoListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('update-tokens-info', callback);
-      delete tokensInfoListeners[listenerId];
-    }
+    ipcRenderer.on('update-tokens-info', listener);
+    return () => {
+      ipcRenderer.removeListener('update-tokens-info', listener);
+    };
   },
 
   addToolListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    toolListeners[listenerId] = (event: Electron.IpcRendererEvent, data: ToolData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ToolData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('tool', toolListeners[listenerId]);
-    return listenerId;
-  },
-  removeToolListener: (listenerId) => {
-    const callback = toolListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('tool', callback);
-      delete toolListeners[listenerId];
-    }
+    ipcRenderer.on('tool', listener);
+    return () => {
+      ipcRenderer.removeListener('tool', listener);
+    };
   },
 
   addInputHistoryUpdatedListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    inputHistoryUpdatedListeners[listenerId] = (event: Electron.IpcRendererEvent, data: InputHistoryData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: InputHistoryData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('input-history-updated', inputHistoryUpdatedListeners[listenerId]);
-    return listenerId;
-  },
-  removeInputHistoryUpdatedListener: (listenerId) => {
-    const callback = inputHistoryUpdatedListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('input-history-updated', callback);
-      delete inputHistoryUpdatedListeners[listenerId];
-    }
+    ipcRenderer.on('input-history-updated', listener);
+    return () => {
+      ipcRenderer.removeListener('input-history-updated', listener);
+    };
   },
 
   addUserMessageListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    userMessageListeners[listenerId] = (event: Electron.IpcRendererEvent, data: UserMessageData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: UserMessageData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('user-message', userMessageListeners[listenerId]);
-    return listenerId;
-  },
-  removeUserMessageListener: (listenerId) => {
-    const callback = userMessageListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('user-message', callback);
-      delete userMessageListeners[listenerId];
-    }
+    ipcRenderer.on('user-message', listener);
+    return () => {
+      ipcRenderer.removeListener('user-message', listener);
+    };
   },
 
   addClearProjectListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    clearProjectListeners[listenerId] = (event: Electron.IpcRendererEvent, receivedBaseDir: string, clearMessages: boolean, clearSession: boolean) => {
-      if (!compareBaseDirs(receivedBaseDir, baseDir)) {
+    const listener = (_: Electron.IpcRendererEvent, data: ClearProjectData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, clearMessages, clearSession);
+      callback(data);
     };
-    ipcRenderer.on('clear-project', clearProjectListeners[listenerId]);
-    return listenerId;
-  },
-  removeClearProjectListener: (listenerId) => {
-    const callback = clearProjectListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('clear-project', callback);
-      delete clearProjectListeners[listenerId];
-    }
+    ipcRenderer.on('clear-project', listener);
+    return () => {
+      ipcRenderer.removeListener('clear-project', listener);
+    };
   },
 
   addProjectStartedListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    projectStartedListeners[listenerId] = (event: Electron.IpcRendererEvent, receivedBaseDir: string) => {
-      if (!compareBaseDirs(receivedBaseDir, baseDir)) {
+    const listener = (_: Electron.IpcRendererEvent, data: ProjectStartedData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, receivedBaseDir);
+      callback(data);
     };
-    ipcRenderer.on('project-started', projectStartedListeners[listenerId]);
-    return listenerId;
-  },
-  removeProjectStartedListener: (listenerId) => {
-    const callback = projectStartedListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('project-started', callback);
-      delete projectStartedListeners[listenerId];
-    }
+    ipcRenderer.on('project-started', listener);
+    return () => {
+      ipcRenderer.removeListener('project-started', listener);
+    };
   },
 
   addVersionsInfoUpdatedListener: (callback) => {
-    const listenerId = uuidv4();
-    versionsInfoUpdatedListeners[listenerId] = (event: Electron.IpcRendererEvent, data: VersionsInfo) => {
-      callback(event, data);
+    const listener = (_: Electron.IpcRendererEvent, data: VersionsInfo) => {
+      callback(data);
     };
-    ipcRenderer.on('versions-info-updated', versionsInfoUpdatedListeners[listenerId]);
-    return listenerId;
-  },
-  removeVersionsInfoUpdatedListener: (listenerId) => {
-    const callback = versionsInfoUpdatedListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('versions-info-updated', callback);
-      delete versionsInfoUpdatedListeners[listenerId];
-    }
+    ipcRenderer.on('versions-info-updated', listener);
+    return () => {
+      ipcRenderer.removeListener('versions-info-updated', listener);
+    };
   },
 
   addTerminalDataListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    terminalDataListeners[listenerId] = (event: Electron.IpcRendererEvent, data: TerminalData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: TerminalData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('terminal-data', terminalDataListeners[listenerId]);
-    return listenerId;
-  },
-  removeTerminalDataListener: (listenerId) => {
-    const callback = terminalDataListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('terminal-data', callback);
-      delete terminalDataListeners[listenerId];
-    }
+    ipcRenderer.on('terminal-data', listener);
+    return () => {
+      ipcRenderer.removeListener('terminal-data', listener);
+    };
   },
 
   addTerminalExitListener: (baseDir, callback) => {
-    const listenerId = uuidv4();
-    terminalExitListeners[listenerId] = (event: Electron.IpcRendererEvent, data: TerminalExitData) => {
+    const listener = (_: Electron.IpcRendererEvent, data: TerminalExitData) => {
       if (!compareBaseDirs(data.baseDir, baseDir)) {
         return;
       }
-      callback(event, data);
+      callback(data);
     };
-    ipcRenderer.on('terminal-exit', terminalExitListeners[listenerId]);
-    return listenerId;
+    ipcRenderer.on('terminal-exit', listener);
+    return () => {
+      ipcRenderer.removeListener('terminal-exit', listener);
+    };
   },
-  removeTerminalExitListener: (listenerId) => {
-    const callback = terminalExitListeners[listenerId];
-    if (callback) {
-      ipcRenderer.removeListener('terminal-exit', callback);
-      delete terminalExitListeners[listenerId];
-    }
+
+  addContextMenuListener: (callback) => {
+    const listener = (_: Electron.IpcRendererEvent, params: Electron.ContextMenuParams) => callback(params);
+    ipcRenderer.on('context-menu', listener);
+    return () => {
+      ipcRenderer.removeListener('context-menu', listener);
+    };
+  },
+
+  addOpenSettingsListener: (callback) => {
+    const listener = (_: Electron.IpcRendererEvent, tabIndex: number) => callback(tabIndex);
+    ipcRenderer.on('open-settings', listener);
+    return () => {
+      ipcRenderer.removeListener('open-settings', listener);
+    };
   },
 
   getCustomCommands: (baseDir) => ipcRenderer.invoke('get-custom-commands', baseDir),
   runCustomCommand: (baseDir, commandName, args, mode) => ipcRenderer.invoke('run-custom-command', baseDir, commandName, args, mode),
 
   // Terminal operations
+  isTerminalSupported: () => true,
   createTerminal: (baseDir, cols, rows) => ipcRenderer.invoke('terminal-create', baseDir, cols, rows),
   writeToTerminal: (terminalId, data) => ipcRenderer.invoke('terminal-write', terminalId, data),
   resizeTerminal: (terminalId, cols, rows) => ipcRenderer.invoke('terminal-resize', terminalId, cols, rows),
