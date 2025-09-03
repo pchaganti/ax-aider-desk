@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- extended context memory mode for Subagents to Full context or Last message
+
 ## [0.29.0]
 
 - updating the context info after Aider mode requests
