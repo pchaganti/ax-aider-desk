@@ -33,6 +33,10 @@ export const AIDER_DESK_COMMANDS_DIR = path.join(AIDER_DESK_DIR, 'commands');
 export const AIDER_DESK_TMP_DIR = path.join(AIDER_DESK_DIR, 'tmp');
 export const POSTHOG_PUBLIC_API_KEY = 'phc_AF4zkjrcziXLh8PBFsRSvVr4VZ38p3ezsdX0KDYuElI';
 export const POSTHOG_HOST = 'https://eu.i.posthog.com';
+export const HEADLESS_MODE = process.env.AIDER_DESK_HEADLESS === 'true';
+export const AUTH_USERNAME = process.env.AIDER_DESK_USERNAME;
+export const AUTH_PASSWORD = process.env.AIDER_DESK_PASSWORD;
+
 export const PROBE_BINARY_PATH = path.join(
   RESOURCES_DIR,
   'app.asar.unpacked',

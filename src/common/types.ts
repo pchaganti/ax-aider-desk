@@ -376,6 +376,14 @@ export interface SettingsData {
   telemetryEnabled: boolean;
   telemetryInformed?: boolean;
   promptBehavior: PromptBehavior;
+  server: {
+    enabled: boolean;
+    basicAuth: {
+      enabled: boolean;
+      username: string;
+      password: string;
+    };
+  };
 }
 
 export interface Group {

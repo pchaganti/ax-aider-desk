@@ -499,4 +499,19 @@ export class BrowserApi implements ApplicationAPI {
     void baseDir;
     throw new UnsupportedError('getAllTerminalsForProject not supported yet.');
   }
+  isManageServerSupported(): boolean {
+    return false;
+  }
+
+  startServer(username?: string, password?: string): Promise<boolean> {
+    void username;
+    void password;
+    // Server control not supported in browser mode
+    return Promise.resolve(false);
+  }
+
+  stopServer(): Promise<boolean> {
+    // Server control not supported in browser mode
+    return Promise.resolve(false);
+  }
 }

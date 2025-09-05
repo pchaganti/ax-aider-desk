@@ -598,4 +598,36 @@ export class EventsHandler {
   async initProjectRulesFile(baseDir: string): Promise<void> {
     return await this.projectManager.getProject(baseDir).initProjectAgentsFile();
   }
+
+  enableServer(username?: string, password?: string): SettingsData {
+    const currentSettings = this.store.getSettings();
+    const updatedSettings: SettingsData = {
+      ...currentSettings,
+      server: {
+        ...currentSettings.server,
+        enabled: true,
+        basicAuth: {
+          ...currentSettings.server.basicAuth,
+          enabled: Boolean(username && password),
+          username: username ?? currentSettings.server.basicAuth.username,
+          password: password ?? currentSettings.server.basicAuth.password,
+        },
+      },
+    };
+    this.store.saveSettings(updatedSettings);
+    return updatedSettings;
+  }
+
+  disableServer(): SettingsData {
+    const currentSettings = this.store.getSettings();
+    const updatedSettings: SettingsData = {
+      ...currentSettings,
+      server: {
+        ...currentSettings.server,
+        enabled: false,
+      },
+    };
+    this.store.saveSettings(updatedSettings);
+    return updatedSettings;
+  }
 }
