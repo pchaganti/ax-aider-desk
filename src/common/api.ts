@@ -44,6 +44,9 @@ export interface ApplicationAPI {
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
   saveTheme: (theme: Theme) => Promise<Theme>;
   saveFont: (font: string) => Promise<Font>;
+  isManageServerSupported: () => boolean;
+  startServer: (username?: string, password?: string) => Promise<boolean>;
+  stopServer: () => Promise<boolean>;
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
   restartProject: (baseDir: string, startupMode?: StartupMode) => void;

@@ -24,8 +24,7 @@ import { ModelInfoManager } from '@/models';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
 import { EventsHandler } from '@/events-handler';
-
-const HEADLESS_MODE = process.env.AIDER_DESK_HEADLESS === 'true';
+import { SERVER_PORT, HEADLESS_MODE } from '@/constants';
 
 const setupCustomMenu = (): void => {
   const menuTemplate: Electron.MenuItemConstructorOptions[] = [
@@ -131,6 +130,7 @@ const initManagers = async (
   store: Store,
 ): Promise<{
   eventsHandler: EventsHandler;
+  restApiController: RestApiController;
 }> => {
   // Initialize telemetry manager
   const telemetryManager = new TelemetryManager(store);
@@ -182,11 +182,14 @@ const initManagers = async (
     terminalManager,
   );
 
-  // Create and initialize REST API controller
-  const restApiController = new RestApiController(httpServer, projectManager, eventsHandler);
+  // Create and initialize REST API controller with the server
+  const restApiController = new RestApiController(httpServer, projectManager, eventsHandler, store);
 
   // Initialize connector manager with the server
-  const connectorManager = new ConnectorManager(projectManager, httpServer, eventManager);
+  const connectorManager = new ConnectorManager(httpServer, projectManager, eventManager);
+
+  // start listening
+  httpServer.listen(SERVER_PORT);
 
   const beforeQuit = async () => {
     terminalManager.close();
@@ -208,6 +211,7 @@ const initManagers = async (
 
   return {
     eventsHandler,
+    restApiController,
   };
 };
 
@@ -261,10 +265,10 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   mainWindow.on('maximize', saveWindowState);
   mainWindow.on('unmaximize', saveWindowState);
 
-  const { eventsHandler } = await initManagers(mainWindow, store);
+  const { eventsHandler, restApiController } = await initManagers(mainWindow, store);
 
   // Initialize IPC handlers
-  setupIpcHandlers(eventsHandler);
+  setupIpcHandlers(eventsHandler, restApiController);
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.
@@ -282,82 +286,87 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
 };
 
 app.whenReady().then(async () => {
-  electronApp.setAppUserModelId('com.hotovo.aider-desk');
-
-  if (!HEADLESS_MODE) {
-    // Setup custom menu only in GUI mode
-    setupCustomMenu();
-
-    app.on('browser-window-created', (_, window) => {
-      optimizer.watchWindowShortcuts(window);
-    });
-  }
-
-  logger.info('------------ Starting AiderDesk... ------------');
-  logger.info('Initializing fix-path...');
-  (await import('fix-path')).default();
-
-  let progressBar: ProgressWindow | null = null;
-  let updateProgress: ((data: UpdateProgressData) => void) | null;
-
-  if (!HEADLESS_MODE) {
-    progressBar = new ProgressWindow({
-      width: 400,
-      icon,
-    });
-    progressBar.title = 'Starting AiderDesk...';
-    progressBar.setDetail('Initializing core components...');
-
-    await new Promise((resolve) => {
-      progressBar?.on('ready', () => {
-        resolve(null);
-      });
-    });
-    await delay(1000);
-
-    updateProgress = ({ step, message, info, progress }: UpdateProgressData) => {
-      progressBar!.title = step;
-      progressBar!.setDetail(message, info);
-      if (progress !== undefined) {
-        progressBar!.setProgress(progress);
-      }
-    };
-  } else {
-    logger.info('Starting in headless mode...');
-    // In headless mode, use a no-op updateProgress
-    updateProgress = () => {};
-  }
-
   try {
-    await performStartUp(updateProgress);
-    if (progressBar) {
-      progressBar.title = 'Startup complete';
-      progressBar.setDetail('Everything is ready! Have fun coding!', 'Booting up UI...');
-      progressBar.setCompleted();
+    electronApp.setAppUserModelId('com.hotovo.aider-desk');
+
+    if (!HEADLESS_MODE) {
+      // Setup custom menu only in GUI mode
+      setupCustomMenu();
+
+      app.on('browser-window-created', (_, window) => {
+        optimizer.watchWindowShortcuts(window);
+      });
+    }
+
+    logger.info('------------ Starting AiderDesk... ------------');
+    logger.info('Initializing fix-path...');
+    (await import('fix-path')).default();
+
+    let progressBar: ProgressWindow | null = null;
+    let updateProgress: ((data: UpdateProgressData) => void) | null;
+
+    if (!HEADLESS_MODE) {
+      progressBar = new ProgressWindow({
+        width: 400,
+        icon,
+      });
+      progressBar.title = 'Starting AiderDesk...';
+      progressBar.setDetail('Initializing core components...');
+
+      await new Promise((resolve) => {
+        progressBar?.on('ready', () => {
+          resolve(null);
+        });
+      });
+      await delay(1000);
+
+      updateProgress = ({ step, message, info, progress }: UpdateProgressData) => {
+        progressBar!.title = step;
+        progressBar!.setDetail(message, info);
+        if (progress !== undefined) {
+          progressBar!.setProgress(progress);
+        }
+      };
+    } else {
+      logger.info('Starting in headless mode...');
+      // In headless mode, use a no-op updateProgress
+      updateProgress = () => {};
+    }
+
+    try {
+      await performStartUp(updateProgress);
+      if (progressBar) {
+        progressBar.title = 'Startup complete';
+        progressBar.setDetail('Everything is ready! Have fun coding!', 'Booting up UI...');
+        progressBar.setCompleted();
+      }
+    } catch (error) {
+      if (progressBar) {
+        progressBar?.close();
+      }
+      dialog.showErrorBox('Setup Failed', error instanceof Error ? error.message : 'Unknown error occurred during setup');
+      app.quit();
+      return;
+    }
+
+    const store = await initStore();
+
+    if (HEADLESS_MODE) {
+      // Initialize managers without window in headless mode
+      await initManagers(null, store);
+    } else {
+      await initWindow(store);
+      progressBar?.close();
+
+      app.on('activate', function () {
+        if (BrowserWindow.getAllWindows().length === 0 && store) {
+          void initWindow(store);
+        }
+      });
     }
   } catch (error) {
-    if (progressBar) {
-      progressBar?.close();
-    }
-    dialog.showErrorBox('Setup Failed', error instanceof Error ? error.message : 'Unknown error occurred during setup');
+    logger.error('Failed to start AiderDesk:', error);
     app.quit();
-    return;
-  }
-
-  const store = await initStore();
-
-  if (HEADLESS_MODE) {
-    // Initialize managers without window in headless mode
-    await initManagers(null, store);
-  } else {
-    await initWindow(store);
-    progressBar?.close();
-
-    app.on('activate', function () {
-      if (BrowserWindow.getAllWindows().length === 0 && store) {
-        void initWindow(store);
-      }
-    });
   }
 });
 

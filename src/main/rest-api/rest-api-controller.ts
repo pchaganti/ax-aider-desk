@@ -1,7 +1,7 @@
 import { Server } from 'http';
 import { join } from 'path';
 
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { is } from '@electron-toolkit/utils';
 
@@ -15,37 +15,77 @@ import { SystemApi } from './system-api';
 import { TodoApi } from './todo-api';
 import { McpApi } from './mcp-api';
 
-import { SERVER_PORT } from '@/constants';
+import { SERVER_PORT, AUTH_USERNAME, AUTH_PASSWORD } from '@/constants';
 import logger from '@/logger';
 import { ProjectManager } from '@/project';
 import { EventsHandler } from '@/events-handler';
+import { Store } from '@/store';
 
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 export class RestApiController {
-  private app = express();
+  private readonly app = express();
+  private isStarted = false;
 
   constructor(
     private readonly server: Server,
     private readonly projectManager: ProjectManager,
     private readonly eventsHandler: EventsHandler,
+    private readonly store: Store,
   ) {
-    // Configure Express
-    this.app.use(express.json({ limit: '50mb' }));
-    this.app.use(cors());
-
-    // Set timeout for all requests
-    this.app.use((req, res, next) => {
-      req.setTimeout(REQUEST_TIMEOUT_MS, () => {
-        res.status(504).json({ error: 'Request timeout' });
-      });
-      res.setTimeout(REQUEST_TIMEOUT_MS, () => {
-        res.status(504).json({ error: 'Response timeout' });
-      });
-      next();
-    });
-
     this.init();
+  }
+
+  private serverGuardMiddleware(_: Request, res: Response, next: NextFunction): void {
+    // In headless mode, always allow requests regardless of server.enabled setting
+    if (process.env.AIDER_DESK_HEADLESS === 'true' || this.isStarted) {
+      next();
+    } else {
+      res.status(503).json({ error: 'Server is not started. Enable the server in your AiderDesk -> Settings -> Server.' });
+    }
+  }
+
+  private timeoutMiddleware(req: Request, res: Response, next: NextFunction): void {
+    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      res.status(504).json({ error: 'Request timeout' });
+    });
+    res.setTimeout(REQUEST_TIMEOUT_MS, () => {
+      res.status(504).json({ error: 'Response timeout' });
+    });
+    next();
+  }
+
+  private basicAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
+    const settings = this.store.getSettings().server;
+
+    // Check if environment variables for auth are provided, which overrides settings
+    const useEnvAuth = !!(AUTH_USERNAME && AUTH_PASSWORD);
+    if (useEnvAuth) {
+      logger.info('Using Basic Auth credentials from environment variables AIDER_DESK_USERNAME and AIDER_DESK_PASSWORD');
+    }
+
+    if (useEnvAuth || settings.basicAuth.enabled) {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Basic ')) {
+        res.setHeader('WWW-Authenticate', 'Basic realm="AiderDesk"');
+        res.status(401).send('Authentication required');
+        return;
+      }
+
+      const base64Credentials = authHeader.split(' ')[1];
+      const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+      const [username, password] = credentials.split(':');
+
+      const expectedUsername = useEnvAuth ? (AUTH_USERNAME as string) : settings.basicAuth.username;
+      const expectedPassword = useEnvAuth ? (AUTH_PASSWORD as string) : settings.basicAuth.password;
+
+      if (username !== expectedUsername || password !== expectedPassword) {
+        res.status(401).send('Invalid credentials');
+        return;
+      }
+    }
+
+    next();
   }
 
   private setupApiRoutes(): void {
@@ -68,6 +108,19 @@ export class RestApiController {
   }
 
   private init() {
+    // Configure Express
+    this.app.use(express.json({ limit: '50mb' }));
+    this.app.use(cors());
+
+    // Add server guard middleware as the first middleware
+    this.app.use(this.serverGuardMiddleware.bind(this));
+
+    // Set timeout for all requests
+    this.app.use(this.timeoutMiddleware.bind(this));
+
+    // Add Basic Auth
+    this.app.use(this.basicAuthMiddleware.bind(this));
+
     this.setupApiRoutes();
 
     // Serve static renderer files in production (for browser access)
@@ -80,14 +133,36 @@ export class RestApiController {
       });
     }
 
-    // The server is already listening from the main process,
-    // so we just need to attach our Express app to it
+    logger.debug(`REST API routes registered on port ${SERVER_PORT}`);
     this.server.on('request', this.app);
 
-    logger.info(`REST API routes registered on port ${SERVER_PORT}`);
+    this.isStarted = this.store.getSettings().server.enabled;
   }
 
   async close() {
-    // nothing for now
+    // No need to stop server anymore - it's always attached
+    this.server.off('request', this.app);
+  }
+
+  async startServer() {
+    if (this.isStarted) {
+      logger.info('Server already started');
+      return false;
+    }
+
+    this.isStarted = true;
+    logger.info('Starting server...');
+    return true;
+  }
+
+  async stopServer() {
+    if (!this.isStarted) {
+      logger.info('Server already stopped');
+      return false;
+    }
+
+    this.isStarted = false;
+    logger.info('Server stopped');
+    return true;
   }
 }

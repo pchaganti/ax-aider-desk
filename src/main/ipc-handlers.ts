@@ -2,8 +2,9 @@ import { EditFormat, FileEdit, Font, McpServerConfig, Mode, ProjectSettings, Set
 import { ipcMain } from 'electron';
 
 import { EventsHandler } from './events-handler';
+import { RestApiController } from './rest-api';
 
-export const setupIpcHandlers = (eventsHandler: EventsHandler) => {
+export const setupIpcHandlers = (eventsHandler: EventsHandler, restApiController: RestApiController) => {
   ipcMain.handle('load-settings', () => {
     return eventsHandler.loadSettings();
   });
@@ -291,5 +292,22 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler) => {
 
   ipcMain.handle('terminal-get-all-for-project', async (_, baseDir: string) => {
     return eventsHandler.getTerminalsForProject(baseDir);
+  });
+
+  // Server control handlers
+  ipcMain.handle('start-server', async (_, username?: string, password?: string) => {
+    const started = await restApiController.startServer();
+    if (started) {
+      eventsHandler.enableServer(username, password);
+    }
+    return started;
+  });
+
+  ipcMain.handle('stop-server', async () => {
+    const stopped = await restApiController.stopServer();
+    if (stopped) {
+      eventsHandler.disableServer();
+    }
+    return stopped;
   });
 };
