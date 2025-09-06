@@ -7,6 +7,7 @@
 - added basic authentication for the server access
 - added possibility to start Cloudflare tunnel to access the server
 - added tokens info for context files
+- added option to change font size
 
 ## [0.29.0]
 

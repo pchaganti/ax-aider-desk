@@ -29,9 +29,7 @@ import {
   UsageDataRow,
   EnvironmentVariable,
   CustomCommand,
-  Font,
   StartupMode,
-  Theme,
   FileEdit,
   ClearProjectData,
   ProjectStartedData,
@@ -43,8 +41,6 @@ export interface ApplicationAPI {
   openLogsDirectory: () => Promise<boolean>;
   loadSettings: () => Promise<SettingsData>;
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
-  saveTheme: (theme: Theme) => Promise<Theme>;
-  saveFont: (font: string) => Promise<Font>;
   isManageServerSupported: () => boolean;
   startServer: (username?: string, password?: string) => Promise<boolean>;
   stopServer: () => Promise<boolean>;
