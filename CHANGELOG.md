@@ -6,6 +6,7 @@
 - added server settings to control exposing the API and browser access
 - added basic authentication for the server access
 - added possibility to start Cloudflare tunnel to access the server
+- added tokens info for context files
 
 ## [0.29.0]
 
