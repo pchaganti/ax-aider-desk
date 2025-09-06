@@ -10,7 +10,7 @@ import icon from '../../resources/icon.png?asset';
 
 import { ProgressWindow } from '@/progress-window';
 import { Agent, McpManager } from '@/agent';
-import { RestApiController } from '@/rest-api';
+import { ServerController, CloudflareTunnelManager } from '@/server';
 import { ConnectorManager } from '@/connector';
 import { setupIpcHandlers } from '@/ipc-handlers';
 import { ProjectManager } from '@/project';
@@ -130,7 +130,7 @@ const initManagers = async (
   store: Store,
 ): Promise<{
   eventsHandler: EventsHandler;
-  restApiController: RestApiController;
+  serverController: ServerController;
 }> => {
   // Initialize telemetry manager
   const telemetryManager = new TelemetryManager(store);
@@ -168,6 +168,9 @@ const initManagers = async (
   // Create HTTP server
   const httpServer = createServer();
 
+  // Initialize Cloudflare tunnel manager
+  const cloudflareTunnelManager = new CloudflareTunnelManager();
+
   // Initialize events handler
   const eventsHandler = new EventsHandler(
     mainWindow,
@@ -180,10 +183,11 @@ const initManagers = async (
     telemetryManager,
     dataManager,
     terminalManager,
+    cloudflareTunnelManager,
   );
 
   // Create and initialize REST API controller with the server
-  const restApiController = new RestApiController(httpServer, projectManager, eventsHandler, store);
+  const serverController = new ServerController(httpServer, projectManager, eventsHandler, store);
 
   // Initialize connector manager with the server
   const connectorManager = new ConnectorManager(httpServer, projectManager, eventManager);
@@ -194,7 +198,7 @@ const initManagers = async (
   const beforeQuit = async () => {
     terminalManager.close();
     await mcpManager.close();
-    await restApiController.close();
+    await serverController.close();
     await connectorManager.close();
     await projectManager.close();
     versionsManager.destroy();
@@ -211,7 +215,7 @@ const initManagers = async (
 
   return {
     eventsHandler,
-    restApiController,
+    serverController: serverController,
   };
 };
 
@@ -265,10 +269,10 @@ const initWindow = async (store: Store): Promise<BrowserWindow> => {
   mainWindow.on('maximize', saveWindowState);
   mainWindow.on('unmaximize', saveWindowState);
 
-  const { eventsHandler, restApiController } = await initManagers(mainWindow, store);
+  const { eventsHandler, serverController } = await initManagers(mainWindow, store);
 
   // Initialize IPC handlers
-  setupIpcHandlers(eventsHandler, restApiController);
+  setupIpcHandlers(eventsHandler, serverController);
 
   // HMR for renderer base on electron-vite cli.
   // Load the remote URL for development or the local html file for production.

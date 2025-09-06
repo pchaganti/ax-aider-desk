@@ -134,6 +134,11 @@ export enum OS {
   MacOS = 'macos',
 }
 
+export interface CloudflareTunnelStatus {
+  isRunning: boolean;
+  url?: string;
+}
+
 export enum MessageRole {
   User = 'user',
   Assistant = 'assistant',

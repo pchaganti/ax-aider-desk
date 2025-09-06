@@ -435,8 +435,8 @@
       "modeAtSign": "@ mention mode"
     },
     "server": {
-      "description": "Enable REST API server which allows you to access AiderDesk via browser on port 23477",
-      "serverStatus": "Server Status",
+      "description": "Enable server on port 24337 to access AiderDesk from external applications",
+      "status": "Status",
       "running": "Running",
       "enableBasicAuth": "Enable Basic Authentication",
       "enableBasicAuthDescription": "Require username and password for browser access and API calls",
@@ -447,7 +447,12 @@
       "stopping": "Stopping...",
       "start": "Start",
       "stop": "Stop",
-      "stopped": "Stopped"
+      "stopped": "Stopped",
+      "copyUrl": "Copy URL",
+      "authentication": "Authentication",
+      "serverControl": "Server Control",
+      "tunnelManagement": "Tunnel Management",
+      "tunnelDescription": "Create a Cloudflare tunnel to securely access your server from external networks. Make sure to use Authentication when exposing the server externally."
     }
   },
   "messages": {

@@ -5,16 +5,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { is } from '@electron-toolkit/utils';
 
-import { ContextApi } from './context-api';
-import { PromptApi } from './prompt-api';
-import { SettingsApi } from './settings-api';
-import { ProjectApi } from './project-api';
-import { CommandsApi } from './commands-api';
-import { UsageApi } from './usage-api';
-import { SystemApi } from './system-api';
-import { TodoApi } from './todo-api';
-import { McpApi } from './mcp-api';
-
+import { ContextApi, PromptApi, SettingsApi, ProjectApi, CommandsApi, UsageApi, SystemApi, TodoApi, McpApi } from '@/server/rest-api';
 import { SERVER_PORT, AUTH_USERNAME, AUTH_PASSWORD } from '@/constants';
 import logger from '@/logger';
 import { ProjectManager } from '@/project';
@@ -23,7 +14,7 @@ import { Store } from '@/store';
 
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
-export class RestApiController {
+export class ServerController {
   private readonly app = express();
   private isStarted = false;
 

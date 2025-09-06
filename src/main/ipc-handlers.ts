@@ -2,9 +2,9 @@ import { EditFormat, FileEdit, Font, McpServerConfig, Mode, ProjectSettings, Set
 import { ipcMain } from 'electron';
 
 import { EventsHandler } from './events-handler';
-import { RestApiController } from './rest-api';
+import { ServerController } from './server/server-controller';
 
-export const setupIpcHandlers = (eventsHandler: EventsHandler, restApiController: RestApiController) => {
+export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController) => {
   ipcMain.handle('load-settings', () => {
     return eventsHandler.loadSettings();
   });
@@ -296,7 +296,7 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, restApiController
 
   // Server control handlers
   ipcMain.handle('start-server', async (_, username?: string, password?: string) => {
-    const started = await restApiController.startServer();
+    const started = await serverController.startServer();
     if (started) {
       eventsHandler.enableServer(username, password);
     }
@@ -304,10 +304,23 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, restApiController
   });
 
   ipcMain.handle('stop-server', async () => {
-    const stopped = await restApiController.stopServer();
+    const stopped = await serverController.stopServer();
     if (stopped) {
       eventsHandler.disableServer();
     }
     return stopped;
+  });
+
+  // Cloudflare tunnel handlers
+  ipcMain.handle('start-cloudflare-tunnel', async () => {
+    return await eventsHandler.startCloudflareTunnel();
+  });
+
+  ipcMain.handle('stop-cloudflare-tunnel', async () => {
+    eventsHandler.stopCloudflareTunnel();
+  });
+
+  ipcMain.handle('get-cloudflare-tunnel-status', () => {
+    return eventsHandler.getCloudflareTunnelStatus();
   });
 };

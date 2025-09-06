@@ -35,6 +35,7 @@ import {
   UsageDataRow,
   UserMessageData,
   VersionsInfo,
+  CloudflareTunnelStatus,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -513,5 +514,17 @@ export class BrowserApi implements ApplicationAPI {
   stopServer(): Promise<boolean> {
     // Server control not supported in browser mode
     return Promise.resolve(false);
+  }
+
+  startCloudflareTunnel(): Promise<boolean> {
+    throw new UnsupportedError('Cloudflare tunnel not supported in browser mode');
+  }
+
+  stopCloudflareTunnel(): Promise<void> {
+    throw new UnsupportedError('Cloudflare tunnel not supported in browser mode');
+  }
+
+  getCloudflareTunnelStatus(): Promise<CloudflareTunnelStatus> {
+    throw new UnsupportedError('Cloudflare tunnel not supported in browser mode');
   }
 }
