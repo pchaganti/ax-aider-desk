@@ -13,7 +13,7 @@ type Props = {
   onRemove?: () => void;
 };
 
-export const EditFileToolMessage = ({ message, onRemove }: Props) => {
+export const FileEditToolMessage = ({ message, onRemove }: Props) => {
   const { t } = useTranslation();
 
   const filePath = message.args.filePath as string;
