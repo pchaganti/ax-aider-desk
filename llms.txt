@@ -103,19 +103,22 @@ src/
       index.ts
       project-manager.ts
       project.ts
-    rest-api/
-      base-api.ts
-      commands-api.ts
-      context-api.ts
+    server/
+      rest-api/
+        base-api.ts
+        commands-api.ts
+        context-api.ts
+        index.ts
+        mcp-api.ts
+        project-api.ts
+        prompt-api.ts
+        settings-api.ts
+        system-api.ts
+        todo-api.ts
+        usage-api.ts
+      cloudflare-tunnel-manager.ts
       index.ts
-      mcp-api.ts
-      project-api.ts
-      prompt-api.ts
-      rest-api-controller.ts
-      settings-api.ts
-      system-api.ts
-      todo-api.ts
-      usage-api.ts
+      server-controller.ts
     session/
       index.ts
       session-manager.ts
@@ -1430,6 +1433,7 @@ File: src/common/locales/en.json
     "zoom": "Zoom level",
     "theme": "Theme",
     "font": "Font",
+    "fontSize": "Font size",
     "fontOptions": {
       "Sono": "Sono (Default)",
       "PlayfairDisplay": "Playfair Display",
@@ -1513,8 +1517,8 @@ File: src/common/locales/en.json
       "modeAtSign": "@ mention mode"
     },
     "server": {
-      "description": "Enable REST API server which allows you to access AiderDesk via browser on port 23477",
-      "serverStatus": "Server Status",
+      "description": "Enable server on port 24337 to access AiderDesk from external applications",
+      "status": "Status",
       "running": "Running",
       "enableBasicAuth": "Enable Basic Authentication",
       "enableBasicAuthDescription": "Require username and password for browser access and API calls",
@@ -1525,7 +1529,12 @@ File: src/common/locales/en.json
       "stopping": "Stopping...",
       "start": "Start",
       "stop": "Stop",
-      "stopped": "Stopped"
+      "stopped": "Stopped",
+      "copyUrl": "Copy URL",
+      "authentication": "Authentication",
+      "serverControl": "Server Control",
+      "tunnelManagement": "Tunnel Management",
+      "tunnelDescription": "Create a Cloudflare tunnel to securely access your server from external networks. Make sure to use Authentication when exposing the server externally."
     }
   },
   "messages": {
@@ -2281,6 +2290,7 @@ File: src/common/locales/zh.json
     "zoom": "缩放级别",
     "theme": "主题",
     "font": "字体",
+    "fontSize": "字体大小",
     "fontOptions": {
       "sono": "Sono (色)",
       "poppins": "Poppins ",
@@ -2710,7 +2720,7 @@ File: src/common/locales/zh.json
     "modeAtSign": "@ 提及模式"
   },
   "server": {
-    "description": "启用 REST API 服务器，允许您通过浏览器在端口 23477 访问 AiderDesk",
+    "description": "启用 服务器，允许您通过浏览器在端口 24337 访问 AiderDesk",
     "serverStatus": "服务器状态",
     "running": "运行中",
     "enableBasicAuth": "启用基本身份验证",
@@ -2722,7 +2732,17 @@ File: src/common/locales/zh.json
     "stopping": "正在停止...",
     "start": "启动",
     "stop": "停止",
-    "stopped": "已停止"
+    "stopped": "已停止",
+    "tunnelStatus": "隧道状态",
+    "tunnelRunning": "运行中",
+    "tunnelStopped": "已停止",
+    "tunnelStarting": "正在启动...",
+    "tunnelStopping": "正在停止...",
+    "copyUrl": "复制 URL",
+    "authentication": "身份验证",
+    "serverControl": "服务器控制",
+    "tunnelManagement": "隧道管理",
+    "tunnelDescription": "创建 Cloudflare 隧道以安全地从外部网络访问您的服务器。当对外暴露服务器时，请务必使用身份验证。"
   },
   "multiselect": {
     "noneSelected": "未选择",
@@ -3000,12 +3020,11 @@ import {
   UsageDataRow,
   EnvironmentVariable,
   CustomCommand,
-  Font,
   StartupMode,
-  Theme,
   FileEdit,
   ClearProjectData,
   ProjectStartedData,
+  CloudflareTunnelStatus,
 } from '@common/types';
 ⋮----
 export interface ApplicationAPI {
@@ -3013,11 +3032,12 @@ export interface ApplicationAPI {
   openLogsDirectory: () => Promise<boolean>;
   loadSettings: () => Promise<SettingsData>;
   saveSettings: (settings: SettingsData) => Promise<SettingsData>;
-  saveTheme: (theme: Theme) => Promise<Theme>;
-  saveFont: (font: string) => Promise<Font>;
   isManageServerSupported: () => boolean;
   startServer: (username?: string, password?: string) => Promise<boolean>;
   stopServer: () => Promise<boolean>;
+  startCloudflareTunnel: () => Promise<boolean>;
+  stopCloudflareTunnel: () => Promise<void>;
+  getCloudflareTunnelStatus: () => Promise<CloudflareTunnelStatus>;
   startProject: (baseDir: string) => void;
   stopProject: (baseDir: string) => void;
   restartProject: (baseDir: string, startupMode?: StartupMode) => void;
@@ -3268,6 +3288,11 @@ export enum OS {
   MacOS = 'macos',
 }
 ⋮----
+export interface CloudflareTunnelStatus {
+  isRunning: boolean;
+  url?: string;
+}
+⋮----
 export enum MessageRole {
   User = 'user',
   Assistant = 'assistant',
@@ -3437,6 +3462,7 @@ export interface SettingsData {
   notificationsEnabled?: boolean;
   theme?: Theme;
   font?: Font;
+  fontSize?: number;
   aiderDeskAutoUpdate: boolean;
   aider: {
     options: string;
@@ -5459,7 +5485,7 @@ public async runCustomCommand(commandName: string, args: string[], mode: Mode = 
 // Clear loading message after execution completes (success or failure)
 
 ================
-File: src/main/rest-api/base-api.ts
+File: src/main/server/rest-api/base-api.ts
 ================
 import { Request, Response, Router } from 'express';
 import { z } from 'zod';
@@ -5494,7 +5520,7 @@ protected validateRequest<T>(schema: z.ZodSchema<T>, data: unknown, res: Respons
 abstract registerRoutes(router: Router): void;
 
 ================
-File: src/main/rest-api/commands-api.ts
+File: src/main/server/rest-api/commands-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5514,7 +5540,7 @@ registerRoutes(router: Router): void
 // Run custom command
 
 ================
-File: src/main/rest-api/context-api.ts
+File: src/main/server/rest-api/context-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5542,14 +5568,12 @@ registerRoutes(router: Router): void
 // Get addable files
 
 ================
-File: src/main/rest-api/index.ts
+File: src/main/server/rest-api/index.ts
 ================
-// Export main controller
-⋮----
-// Export API modules
+
 
 ================
-File: src/main/rest-api/mcp-api.ts
+File: src/main/server/rest-api/mcp-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5569,7 +5593,7 @@ registerRoutes(router: Router): void
 // Reload MCP servers
 
 ================
-File: src/main/rest-api/project-api.ts
+File: src/main/server/rest-api/project-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5656,7 +5680,7 @@ registerRoutes(router: Router): void
 // Add open project
 
 ================
-File: src/main/rest-api/prompt-api.ts
+File: src/main/server/rest-api/prompt-api.ts
 ================
 import { Router } from 'express';
 import { z } from 'zod';
@@ -5676,7 +5700,138 @@ registerRoutes(router: Router): void
 // Clear the running flag even if there's an error
 
 ================
-File: src/main/rest-api/rest-api-controller.ts
+File: src/main/server/rest-api/settings-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { EventsHandler } from '@/events-handler';
+⋮----
+const SettingsDataSchema = z.any(); // Placeholder - can be refined based on SettingsData type
+⋮----
+export class SettingsApi extends BaseApi
+⋮----
+constructor(private readonly eventsHandler: EventsHandler)
+⋮----
+registerRoutes(router: Router): void
+⋮----
+// Get settings
+⋮----
+// Update settings
+⋮----
+// Get models
+⋮----
+// Get recent projects
+⋮----
+// Add recent project
+⋮----
+// Remove recent project
+⋮----
+// Set zoom level
+⋮----
+// Get versions
+⋮----
+// Download latest AiderDesk
+⋮----
+// Get release notes
+⋮----
+// Clear release notes
+⋮----
+// Get OS
+
+================
+File: src/main/server/rest-api/system-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { EventsHandler } from '@/events-handler';
+⋮----
+export class SystemApi extends BaseApi
+⋮----
+constructor(private readonly eventsHandler: EventsHandler)
+⋮----
+registerRoutes(router: Router): void
+
+================
+File: src/main/server/rest-api/todo-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { EventsHandler } from '@/events-handler';
+⋮----
+export class TodoApi extends BaseApi
+⋮----
+constructor(private readonly eventsHandler: EventsHandler)
+⋮----
+registerRoutes(router: Router): void
+⋮----
+// Get todos
+⋮----
+// Add todo
+⋮----
+// Update todo
+⋮----
+// Delete todo
+⋮----
+// Clear all todos
+
+================
+File: src/main/server/rest-api/usage-api.ts
+================
+import { Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from './base-api';
+⋮----
+import { EventsHandler } from '@/events-handler';
+⋮----
+export class UsageApi extends BaseApi
+⋮----
+constructor(private readonly eventsHandler: EventsHandler)
+⋮----
+registerRoutes(router: Router): void
+
+================
+File: src/main/server/cloudflare-tunnel-manager.ts
+================
+import { CloudflareTunnelStatus } from '@common/types';
+import { Tunnel, use as setCloudflaredBinary } from 'cloudflared';
+import { is } from '@electron-toolkit/utils';
+⋮----
+import { CLOUDFLARED_BINARY_PATH, SERVER_PORT } from '@/constants';
+import logger from '@/logger';
+⋮----
+export class CloudflareTunnelManager
+⋮----
+async start(): Promise<void>
+⋮----
+// set cloudflared binary path only in production app
+⋮----
+// Wait for URL
+⋮----
+// Wait for connection
+⋮----
+// Keep listeners for ongoing events
+⋮----
+stop(): void
+⋮----
+getStatus(): CloudflareTunnelStatus
+
+================
+File: src/main/server/index.ts
+================
+// Export main controller
+
+================
+File: src/main/server/server-controller.ts
 ================
 import { Server } from 'http';
 import { join } from 'path';
@@ -5685,16 +5840,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { is } from '@electron-toolkit/utils';
 ⋮----
-import { ContextApi } from './context-api';
-import { PromptApi } from './prompt-api';
-import { SettingsApi } from './settings-api';
-import { ProjectApi } from './project-api';
-import { CommandsApi } from './commands-api';
-import { UsageApi } from './usage-api';
-import { SystemApi } from './system-api';
-import { TodoApi } from './todo-api';
-import { McpApi } from './mcp-api';
-⋮----
+import { ContextApi, PromptApi, SettingsApi, ProjectApi, CommandsApi, UsageApi, SystemApi, TodoApi, McpApi } from '@/server/rest-api';
 import { SERVER_PORT, AUTH_USERNAME, AUTH_PASSWORD } from '@/constants';
 import logger from '@/logger';
 import { ProjectManager } from '@/project';
@@ -5703,7 +5849,7 @@ import { Store } from '@/store';
 ⋮----
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 ⋮----
-export class RestApiController
+export class ServerController
 ⋮----
 constructor(
     private readonly server: Server,
@@ -5751,111 +5897,6 @@ async close()
 async startServer()
 ⋮----
 async stopServer()
-
-================
-File: src/main/rest-api/settings-api.ts
-================
-import { Router } from 'express';
-import { z } from 'zod';
-import { Font, Theme } from '@common/types';
-⋮----
-import { BaseApi } from './base-api';
-⋮----
-import { EventsHandler } from '@/events-handler';
-⋮----
-const SettingsDataSchema = z.any(); // Placeholder - can be refined based on SettingsData type
-⋮----
-export class SettingsApi extends BaseApi
-⋮----
-constructor(private readonly eventsHandler: EventsHandler)
-⋮----
-registerRoutes(router: Router): void
-⋮----
-// Get settings
-⋮----
-// Save theme
-⋮----
-// Save font
-⋮----
-// Update settings
-⋮----
-// Get models
-⋮----
-// Get recent projects
-⋮----
-// Add recent project
-⋮----
-// Remove recent project
-⋮----
-// Set zoom level
-⋮----
-// Get versions
-⋮----
-// Download latest AiderDesk
-⋮----
-// Get release notes
-⋮----
-// Clear release notes
-⋮----
-// Get OS
-
-================
-File: src/main/rest-api/system-api.ts
-================
-import { Router } from 'express';
-import { z } from 'zod';
-⋮----
-import { BaseApi } from './base-api';
-⋮----
-import { EventsHandler } from '@/events-handler';
-⋮----
-export class SystemApi extends BaseApi
-⋮----
-constructor(private readonly eventsHandler: EventsHandler)
-⋮----
-registerRoutes(router: Router): void
-
-================
-File: src/main/rest-api/todo-api.ts
-================
-import { Router } from 'express';
-import { z } from 'zod';
-⋮----
-import { BaseApi } from './base-api';
-⋮----
-import { EventsHandler } from '@/events-handler';
-⋮----
-export class TodoApi extends BaseApi
-⋮----
-constructor(private readonly eventsHandler: EventsHandler)
-⋮----
-registerRoutes(router: Router): void
-⋮----
-// Get todos
-⋮----
-// Add todo
-⋮----
-// Update todo
-⋮----
-// Delete todo
-⋮----
-// Clear all todos
-
-================
-File: src/main/rest-api/usage-api.ts
-================
-import { Router } from 'express';
-import { z } from 'zod';
-⋮----
-import { BaseApi } from './base-api';
-⋮----
-import { EventsHandler } from '@/events-handler';
-⋮----
-export class UsageApi extends BaseApi
-⋮----
-constructor(private readonly eventsHandler: EventsHandler)
-⋮----
-registerRoutes(router: Router): void
 
 ================
 File: src/main/session/index.ts
@@ -6696,6 +6737,8 @@ import path from 'path';
 ⋮----
 import { is } from '@electron-toolkit/utils';
 import { app } from 'electron';
+⋮----
+// constants for project directory files
 
 ================
 File: src/main/events-handler.ts
@@ -6725,12 +6768,14 @@ import {
   TodoItem,
   UsageDataRow,
   VersionsInfo,
+  CloudflareTunnelStatus,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 ⋮----
 import { Agent, McpManager } from '@/agent';
 import { ModelInfoManager } from '@/models';
 import { ProjectManager } from '@/project';
+import { CloudflareTunnelManager } from '@/server';
 import { getDefaultProjectSettings, Store } from '@/store';
 import { TelemetryManager } from '@/telemetry';
 import { VersionsManager } from '@/versions';
@@ -6751,6 +6796,8 @@ saveSettings(newSettings: SettingsData): SettingsData
 saveTheme(theme: Theme): Theme | undefined
 ⋮----
 saveFont(font: Font): Font | undefined
+⋮----
+saveFontSize(fontSize: number): number | undefined
 ⋮----
 async loadModelsInfo(): Promise<Record<string, ModelInfo>>
 ⋮----
@@ -6905,6 +6952,12 @@ async initProjectRulesFile(baseDir: string): Promise<void>
 enableServer(username?: string, password?: string): SettingsData
 ⋮----
 disableServer(): SettingsData
+⋮----
+async startCloudflareTunnel(): Promise<CloudflareTunnelStatus | null>
+⋮----
+stopCloudflareTunnel(): void
+⋮----
+getCloudflareTunnelStatus(): CloudflareTunnelStatus
 
 ================
 File: src/main/index.ts
@@ -6921,7 +6974,7 @@ import icon from '../../resources/icon.png?asset';
 ⋮----
 import { ProgressWindow } from '@/progress-window';
 import { Agent, McpManager } from '@/agent';
-import { RestApiController } from '@/rest-api';
+import { ServerController, CloudflareTunnelManager } from '@/server';
 import { ConnectorManager } from '@/connector';
 import { setupIpcHandlers } from '@/ipc-handlers';
 import { ProjectManager } from '@/project';
@@ -6972,6 +7025,8 @@ const initManagers = async (
 ⋮----
 // Create HTTP server
 ⋮----
+// Initialize Cloudflare tunnel manager
+⋮----
 // Initialize events handler
 ⋮----
 // Create and initialize REST API controller with the server
@@ -7007,17 +7062,19 @@ updateProgress = () =>
 ================
 File: src/main/ipc-handlers.ts
 ================
-import { EditFormat, FileEdit, Font, McpServerConfig, Mode, ProjectSettings, SettingsData, StartupMode, Theme, TodoItem } from '@common/types';
+import { EditFormat, FileEdit, McpServerConfig, Mode, ProjectSettings, SettingsData, StartupMode, TodoItem } from '@common/types';
 import { ipcMain } from 'electron';
 ⋮----
 import { EventsHandler } from './events-handler';
-import { RestApiController } from './rest-api';
+import { ServerController } from './server/server-controller';
 ⋮----
-export const setupIpcHandlers = (eventsHandler: EventsHandler, restApiController: RestApiController) =>
+export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController) =>
 ⋮----
 // Terminal handlers
 ⋮----
 // Server control handlers
+⋮----
+// Cloudflare tunnel handlers
 
 ================
 File: src/main/logger.ts
@@ -7459,7 +7516,6 @@ import {
   EditFormat,
   EnvironmentVariable,
   FileEdit,
-  Font,
   InputHistoryData,
   LogData,
   McpServerConfig,
@@ -7479,13 +7535,13 @@ import {
   StartupMode,
   TerminalData,
   TerminalExitData,
-  Theme,
   TodoItem,
   TokensInfoData,
   ToolData,
   UsageDataRow,
   UserMessageData,
   VersionsInfo,
+  CloudflareTunnelStatus,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import axios, { type AxiosInstance } from 'axios';
@@ -7544,8 +7600,6 @@ isOpenLogsDirectorySupported(): boolean
 openLogsDirectory(): Promise<boolean>
 loadSettings(): Promise<SettingsData>
 saveSettings(settings: SettingsData): Promise<SettingsData>
-saveTheme(theme: Theme): Promise<Theme>
-saveFont(font: string): Promise<Font>
 startProject(baseDir: string): void
 stopProject(baseDir: string): void
 restartProject(baseDir: string, startupMode?: StartupMode): void
@@ -7648,6 +7702,12 @@ startServer(username?: string, password?: string): Promise<boolean>
 stopServer(): Promise<boolean>
 ⋮----
 // Server control not supported in browser mode
+⋮----
+startCloudflareTunnel(): Promise<boolean>
+⋮----
+stopCloudflareTunnel(): Promise<void>
+⋮----
+getCloudflareTunnelStatus(): Promise<CloudflareTunnelStatus>
 
 ================
 File: src/renderer/src/assets/electron.svg
@@ -7699,7 +7759,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdCheck, MdDoneAll, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap } from 'react-icons/md';
 import { RiToolsFill } from 'react-icons/ri';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { AgentProfile, ToolApprovalState } from '@common/types';
 import { getActiveAgentProfile } from '@common/utils';
 import { BiCog } from 'react-icons/bi';
@@ -7890,7 +7950,7 @@ File: src/renderer/src/components/common/Accordion.tsx
 ================
 import { ReactNode, useRef, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 ⋮----
 type Props = {
@@ -8033,7 +8093,7 @@ tooltip=
 ================
 File: src/renderer/src/components/common/CodeInline.tsx
 ================
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { ReactNode } from 'react';
 ⋮----
 type Props = {
@@ -8114,7 +8174,7 @@ import { forwardRef, ReactNode } from 'react';
 import ReactDatePicker, { type DatePickerProps } from 'react-datepicker';
 ⋮----
 import { FaCalendarAlt } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { Input } from './Input';
 ⋮----
@@ -8188,7 +8248,7 @@ File: src/renderer/src/components/common/InfoIcon.tsx
 ================
 import { FaInfoCircle } from 'react-icons/fa';
 import { ReactNode } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { IconButton } from './IconButton';
 ⋮----
@@ -8290,7 +8350,7 @@ className="sr-only" // Hide the actual input but keep it accessible
 File: src/renderer/src/components/common/Section.tsx
 ================
 import { ReactNode } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 type Props = {
   title?: string;
@@ -8420,7 +8480,7 @@ body.theme-light .context-dimmed {
 ================
 File: src/renderer/src/components/ContextFiles/ContextFiles.tsx
 ================
-import { ContextFile, ContextFilesUpdatedData, OS } from '@common/types';
+import { ContextFile, ContextFilesUpdatedData, OS, TokensInfoData } from '@common/types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import objectHash from 'object-hash';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
@@ -8451,6 +8511,7 @@ type Props = {
   baseDir: string;
   allFiles: string[];
   showFileDialog: () => void;
+  tokensInfo?: TokensInfoData | null;
 };
 ⋮----
 // Handle highlighting of new files
@@ -8539,7 +8600,7 @@ File: src/renderer/src/components/message/EditFileToolMessage.tsx
 import { useTranslation } from 'react-i18next';
 import { RiToolsFill } from 'react-icons/ri';
 import { getLanguageFromPath } from '@common/utils';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
@@ -8582,7 +8643,7 @@ const getToolName = (): string =>
 ================
 File: src/renderer/src/components/message/GroupMessageBlock.tsx
 ================
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { LocalizedString, UsageReportData } from '@common/types';
 ⋮----
@@ -8815,7 +8876,7 @@ type Props = {
 ================
 File: src/renderer/src/components/message/ResponseMessageBlock.tsx
 ================
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { RiRobot2Line } from 'react-icons/ri';
 ⋮----
 import { MessageBar } from './MessageBar';
@@ -8857,7 +8918,7 @@ import { MouseEvent, useState } from 'react';
 import { FaBrain, FaChevronDown, FaChevronRight } from 'react-icons/fa';
 import { MdOutlineLightbulb } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
 ⋮----
@@ -8886,7 +8947,7 @@ import { CgSpinner } from 'react-icons/cg';
 import { RiToolsFill } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { VscError } from 'react-icons/vsc';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
@@ -8979,7 +9040,7 @@ type Props = {
 File: src/renderer/src/components/message/UserMessageBlock.tsx
 ================
 import { FaRegUser } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { MessageBar } from './MessageBar';
 ⋮----
@@ -9141,7 +9202,7 @@ export const groupMessagesByPromptContext = (messages: Message[]): Message[] =>
 File: src/renderer/src/components/onboarding/OnboardingStepper.tsx
 ================
 import { HiCheck } from 'react-icons/hi';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 type Step = {
   title: string;
@@ -9379,7 +9440,7 @@ import { ProjectData } from '@common/types';
 import { CSS } from '@dnd-kit/utilities';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Tab, TabGroup, TabList } from '@headlessui/react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { MdAdd, MdClose, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -9623,7 +9684,7 @@ const handleCopyTerminalOutput = (output: string) =>
 File: src/renderer/src/components/project/TodoListItem.tsx
 ================
 import { useState } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { MdEdit, MdDelete, MdCheck, MdClose } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { TodoItem } from '@common/types';
@@ -10281,7 +10342,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
 import { HiPlus } from 'react-icons/hi';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
@@ -10383,7 +10444,7 @@ File: src/renderer/src/components/settings/agent/AgentProfileItem.tsx
 ================
 import { AgentProfile } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 ⋮----
@@ -10786,6 +10847,7 @@ type Props = {
   onZoomChange: (zoomLevel: number) => void;
   onThemeChange: (themeName: Theme) => void;
   onFontChange: (fontName: Font) => void;
+  onFontSizeChange: (fontSize: number) => void;
 };
 ⋮----
 const handleStartupModeChange = (mode: StartupMode) =>
@@ -10799,6 +10861,8 @@ const handleNotificationsEnabledChange = (checked: boolean) =>
 const handleThemeChange = (value: string) =>
 ⋮----
 const handleFontChange = (value: string) =>
+⋮----
+const handleFontSizeChange = (value: string) =>
 ⋮----
 const handleSuggestionModeChange = (mode: SuggestionMode) =>
 ⋮----
@@ -10917,7 +10981,7 @@ import {
 import { MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaChevronDown, FaChevronRight } from 'react-icons/fa';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import {
   AnthropicParameters,
@@ -10951,10 +11015,11 @@ const renderProviderParameters = () =>
 ================
 File: src/renderer/src/components/settings/ServerSettings.tsx
 ================
-import { ChangeEvent, useState } from 'react';
+import { ChangeEvent, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SettingsData } from '@common/types';
+import { SettingsData, CloudflareTunnelStatus } from '@common/types';
 import { clsx } from 'clsx';
+import { BiCopy } from 'react-icons/bi';
 ⋮----
 import { Input } from '../common/Input';
 import { Section } from '../common/Section';
@@ -10962,11 +11027,16 @@ import { Button } from '../common/Button';
 import { Checkbox } from '../common/Checkbox';
 ⋮----
 import { useApi } from '@/context/ApiContext';
+import { IconButton } from '@/components/common/IconButton';
 ⋮----
 type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
 };
+⋮----
+const loadTunnelStatus = async () =>
+⋮----
+// eslint-disable-next-line no-console
 ⋮----
 const handleServerToggle = async () =>
 ⋮----
@@ -10986,14 +11056,21 @@ const handleUsernameChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
+const handleTunnelToggle = async () =>
+⋮----
+// Reload tunnel status
+⋮----
+// eslint-disable-next-line no-console
+⋮----
 const getButtonText = () =>
 ⋮----
-{/* Authentication Toggle */}
+const getTunnelButtonText = () =>
+⋮----
+<Section title=
+⋮----
+label=
 ⋮----
 {/* Collapsible Authentication Inputs */}
-⋮----
-{/* Centered Server Status and Control */}
-⋮----
 
 ================
 File: src/renderer/src/components/settings/SettingsDialog.tsx
@@ -11102,7 +11179,7 @@ File: src/renderer/src/components/terminal/TerminalView.tsx
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { IoMdAdd, IoMdClose, IoMdRemove } from 'react-icons/io';
 import { BiCopy } from 'react-icons/bi';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from 'react-i18next';
 ⋮----
@@ -11317,7 +11394,7 @@ import { FaSync, FaTable, FaChartBar } from 'react-icons/fa';
 import { IoMdClose } from 'react-icons/io';
 import { CgSpinner } from 'react-icons/cg';
 import { UsageDataRow } from '@common/types';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { Select } from '../common/Select';
 ⋮----
@@ -11458,7 +11535,7 @@ File: src/renderer/src/components/AutocompletionInput.tsx
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 type Props = {
   value: string;
@@ -11744,9 +11821,11 @@ type SettingsContextType = {
   settings: SettingsData | null;
   saveSettings: (settings: SettingsData) => Promise<void>;
   theme: Theme | null;
-  saveTheme: (theme: Theme) => void;
+  setTheme: (theme: Theme) => void;
   font: Font | null;
-  saveFont: (font: Font) => void;
+  setFont: (font: Font) => void;
+  fontSize: number | null;
+  setFontSize: (fontSize: number) => void;
 };
 ⋮----
 export const SettingsProvider = (
@@ -11754,14 +11833,6 @@ export const SettingsProvider = (
 const loadSettings = async () =>
 ⋮----
 const saveSettings = async (updated: SettingsData) =>
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-const saveTheme = async (theme: Theme) =>
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-const saveFont = async (font: Font) =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -11925,7 +11996,7 @@ import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react
 import { useTranslation } from 'react-i18next';
 import Mark from 'mark.js';
 import { IoIosArrowUp, IoIosArrowDown, IoMdClose } from 'react-icons/io';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { IconButton } from '@/components/common/IconButton';
@@ -12011,8 +12082,6 @@ const loadModels = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const setActiveProject = async (baseDir: string) =>
-⋮----
 // First TAB press - switch to previous tab
 ⋮----
 // Subsequent TAB presses - cycle through tabs
@@ -12093,6 +12162,7 @@ type Props = {
   onZoomChange: (zoomLevel: number) => void;
   onThemeChange: (theme: Theme) => void;
   onFontChange: (fontName: Font) => void;
+  onFontSizeChange: (fontSize: number) => void;
   initialTab?: number;
   initialAgentProfileId?: string;
   initialAgentProvider?: LlmProviderName;
@@ -14063,6 +14133,7 @@ File: package.json
     "better-sqlite3": "^12.0.0",
     "cheerio": "^1.0.0",
     "chokidar": "^4.0.3",
+    "cloudflared": "^0.7.1",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "electron-store": "^10.1.0",
