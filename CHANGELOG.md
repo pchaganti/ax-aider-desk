@@ -9,6 +9,7 @@
 - added tokens info for context files
 - added option to change font size
 - added simple but functional responsive design
+- fixed issue causing info message types appearing before the end of diffs when using fast models
 
 ## [0.29.0]
 

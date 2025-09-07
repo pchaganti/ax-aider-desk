@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Diff, Hunk, parseDiff } from 'react-diff-view';
 import { diffLines, formatLines } from 'unidiff';
+import { useDebounce } from '@reactuses/core';
 
 import { createTokens } from './utils';
 
@@ -10,19 +11,28 @@ import { useResponsive } from '@/hooks/useResponsive';
 import 'react-diff-view/style/index.css';
 import './DiffViewer.scss';
 
+const DEBOUNCE_TIME = 100;
+
 type Props = {
   oldValue: string;
   newValue: string;
   language: string;
+  isComplete?: boolean;
 };
 
-export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
+export const DiffViewer = ({ oldValue, newValue, language, isComplete = false }: Props) => {
   const { t } = useTranslation();
   const { isMobile } = useResponsive();
 
+  const debouncedOldValue = useDebounce(oldValue, DEBOUNCE_TIME, { leading: true, maxWait: DEBOUNCE_TIME });
+  const debouncedNewValue = useDebounce(newValue, DEBOUNCE_TIME, { leading: true, maxWait: DEBOUNCE_TIME });
+
+  const oldValueToUse = isComplete ? oldValue : debouncedOldValue;
+  const newValueToUse = isComplete ? newValue : debouncedNewValue;
+
   const diffComputationResult = useMemo(() => {
     try {
-      const diffText = formatLines(diffLines(oldValue, newValue), { context: 100 });
+      const diffText = formatLines(diffLines(oldValueToUse, newValueToUse), { context: 100 });
       const [parsedFile] = parseDiff(diffText, { nearbySequences: 'zip' });
       return { file: parsedFile, error: null };
     } catch (e) {
@@ -31,7 +41,7 @@ export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
       console.error('Error generating diff:', error);
       return { file: undefined, error: error };
     }
-  }, [oldValue, newValue]);
+  }, [oldValueToUse, newValueToUse]);
 
   const { file: diffFile, error: diffError } = diffComputationResult;
 
@@ -48,11 +58,15 @@ export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
         <div className={`flex ${isMobile ? 'flex-col' : 'w-full'}`}>
           <div className={`flex-1 overflow-auto px-4 py-3 ${!isMobile ? 'border-r border-border-dark' : ''}`}>
             <h3 className="mt-0 mb-2 text-xs font-semibold text-text-secondary">Old Value</h3>
-            <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-text-primary leading-normal bg-bg-secondary px-3 py-2 rounded">{oldValue}</pre>
+            <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-text-primary leading-normal bg-bg-secondary px-3 py-2 rounded">
+              {oldValueToUse}
+            </pre>
           </div>
           <div className="flex-1 overflow-auto px-4 py-3">
             <h3 className="mt-0 mb-2 text-xs font-semibold text-text-secondary">New Value</h3>
-            <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-text-primary leading-normal bg-bg-secondary px-3 py-2 rounded">{newValue}</pre>
+            <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-text-primary leading-normal bg-bg-secondary px-3 py-2 rounded">
+              {newValueToUse}
+            </pre>
           </div>
         </div>
         {diffError.message && (
