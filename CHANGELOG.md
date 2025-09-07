@@ -8,6 +8,7 @@
 - added possibility to start Cloudflare tunnel to access the server
 - added tokens info for context files
 - added option to change font size
+- added simple but functional responsive design
 
 ## [0.29.0]
 

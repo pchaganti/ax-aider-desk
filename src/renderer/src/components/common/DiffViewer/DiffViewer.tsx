@@ -5,6 +5,8 @@ import { diffLines, formatLines } from 'unidiff';
 
 import { createTokens } from './utils';
 
+import { useResponsive } from '@/hooks/useResponsive';
+
 import 'react-diff-view/style/index.css';
 import './DiffViewer.scss';
 
@@ -16,6 +18,7 @@ type Props = {
 
 export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
   const { t } = useTranslation();
+  const { isMobile } = useResponsive();
 
   const diffComputationResult = useMemo(() => {
     try {
@@ -41,9 +44,9 @@ export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
 
   if (diffError) {
     return (
-      <div className="flex w-full flex-col">
-        <div className="flex w-full">
-          <div className="flex-1 overflow-auto px-4 py-3 border-r border-border-dark">
+      <div className={`flex w-full ${isMobile ? 'flex-col' : ''}`}>
+        <div className={`flex ${isMobile ? 'flex-col' : 'w-full'}`}>
+          <div className={`flex-1 overflow-auto px-4 py-3 ${!isMobile ? 'border-r border-border-dark' : ''}`}>
             <h3 className="mt-0 mb-2 text-xs font-semibold text-text-secondary">Old Value</h3>
             <pre className="whitespace-pre-wrap break-words m-0 text-2xs text-text-primary leading-normal bg-bg-secondary px-3 py-2 rounded">{oldValue}</pre>
           </div>
@@ -69,7 +72,14 @@ export const DiffViewer = ({ oldValue, newValue, language }: Props) => {
   }
 
   return (
-    <Diff viewType="split" diffType={diffFile.type} hunks={diffFile.hunks} className="diff-viewer" optimizeSelection={true} tokens={tokens}>
+    <Diff
+      viewType={isMobile ? 'unified' : 'split'}
+      diffType={diffFile.type}
+      hunks={diffFile.hunks}
+      className="diff-viewer"
+      optimizeSelection={true}
+      tokens={tokens}
+    >
       {(hunks) => hunks.map((hunk) => <Hunk key={hunk.content} hunk={hunk} />)}
     </Diff>
   );

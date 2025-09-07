@@ -423,7 +423,8 @@
     "editingLastMessage": "正在编辑最后一条消息",
     "cancelEdit": "取消编辑",
     "group": "分组",
-    "scrollToBottom": "滚动到底部"
+    "scrollToBottom": "滚动到底部",
+    "messageBar": "消息栏"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
@@ -717,7 +718,8 @@
   "projectBar": {
     "toggleMarkdown": "Markdown 渲染",
     "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。",
-    "aider": "Aider"
+    "aider": "Aider",
+    "toggleSidebar": "切换侧边栏"
   },
   "reasoningEffort": {
     "label": "推理",

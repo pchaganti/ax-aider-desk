@@ -468,7 +468,8 @@
     "editingLastMessage": "Editing last message",
     "cancelEdit": "Cancel",
     "group": "Group",
-    "scrollToBottom": "Scroll to bottom"
+    "scrollToBottom": "Scroll to bottom",
+    "messageBar": "Message Bar"
   },
   "errors": {
     "frozenTitle": "AIDER FROZEN?",
@@ -744,7 +745,8 @@
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",
     "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",
-    "aider": "Aider"
+    "aider": "Aider",
+    "toggleSidebar": "Toggle sidebar"
   },
   "reasoningEffort": {
     "label": "Reasoning",

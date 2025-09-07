@@ -203,8 +203,8 @@ export const Home = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen p-[4px] bg-gradient-to-b from-bg-primary to-bg-primary-light">
-      <div className="flex flex-col h-screen border-2 border-border-default relative">
+    <div className="flex flex-col h-full p-[4px] bg-gradient-to-b from-bg-primary to-bg-primary-light">
+      <div className="flex flex-col h-full border-2 border-border-default relative">
         <div className="flex border-b-2 border-border-default justify-between bg-gradient-to-b from-bg-primary to-bg-primary-light">
           <ProjectTabs
             openProjects={openProjects}
@@ -254,7 +254,7 @@ export const Home = () => {
           />
         )}
         {!releaseNotesContent && <TelemetryInfoDialog />}
-        <div className="flex-grow overflow-hidden relative">
+        <div className="flex-1 overflow-hidden relative">
           {openProjects.length > 0 ? renderProjectPanels() : <NoProjectsOpen onOpenProject={() => setIsOpenProjectDialogVisible(true)} />}
         </div>
       </div>
