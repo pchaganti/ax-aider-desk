@@ -108,10 +108,13 @@ export const Home = () => {
     void loadModels();
   }, [api]);
 
-  const setActiveProject = async (baseDir: string) => {
-    const projects = await api.setActiveProject(baseDir);
-    setOpenProjects(projects);
-  };
+  const setActiveProject = useCallback(
+    async (baseDir: string) => {
+      const projects = await api.setActiveProject(baseDir);
+      setOpenProjects(projects);
+    },
+    [api],
+  );
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -125,12 +128,12 @@ export const Home = () => {
         if (!isTabbing && previousProjectBaseDir && openProjects.some((project) => project.baseDir === previousProjectBaseDir)) {
           // First TAB press - switch to previous tab
           setPreviousProjectBaseDir(activeProject?.baseDir);
-          setActiveProject(previousProjectBaseDir);
+          void setActiveProject(previousProjectBaseDir);
         } else {
           // Subsequent TAB presses - cycle through tabs
           const currentIndex = openProjects.findIndex((project) => project.baseDir === activeProject?.baseDir);
           const nextIndex = (currentIndex + 1) % openProjects.length;
-          setActiveProject(openProjects[nextIndex].baseDir);
+          void setActiveProject(openProjects[nextIndex].baseDir);
           setPreviousProjectBaseDir(activeProject?.baseDir);
         }
       }

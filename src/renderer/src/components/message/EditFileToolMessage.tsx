@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { RiToolsFill } from 'react-icons/ri';
 import { getLanguageFromPath } from '@common/utils';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 import { ToolMessage } from '@/types/message';
 import { MessageBar } from '@/components/message/MessageBar';
