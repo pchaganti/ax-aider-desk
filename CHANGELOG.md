@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- updated to React 19 for possible performance improvements
+
 ## [0.30.0]
 
 - extended context memory mode for Subagents to Full context or Last message
