@@ -222,7 +222,7 @@ src/
           CommandOutputMessageBlock.tsx
           CopyMessageButton.tsx
           CustomCommandBashBlock.tsx
-          EditFileToolMessage.tsx
+          FileEditToolMessage.tsx
           FileWriteToolMessage.tsx
           GroupMessageBlock.tsx
           index.ts
@@ -244,11 +244,13 @@ src/
         project/
           AddFileDialog.tsx
           FileFinder.tsx
+          MobileSidebar.tsx
           NoProjectsOpen.tsx
           OpenProjectDialog.tsx
           ProjectBar.tsx
           ProjectTabs.tsx
           ProjectView.tsx
+          SidebarContent.tsx
           TodoListItem.tsx
           TodoWindow.tsx
         PromptField/
@@ -327,6 +329,7 @@ src/
         useOS.ts
         useParsedContent.ts
         useRequestyModels.ts
+        useResponsive.ts
         useSearchText.tsx
         useVersions.ts
       i18n/
@@ -357,7 +360,6 @@ src/
         routes.ts
         string-utils.ts
       App.tsx
-      env.d.ts
       fonts.css
       main.css
       main.tsx
@@ -1549,7 +1551,8 @@ File: src/common/locales/en.json
     "editingLastMessage": "Editing last message",
     "cancelEdit": "Cancel",
     "group": "Group",
-    "scrollToBottom": "Scroll to bottom"
+    "scrollToBottom": "Scroll to bottom",
+    "messageBar": "Message Bar"
   },
   "errors": {
     "frozenTitle": "AIDER FROZEN?",
@@ -1825,7 +1828,8 @@ File: src/common/locales/en.json
   "projectBar": {
     "toggleMarkdown": "Markdown rendering",
     "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",
-    "aider": "Aider"
+    "aider": "Aider",
+    "toggleSidebar": "Toggle sidebar"
   },
   "reasoningEffort": {
     "label": "Reasoning",
@@ -2366,7 +2370,8 @@ File: src/common/locales/zh.json
     "editingLastMessage": "正在编辑最后一条消息",
     "cancelEdit": "取消编辑",
     "group": "分组",
-    "scrollToBottom": "滚动到底部"
+    "scrollToBottom": "滚动到底部",
+    "messageBar": "消息栏"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",
@@ -2660,7 +2665,8 @@ File: src/common/locales/zh.json
   "projectBar": {
     "toggleMarkdown": "Markdown 渲染",
     "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。",
-    "aider": "Aider"
+    "aider": "Aider",
+    "toggleSidebar": "切换侧边栏"
   },
   "reasoningEffort": {
     "label": "推理",
@@ -7897,13 +7903,17 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Diff, Hunk, parseDiff } from 'react-diff-view';
 import { diffLines, formatLines } from 'unidiff';
+import { useDebounce } from '@reactuses/core';
 ⋮----
 import { createTokens } from './utils';
+⋮----
+import { useResponsive } from '@/hooks/useResponsive';
 ⋮----
 type Props = {
   oldValue: string;
   newValue: string;
   language: string;
+  isComplete?: boolean;
 };
 ⋮----
 export const DiffViewer = (
@@ -8595,7 +8605,7 @@ type Props = {
 const toggleAccordion = () =>
 
 ================
-File: src/renderer/src/components/message/EditFileToolMessage.tsx
+File: src/renderer/src/components/message/FileEditToolMessage.tsx
 ================
 import { useTranslation } from 'react-i18next';
 import { RiToolsFill } from 'react-icons/ri';
@@ -8648,7 +8658,7 @@ import { useTranslation } from 'react-i18next';
 import { LocalizedString, UsageReportData } from '@common/types';
 ⋮----
 import { MessageBlock } from './MessageBlock';
-import { UsageInfo } from './UsageInfo';
+import { MessageBar } from './MessageBar';
 ⋮----
 import { Accordion } from '@/components/common/Accordion';
 import { GroupMessage, Message, ResponseMessage, ToolMessage, isResponseMessage, isToolMessage } from '@/types/message';
@@ -8734,6 +8744,7 @@ import { useTranslation } from 'react-i18next';
 import { UsageReportData } from '@common/types';
 import { MdDeleteForever, MdRedo, MdEdit } from 'react-icons/md';
 import { FaEllipsisVertical } from 'react-icons/fa6';
+import { twMerge } from 'tailwind-merge';
 ⋮----
 import { IconButton } from '../common/IconButton';
 ⋮----
@@ -8743,7 +8754,8 @@ import { UsageInfo } from './UsageInfo';
 import { useClickOutside } from '@/hooks/useClickOutside';
 ⋮----
 type Props = {
-  content: string;
+  className?: string;
+  content?: string;
   usageReport?: UsageReportData;
   remove?: () => void;
   redo?: () => void;
@@ -8777,6 +8789,10 @@ import { LogMessageBlock } from './LogMessageBlock';
 import { UserMessageBlock } from './UserMessageBlock';
 import { ReflectedMessageBlock } from './ReflectedMessageBlock';
 import { ResponseMessageBlock } from './ResponseMessageBlock';
+import { ToolMessageBlock } from './ToolMessageBlock';
+import { FileWriteToolMessage } from './FileWriteToolMessage';
+import { FileEditToolMessage } from './FileEditToolMessage';
+import { SubagentToolMessage } from './SubagentToolMessage';
 ⋮----
 import {
   isCommandOutputMessage,
@@ -8790,10 +8806,6 @@ import {
   Message,
   ToolMessage,
 } from '@/types/message';
-import { ToolMessageBlock } from '@/components/message/ToolMessageBlock';
-import { FileWriteToolMessage } from '@/components/message/FileWriteToolMessage';
-import { EditFileToolMessage } from '@/components/message/EditFileToolMessage';
-import { SubagentToolMessage } from '@/components/message/SubagentToolMessage';
 ⋮----
 type Props = {
   baseDir: string;
@@ -9319,6 +9331,51 @@ const handleBrowse = async (browseType: 'file' | 'directory') =>
 // eslint-disable-next-line no-console
 
 ================
+File: src/renderer/src/components/project/MobileSidebar.tsx
+================
+import React from 'react';
+import { motion } from 'framer-motion';
+import { clsx } from 'clsx';
+import { Mode, TokensInfoData } from '@common/types';
+import { FiChevronDown } from 'react-icons/fi';
+⋮----
+import { SidebarContent } from '@/components/project/SidebarContent';
+⋮----
+type AddFileDialogOptions = {
+  readOnly: boolean;
+};
+⋮----
+type Props = {
+  showSidebar: boolean;
+  setShowSidebar: (show: boolean) => void;
+  baseDir: string;
+  allFiles: string[];
+  tokensInfo: TokensInfoData | null;
+  aiderTotalCost: number;
+  maxInputTokens: number;
+  clearMessages: (clearContext?: boolean) => void;
+  runCommand: (command: string) => void;
+  restartProject: () => void;
+  mode: Mode;
+  setAddFileDialogOptions: React.Dispatch<React.SetStateAction<AddFileDialogOptions | null>>;
+};
+⋮----
+export const MobileSidebar = ({
+  showSidebar,
+  setShowSidebar,
+  baseDir,
+  allFiles,
+  tokensInfo,
+  aiderTotalCost,
+  maxInputTokens,
+  clearMessages,
+  runCommand,
+  restartProject,
+  mode,
+  setAddFileDialogOptions,
+}: Props) =>
+
+================
 File: src/renderer/src/components/project/NoProjectsOpen.tsx
 ================
 import { useTranslation } from 'react-i18next';
@@ -9370,7 +9427,7 @@ File: src/renderer/src/components/project/ProjectBar.tsx
 ================
 import { EditFormat, Mode, ModelsData, RawModelInfo, SessionData } from '@common/types';
 import React, { ReactNode, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { BsCodeSlash, BsFilter } from 'react-icons/bs';
+import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
 import { IoMdClose } from 'react-icons/io';
@@ -9391,6 +9448,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showSuccessNotification } from '@/utils/notifications';
 import { useApi } from '@/context/ApiContext';
+import { useResponsive } from '@/hooks/useResponsive';
 ⋮----
 export type ProjectTopBarRef = {
   openMainModelSelector: (model?: string) => void;
@@ -9407,6 +9465,7 @@ type Props = {
   onRenderMarkdownChanged: (value: boolean) => void;
   onExportSessionToImage: () => void;
   runCommand: (command: string) => void;
+  onToggleSidebar: () => void;
 };
 ⋮----
 // optimistic update
@@ -9432,6 +9491,8 @@ type Props = {
 // Original horizontal layout for other modes
 ⋮----
 data-tooltip-content=
+⋮----
+tooltip=
 
 ================
 File: src/renderer/src/components/project/ProjectTabs.tsx
@@ -9518,20 +9579,21 @@ import {
   ToolMessage,
   UserMessage,
 } from '@/types/message';
-import { ContextFiles } from '@/components/ContextFiles';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { useSettings } from '@/context/SettingsContext';
 import { useProjectSettings } from '@/context/ProjectSettingsContext';
 import { AddFileDialog } from '@/components/project/AddFileDialog';
 import { ProjectBar, ProjectTopBarRef } from '@/components/project/ProjectBar';
 import { PromptField, PromptFieldRef } from '@/components/PromptField';
-import { CostInfo } from '@/components/CostInfo';
 import { Button } from '@/components/common/Button';
 import { TodoWindow } from '@/components/project/TodoWindow';
 import { TerminalView, TerminalViewRef } from '@/components/terminal/TerminalView';
+import { MobileSidebar } from '@/components/project/MobileSidebar';
+import { SidebarContent } from '@/components/project/SidebarContent';
 ⋮----
 import { useSearchText } from '@/hooks/useSearchText';
 import { useApi } from '@/context/ApiContext';
+import { useResponsive } from '@/hooks/useResponsive';
 ⋮----
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -9679,6 +9741,40 @@ const handleClearAllTodos = async () =>
 const handleTerminalViewResize = () =>
 ⋮----
 const handleCopyTerminalOutput = (output: string) =>
+
+================
+File: src/renderer/src/components/project/SidebarContent.tsx
+================
+import { TokensInfoData, Mode } from '@common/types';
+⋮----
+import { ContextFiles } from '@/components/ContextFiles';
+import { CostInfo } from '@/components/CostInfo';
+⋮----
+type Props = {
+  baseDir: string;
+  allFiles: string[];
+  tokensInfo: TokensInfoData | null;
+  aiderTotalCost: number;
+  maxInputTokens: number;
+  clearMessages: (clearContext?: boolean) => void;
+  runCommand: (command: string) => void;
+  restartProject: () => void;
+  mode: Mode;
+  showFileDialog: () => void;
+};
+⋮----
+export const SidebarContent = ({
+  baseDir,
+  allFiles,
+  tokensInfo,
+  aiderTotalCost,
+  maxInputTokens,
+  clearMessages,
+  runCommand,
+  restartProject,
+  mode,
+  showFileDialog,
+}: Props) =>
 
 ================
 File: src/renderer/src/components/project/TodoListItem.tsx
@@ -11990,6 +12086,16 @@ const fetchModels = async () =>
 // eslint-disable-next-line no-console
 
 ================
+File: src/renderer/src/hooks/useResponsive.ts
+================
+import { useState, useEffect } from 'react';
+import { debounce } from 'lodash';
+⋮----
+export const useResponsive = () =>
+⋮----
+const checkScreenSize = () =>
+
+================
 File: src/renderer/src/hooks/useSearchText.tsx
 ================
 import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
@@ -13730,6 +13836,7 @@ import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { THEMES } from '@common/types';
 ⋮----
+import { useResponsive } from '@/hooks/useResponsive';
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
 import { ContextMenuProvider, useContextMenu } from '@/context/ContextMenuContext';
@@ -13749,11 +13856,6 @@ const ThemeAndFontManager = () =>
 const App = () =>
 ⋮----
 useEffect(() =>
-
-================
-File: src/renderer/src/env.d.ts
-================
-/// <reference types="vite/client" />
 
 ================
 File: src/renderer/src/fonts.css
@@ -13830,7 +13932,7 @@ File: src/renderer/index.html
 <html>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=1000" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>AiderDesk</title>
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
@@ -14113,6 +14215,7 @@ File: package.json
     "@opentelemetry/auto-instrumentations-node": "^0.62.0",
     "@opentelemetry/sdk-node": "^0.203.0",
     "@opentelemetry/sdk-trace-base": "^2.0.1",
+    "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
     "@requesty/ai-sdk": "^0.0.9",
     "@smithy/eventstream-codec": "^2.0.0",
