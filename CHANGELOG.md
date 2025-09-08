@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - updated to React 19 for possible performance improvements
+- added better undo last commit support even outside of Aider modes
 
 ## [0.30.0]
 
