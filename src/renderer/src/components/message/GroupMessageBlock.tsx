@@ -105,7 +105,7 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
           ))}
         </div>
       </Accordion>
-      <div className="px-2 pb-3">
+      <div className="px-3 pb-3">
         <MessageBar className="mt-0" usageReport={aggregatedUsage} />
       </div>
     </div>

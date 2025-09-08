@@ -538,6 +538,7 @@ export interface CustomCommand {
   arguments: CustomCommandArgument[];
   template: string;
   includeContext?: boolean;
+  autoApprove?: boolean;
 }
 
 export interface TerminalData {

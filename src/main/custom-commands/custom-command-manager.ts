@@ -149,12 +149,14 @@ export class CustomCommandManager {
       const args = Array.isArray(parsed.arguments) ? parsed.arguments : [];
       const template = parsed.__content?.trim() || '';
       const includeContext = typeof parsed.includeContext === 'boolean' ? parsed.includeContext : true;
+      const autoApprove = typeof parsed.autoApprove === 'boolean' ? parsed.autoApprove : undefined;
       commands.set(name, {
         name,
         description: parsed.description || 'Not specified',
         arguments: args,
         template,
         includeContext,
+        autoApprove,
       });
     } catch (err) {
       logger.error(`Failed to parse command file ${filePath}: ${err}`);
