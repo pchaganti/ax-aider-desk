@@ -6,6 +6,7 @@ import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { THEMES } from '@common/types';
 
+import { useResponsive } from '@/hooks/useResponsive';
 import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
 import { ContextMenuProvider, useContextMenu } from '@/context/ContextMenuContext';
@@ -40,6 +41,7 @@ const AnimatedRoutes = () => {
   const { i18n } = useTranslation();
   const location = useLocation();
   const { settings } = useSettings();
+  const { isMobile: _isMobile, isTablet: _isTablet, isDesktop: _isDesktop } = useResponsive();
   useContextMenu();
 
   useEffect(() => {
@@ -49,7 +51,7 @@ const AnimatedRoutes = () => {
   }, [i18n, settings]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
+    <div className="absolute inset-0">
       <AnimatePresence initial={true}>
         <motion.div
           key={location.pathname}
