@@ -3655,6 +3655,7 @@ export interface CustomCommand {
   arguments: CustomCommandArgument[];
   template: string;
   includeContext?: boolean;
+  autoApprove?: boolean;
 }
 ⋮----
 export interface TerminalData {
@@ -5308,7 +5309,15 @@ public sendDropFile(filePath: string, readOnly?: boolean, noUpdate?: boolean): v
 ⋮----
 private sendContextFilesUpdated()
 ⋮----
-public runCommand(command: string, addToHistory = true)
+public async runCommand(command: string, addToHistory = true)
+⋮----
+// Get the current HEAD commit hash before undoing
+⋮----
+// Get all files from the last commit
+⋮----
+// Checkout each file's version at HEAD~1
+⋮----
+// Reset --soft HEAD~1
 ⋮----
 public updateContextFiles(contextFiles: ContextFile[])
 ⋮----
@@ -5367,7 +5376,7 @@ public async addContextMessage(role: MessageRole, content: string, usageReport?:
 ⋮----
 public sendAddMessage(role: MessageRole = MessageRole.User, content: string, acknowledge = true)
 ⋮----
-public clearContext(addToHistory = false, updateContextInfo = true)
+public async clearContext(addToHistory = false, updateContextInfo = true)
 ⋮----
 public interruptResponse()
 ⋮----
@@ -5394,11 +5403,11 @@ public async removeLastMessage()
 ⋮----
 public async redoLastUserPrompt(mode: Mode, updatedPrompt?: string)
 ⋮----
-this.reloadConnectorMessages(); // This sends 'clear-project' which truncates UI messages
+await this.reloadConnectorMessages(); // This sends 'clear-project' which truncates UI messages
 ⋮----
 // No need to await runPrompt here, let it run in the background
 ⋮----
-private reloadConnectorMessages()
+private async reloadConnectorMessages()
 ⋮----
 public async compactConversation(mode: Mode, customInstructions?: string)
 ⋮----
@@ -5485,6 +5494,8 @@ public async runCustomCommand(commandName: string, args: string[], mode: Mode = 
 // Re-throw other errors
 ⋮----
 // Agent mode logic
+⋮----
+// Override profile's autoApprove if command specifies it
 ⋮----
 // All other modes (code, ask, architect)
 ⋮----
@@ -14161,7 +14172,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.30.0-dev",
+  "version": "0.31.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -14232,7 +14243,7 @@ File: package.json
     "@xterm/xterm": "^5.5.0",
     "ai": "^4.3.16",
     "axios": "^1.8.3",
-    "babel-plugin-react-compiler": "^19.1.0-rc.2",
+    "babel-plugin-react-compiler": "^19.1.0-rc.3",
     "better-sqlite3": "^12.0.0",
     "cheerio": "^1.0.0",
     "chokidar": "^4.0.3",
@@ -14290,7 +14301,7 @@ File: package.json
     "textarea-caret": "^3.1.0",
     "tmp": "^0.2.3",
     "tree-kill": "^1.2.2",
-    "turndown": "^7.1.2",
+    "turndown": "^7.2.1",
     "unidiff": "^1.0.4",
     "uuid": "^11.0.2",
     "vite-plugin-prismjs": "^0.0.11",
@@ -14323,24 +14334,24 @@ File: package.json
     "@vitejs/plugin-react": "^4.3.1",
     "adm-zip": "^0.5.16",
     "autoprefixer": "^10.4.20",
-    "electron": "^37.2.6",
+    "electron": "^37.4.0",
     "electron-builder": "^26.0.12",
     "electron-vite": "^4.0.0",
-    "esbuild": "^0.25.1",
+    "esbuild": "^0.25.9",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.7.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-react": "^7.37.2",
-    "eslint-plugin-react-hooks": "^6.0.0-rc.1",
+    "eslint-plugin-react-hooks": "^6.0.0",
     "globals": "^15.9.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.4.1",
     "node-fetch": "^3.3.2",
     "prettier": "^3.3.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "sass-embedded": "^1.89.0",
     "tailwind-scrollbar": "^3.1.0",
     "tailwindcss": "^3.4.14",
