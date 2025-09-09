@@ -1,7 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, KeyboardEvent, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdClose, MdKeyboardArrowUp, MdKeyboardReturn } from 'react-icons/md';
-import { useDebounce } from 'react-use';
+import { useDebounce } from '@reactuses/core';
 import { twMerge } from 'tailwind-merge';
 
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -24,19 +24,11 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
   ({ className, models, selectedModel, onChange, preferredModels, removePreferredModel }, ref) => {
     const { t } = useTranslation();
     const [modelSearchTerm, setModelSearchTerm] = useState('');
-    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [highlightedModelIndex, setHighlightedModelIndex] = useState(-1);
     const [visible, show, hide] = useBooleanState(false);
     const modelSelectorRef = useRef<HTMLDivElement>(null);
     const highlightedModelRef = useRef<HTMLDivElement>(null);
-
-    useDebounce(
-      () => {
-        setDebouncedSearchTerm(modelSearchTerm);
-      },
-      300,
-      [modelSearchTerm],
-    );
+    const debouncedSearchTerm = useDebounce(modelSearchTerm, 300);
 
     useClickOutside(modelSelectorRef, hide);
 
