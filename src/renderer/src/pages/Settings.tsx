@@ -52,7 +52,7 @@ export const Settings = ({
   const renderTab = (label: string) => (
     <Tab
       className={({ selected }) =>
-        `relative px-6 py-3 text-sm font-medium transition-all duration-200 uppercase tracking-wide ${
+        `relative px-6 py-3 text-sm font-medium transition-all duration-200 uppercase tracking-wide focus:outline-none ${
           selected ? 'text-text-primary' : 'text-text-muted  hover:text-text-secondary hover:bg-bg-secondary-light'
         } first:rounded-tl-lg border-r border-border-default-dark last:border-r-0`
       }

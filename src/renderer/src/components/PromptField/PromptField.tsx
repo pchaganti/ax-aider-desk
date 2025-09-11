@@ -13,7 +13,7 @@ import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/type
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { useDebounce } from 'react-use';
+import { useDebounce } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdPlaylistRemove, MdStop } from 'react-icons/md';
@@ -147,7 +147,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
   ) => {
     const { t } = useTranslation();
     const [text, setText] = useState('');
-    const [debouncedText, setDebouncedText] = useState('');
+    const debouncedText = useDebounce(text, 30);
     const [placeholderIndex, setPlaceholderIndex] = useState(Math.floor(Math.random() * PLACEHOLDER_COUNT));
     const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
     const [highlightedHistoryItemIndex, setHighlightedHistoryItemIndex] = useState(0);
@@ -220,15 +220,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         options: words.map((w) => ({ label: w, type: 'text' })),
       };
     };
-
-    useDebounce(
-      () => {
-        setDebouncedText(text);
-        setHighlightedHistoryItemIndex(0);
-      },
-      30,
-      [text],
-    );
 
     const allHistoryItems =
       historyMenuVisible && debouncedText.trim().length > 0
@@ -446,6 +437,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         setSelectedAnswer(question.defaultAnswer || 'y');
       }
     }, [question]);
+
+    useEffect(() => {
+      setHighlightedHistoryItemIndex(0);
+    }, [debouncedText]);
 
     useEffect(() => {
       if (!disabled && isActive && editorRef.current) {

@@ -15,6 +15,7 @@ import {
   TokensInfoData,
   UserMessageData,
   VersionsInfo,
+  AutocompletionData,
 } from '@common/types';
 
 import logger from '@/logger';
@@ -84,7 +85,7 @@ export class EventManager {
 
   // Autocompletion events
   sendUpdateAutocompletion(baseDir: string, words: string[], allFiles: string[], models: string[]): void {
-    const data = {
+    const data: AutocompletionData = {
       baseDir,
       words,
       allFiles,

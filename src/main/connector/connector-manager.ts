@@ -127,7 +127,7 @@ export class ConnectorManager {
         }
 
         logger.debug('Updating autocompletion', { baseDir: connector.baseDir });
-        this.projectManager.getProject(connector.baseDir).updateAutocompletionData(message.words, message.allFiles, message.models);
+        void this.projectManager.getProject(connector.baseDir).updateAutocompletionData(message.words, message.models);
       } else if (isAskQuestionMessage(message)) {
         const connector = this.findConnectorBySocket(socket);
         if (!connector) {
