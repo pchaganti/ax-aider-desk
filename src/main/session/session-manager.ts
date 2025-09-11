@@ -402,7 +402,7 @@ export class SessionManager {
 
   async loadMessages(contextMessages: ContextMessage[]): Promise<void> {
     // Clear all current messages
-    this.project.clearContext(false, false);
+    await this.project.clearContext(false, false);
 
     this.contextMessages = contextMessages;
 

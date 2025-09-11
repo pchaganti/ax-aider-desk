@@ -6,6 +6,7 @@
 - added better undo last commit support even outside of Aider modes
 - added support for optional autoApprove property in custom commands
 - improved support when using subfolder of git root as project directory
+- properly loading messages from the last session on startup
 
 ## [0.30.0]
 
