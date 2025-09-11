@@ -9,8 +9,9 @@ import socketio
 import tempfile
 import threading
 import uuid
+from pathlib import Path
 from typing import Dict, Optional, Any, Coroutine
-from aider import models
+from aider import models, utils
 from aider.coders import Coder
 from aider.commands import Commands
 from aider.io import InputOutput, AutoCompleter
@@ -788,22 +789,6 @@ class Connector:
     })
     await self.send_current_models()
 
-  async def _send_tokenized_autocompletion(self, tokenized_words, initial_words, all_relative_files, all_models):
-    """Sends the final autocompletion message after tokenization."""
-    try:
-      # Combine initial words with tokenized words
-      final_words = initial_words + tokenized_words
-
-      # Send the final list of words
-      await self.send_action({
-        "action": "update-autocompletion",
-        "words": final_words,
-        "allFiles": all_relative_files,
-        "models": all_models
-      })
-    except Exception as e:
-      self.coder.io.tool_error(f"Error sending tokenized autocompletion: {str(e)}")
-
   def _tokenize_files_sync(self, root, rel_fnames, addable_rel_fnames, encoding, abs_read_only_fnames):
     """Synchronous helper function for file tokenization."""
     try:
@@ -1047,15 +1032,11 @@ class Connector:
         else:
           relative_path = file_path
         rel_fnames.append(relative_path)
-      all_relative_files = self.coder.get_all_relative_files()
       all_models = sorted(set(models.fuzzy_match_models("") + [model_settings.name for model_settings in models.MODEL_SETTINGS]))
 
-      # Initialize words with just the filenames and send immediately
-      initial_words = [fname.split('/')[-1] for fname in all_relative_files]
       await self.send_action({
         "action": "update-autocompletion",
-        "words": initial_words,
-        "allFiles": all_relative_files,
+        "words": [],
         "models": all_models
       })
 
@@ -1075,9 +1056,11 @@ class Connector:
               self.coder.io.encoding,
               self.coder.abs_read_only_fnames
             )
-            await self._send_tokenized_autocompletion(
-              tokenized_words, initial_words, all_relative_files, all_models
-            )
+            await self.send_action({
+              "action": "update-autocompletion",
+              "words": tokenized_words,
+              "models": all_models
+            })
           except asyncio.CancelledError:
             # Task was cancelled, do nothing.
             pass

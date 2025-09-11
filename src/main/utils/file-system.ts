@@ -3,6 +3,7 @@ import * as path from 'path';
 import fsPromises from 'fs/promises';
 
 import ignore from 'ignore';
+import { simpleGit } from 'simple-git';
 import { fileExists } from '@common/utils';
 
 import logger from '@/logger';
@@ -96,5 +97,18 @@ export const isFileIgnored = async (projectBaseDir: string, filePath: string): P
   } catch (error) {
     logger.debug(`Failed to check if file is ignored: ${filePath}`, { error });
     return false;
+  }
+};
+
+export const getAllFiles = async (baseDir: string): Promise<string[]> => {
+  try {
+    const git = simpleGit(baseDir);
+    const result = await git.raw(['ls-files']);
+    const files = result.trim().split('\n').filter(Boolean);
+    logger.debug('Retrieved tracked files from Git', { count: files.length, baseDir });
+    return files;
+  } catch (error) {
+    logger.warn('Failed to get tracked files from Git', { error, baseDir });
+    return []; // Return empty array if Git command fails
   }
 };

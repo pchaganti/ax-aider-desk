@@ -465,7 +465,7 @@ export const ProjectView = ({ project, modelsInfo, isActive = false }: Props) =>
     const handleUpdateAutocompletion = ({ allFiles, models, words }: AutocompletionData) => {
       setAllFiles(allFiles);
       setAvailableModels(models);
-      setAutocompletionWords(words);
+      setAutocompletionWords([...words, ...allFiles]);
     };
 
     const handleUpdateAiderModels = (data: ModelsData) => {

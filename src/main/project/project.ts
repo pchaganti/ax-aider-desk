@@ -66,6 +66,7 @@ import { parse } from '@dotenvx/dotenvx';
 
 import type { SimpleGit } from 'simple-git';
 
+import { getAllFiles } from '@/utils/file-system';
 import { getCompactConversationPrompt, getInitProjectPrompt, getSystemPrompt } from '@/agent/prompts';
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from '@/constants';
 import { TaskManager } from '@/tasks';
@@ -88,7 +89,6 @@ export class Project {
   private currentQuestion: QuestionData | null = null;
   private currentQuestionResolves: ((answer: [string, string | undefined]) => void)[] = [];
   private questionAnswers: Map<string, 'y' | 'n'> = new Map();
-  private allTrackedFiles: string[] = [];
   private currentResponseMessageId: string | null = null;
   private currentPromptContext: PromptContext | null = null;
   private inputHistoryFile = '.aider.input.history';
@@ -165,9 +165,11 @@ export class Project {
     this.currentQuestionResolves = [];
     this.questionAnswers.clear();
 
+    this.updateAutocompletionData([], []);
+    this.sendContextFilesUpdated();
+
     await Promise.all([this.startAider(), this.sendInputHistoryUpdatedEvent(), this.updateContextInfo()]);
 
-    this.sendContextFilesUpdated();
     this.eventManager.sendProjectStarted(this.baseDir);
   }
 
@@ -933,25 +935,31 @@ export class Project {
     if (command.trim() === 'undo') {
       sendToConnectors = false;
       try {
+        // Get the Git root directory to handle monorepo scenarios
+        const gitRoot = await this.git.revparse(['--show-toplevel']);
+        const gitRootDir = simpleGit(gitRoot);
+
         // Get the current HEAD commit hash before undoing
-        const commitHash = await this.git.revparse(['HEAD']);
-        const commitMessage = await this.git.show(['--format=%s', '--no-patch', 'HEAD']);
+        const commitHash = await gitRootDir.revparse(['HEAD']);
+        const commitMessage = await gitRootDir.show(['--format=%s', '--no-patch', 'HEAD']);
 
         // Get all files from the last commit
-        const lastCommitFiles = await this.git.show(['--name-only', '--pretty=format:', 'HEAD']);
+        const lastCommitFiles = await gitRootDir.show(['--name-only', '--pretty=format:', 'HEAD']);
         const files = lastCommitFiles.split('\n').filter((file) => file.trim() !== '');
 
         // Checkout each file's version at HEAD~1
         for (const file of files) {
-          await this.git.checkout(['HEAD~1', '--', file]);
+          await gitRootDir.checkout(['HEAD~1', '--', file]);
         }
 
         // Reset --soft HEAD~1
-        await this.git.reset(['--soft', 'HEAD~1']);
+        await gitRootDir.reset(['--soft', 'HEAD~1']);
         logger.info(`Reverted: ${commitMessage} (${commitHash.substring(0, 7)})`);
         this.addLogMessage('info', `Reverted ${commitHash.substring(0, 7)}: ${commitMessage}`);
       } catch (error) {
-        logger.error('Failed to undo last commit:', { error: error instanceof Error ? error.message : String(error) });
+        logger.error('Failed to undo last commit:', {
+          error: error instanceof Error ? error.message : String(error),
+        });
         this.addLogMessage('error', 'Failed to undo last commit.');
       }
     }
@@ -1098,10 +1106,8 @@ export class Project {
     });
   }
 
-  public updateAutocompletionData(words: string[], allFiles: string[], models: string[]) {
-    this.allTrackedFiles = allFiles;
-
-    this.eventManager.sendUpdateAutocompletion(this.baseDir, words, allFiles, models);
+  public async updateAutocompletionData(words: string[], models: string[]) {
+    this.eventManager.sendUpdateAutocompletion(this.baseDir, words, await getAllFiles(this.baseDir), models);
   }
 
   public updateAiderModels(modelsData: ModelsData) {
@@ -1140,9 +1146,9 @@ export class Project {
     });
   }
 
-  public getAddableFiles(searchRegex?: string): string[] {
+  public async getAddableFiles(searchRegex?: string): Promise<string[]> {
     const contextFilePaths = new Set(this.getContextFiles().map((file) => file.path));
-    let files = this.allTrackedFiles.filter((file) => !contextFilePaths.has(file));
+    let files = (await getAllFiles(this.baseDir)).filter((file) => !contextFilePaths.has(file));
 
     if (searchRegex) {
       try {
