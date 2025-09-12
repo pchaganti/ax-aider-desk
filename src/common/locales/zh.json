@@ -167,6 +167,7 @@
     "modelName": "模型",
     "baseUrlPlaceholder": "例如 http://localhost:8080/v1",
     "reasoningEffort": "推理努力",
+    "reasoningEffortNone": "无",
     "reasoningEffortMinimal": "最小",
     "reasoningEffortLow": "低",
     "reasoningEffortMedium": "中",

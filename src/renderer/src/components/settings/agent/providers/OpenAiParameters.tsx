@@ -16,9 +16,10 @@ export const OpenAiParameters = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
 
   const apiKey = provider.apiKey || '';
-  const reasoningEffort = provider.reasoningEffort || ReasoningEffort.Medium;
+  const reasoningEffort = provider.reasoningEffort || ReasoningEffort.None;
 
   const reasoningOptions: Option[] = [
+    { value: ReasoningEffort.None, label: t('openai.reasoningEffortNone') },
     { value: ReasoningEffort.Minimal, label: t('openai.reasoningEffortMinimal') },
     { value: ReasoningEffort.Low, label: t('openai.reasoningEffortLow') },
     { value: ReasoningEffort.Medium, label: t('openai.reasoningEffortMedium') },
