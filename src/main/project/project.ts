@@ -165,7 +165,7 @@ export class Project {
     this.currentQuestionResolves = [];
     this.questionAnswers.clear();
 
-    this.updateAutocompletionData([], []);
+    await this.updateAutocompletionData([], []);
     this.sendContextFilesUpdated();
 
     await Promise.all([this.startAider(), this.sendInputHistoryUpdatedEvent(), this.updateContextInfo()]);
@@ -947,9 +947,16 @@ export class Project {
         const lastCommitFiles = await gitRootDir.show(['--name-only', '--pretty=format:', 'HEAD']);
         const files = lastCommitFiles.split('\n').filter((file) => file.trim() !== '');
 
-        // Checkout each file's version at HEAD~1
+        // For each file, check if it exists at HEAD~1 before attempting checkout
         for (const file of files) {
-          await gitRootDir.checkout(['HEAD~1', '--', file]);
+          try {
+            // Check if file exists at HEAD~1
+            await gitRootDir.show(['HEAD~1', '--', file]);
+            // If it exists, checkout the previous version
+            await gitRootDir.checkout(['HEAD~1', '--', file]);
+          } catch {
+            await gitRootDir.rm(file);
+          }
         }
 
         // Reset --soft HEAD~1

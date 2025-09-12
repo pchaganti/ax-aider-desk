@@ -862,8 +862,10 @@ def get_context_files(self, coder=None)
 ⋮----
 coder = self.coder
 ⋮----
-inchat_files = coder.get_inchat_relative_files()
-read_only_files = [coder.get_rel_fname(fname) for fname in coder.abs_read_only_fnames]
+def get_rel_fname(fname)
+⋮----
+editable_files = [get_rel_fname(fname) for fname in coder.abs_fnames]
+read_only_files = [get_rel_fname(fname) for fname in coder.abs_read_only_fnames]
 ⋮----
 async def send_add_context_message(self, role, content)
 ⋮----
@@ -5306,7 +5308,11 @@ public async runCommand(command: string, addToHistory = true)
 ⋮----
 // Get all files from the last commit
 ⋮----
-// Checkout each file's version at HEAD~1
+// For each file, check if it exists at HEAD~1 before attempting checkout
+⋮----
+// Check if file exists at HEAD~1
+⋮----
+// If it exists, checkout the previous version
 ⋮----
 // Reset --soft HEAD~1
 ⋮----

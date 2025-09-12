@@ -1050,9 +1050,9 @@ class Connector:
           try:
             tokenized_words = await asyncio.to_thread(
               self._tokenize_files_sync,
-              self.coder.root,
+              self.base_dir,
               rel_fnames,
-              self.coder.get_addable_relative_files(),
+              [],
               self.coder.io.encoding,
               self.coder.abs_read_only_fnames
             )
@@ -1100,11 +1100,17 @@ class Connector:
     if not coder:
       coder = self.coder
 
-    inchat_files = coder.get_inchat_relative_files()
-    read_only_files = [coder.get_rel_fname(fname) for fname in coder.abs_read_only_fnames]
+    def get_rel_fname(fname):
+      try:
+        return os.path.relpath(fname, self.base_dir)
+      except ValueError:
+        return fname
+
+    editable_files = [get_rel_fname(fname) for fname in coder.abs_fnames]
+    read_only_files = [get_rel_fname(fname) for fname in coder.abs_read_only_fnames]
 
     return [
-      {"path": fname, "readOnly": False} for fname in inchat_files
+      {"path": fname, "readOnly": False} for fname in editable_files
     ] + [
       {"path": fname, "readOnly": True} for fname in read_only_files
     ]
