@@ -728,15 +728,6 @@ async def on_connect(self)
 ⋮----
 """Handle connection event."""
 ⋮----
-async def _send_tokenized_autocompletion(self, tokenized_words, initial_words, all_relative_files, all_models)
-⋮----
-"""Sends the final autocompletion message after tokenization."""
-⋮----
-# Combine initial words with tokenized words
-final_words = initial_words + tokenized_words
-⋮----
-# Send the final list of words
-⋮----
 def _tokenize_files_sync(self, root, rel_fnames, addable_rel_fnames, encoding, abs_read_only_fnames)
 ⋮----
 """Synchronous helper function for file tokenization."""
@@ -844,11 +835,7 @@ relative_path = os.path.relpath(file_path, self.base_dir)
 ⋮----
 relative_path = file_path
 ⋮----
-all_relative_files = self.coder.get_all_relative_files()
 all_models = sorted(set(models.fuzzy_match_models("") + [model_settings.name for model_settings in models.MODEL_SETTINGS]))
-⋮----
-# Initialize words with just the filenames and send immediately
-initial_words = [fname.split('/')[-1] for fname in all_relative_files]
 ⋮----
 # Run tokenization in a separate thread
 ⋮----
@@ -4890,6 +4877,7 @@ import {
   TokensInfoData,
   UserMessageData,
   VersionsInfo,
+  AutocompletionData,
 } from '@common/types';
 ⋮----
 import logger from '@/logger';
@@ -5140,6 +5128,7 @@ import { parse } from '@dotenvx/dotenvx';
 ⋮----
 import type { SimpleGit } from 'simple-git';
 ⋮----
+import { getAllFiles } from '@/utils/file-system';
 import { getCompactConversationPrompt, getInitProjectPrompt, getSystemPrompt } from '@/agent/prompts';
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TODOS_FILE, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from '@/constants';
 import { TaskManager } from '@/tasks';
@@ -5311,6 +5300,8 @@ private sendContextFilesUpdated()
 ⋮----
 public async runCommand(command: string, addToHistory = true)
 ⋮----
+// Get the Git root directory to handle monorepo scenarios
+⋮----
 // Get the current HEAD commit hash before undoing
 ⋮----
 // Get all files from the last commit
@@ -5340,7 +5331,7 @@ public async askQuestion(questionData: QuestionData, awaitAnswer = true): Promis
 ⋮----
 // Store the resolve function for the promise
 ⋮----
-public updateAutocompletionData(words: string[], allFiles: string[], models: string[])
+public async updateAutocompletionData(words: string[], models: string[])
 ⋮----
 public updateAiderModels(modelsData: ModelsData)
 ⋮----
@@ -5348,7 +5339,7 @@ public updateModels(mainModel: string, weakModel: string | null, editFormat: Edi
 ⋮----
 public setArchitectModel(architectModel: string)
 ⋮----
-public getAddableFiles(searchRegex?: string): string[]
+public async getAddableFiles(searchRegex?: string): Promise<string[]>
 ⋮----
 public getContextFiles(): ContextFile[]
 ⋮----
@@ -6577,6 +6568,7 @@ File: src/main/utils/file-system.ts
 import fsPromises from 'fs/promises';
 ⋮----
 import ignore from 'ignore';
+import { simpleGit } from 'simple-git';
 import { fileExists } from '@common/utils';
 ⋮----
 import logger from '@/logger';
@@ -6602,6 +6594,10 @@ export const isDirectory = async (path: string): Promise<boolean> =>
 export const isFileIgnored = async (projectBaseDir: string, filePath: string): Promise<boolean> =>
 ⋮----
 // Make the path relative to the base directory
+⋮----
+export const getAllFiles = async (baseDir: string): Promise<string[]> =>
+⋮----
+return []; // Return empty array if Git command fails
 
 ================
 File: src/main/utils/index.ts
@@ -10001,7 +9997,7 @@ import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/type
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { useDebounce } from 'react-use';
+import { useDebounce } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdPlaylistRemove, MdStop } from 'react-icons/md';
@@ -11699,7 +11695,7 @@ File: src/renderer/src/components/ModelSelector.tsx
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, KeyboardEvent, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdClose, MdKeyboardArrowUp, MdKeyboardReturn } from 'react-icons/md';
-import { useDebounce } from 'react-use';
+import { useDebounce } from '@reactuses/core';
 import { twMerge } from 'tailwind-merge';
 ⋮----
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -14289,7 +14285,6 @@ File: package.json
     "react-textarea-autosize": "^8.5.6",
     "react-toastify": "^10.0.6",
     "react-tooltip": "^5.28.0",
-    "react-use": "^17.5.1",
     "recharts": "^3.0.2",
     "refractor": "^3.6.0",
     "rehype-autolink-headings": "^7.1.0",
