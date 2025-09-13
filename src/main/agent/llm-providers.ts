@@ -30,7 +30,7 @@ import { AgentProfile, ReasoningEffort, UsageReportData } from '@common/types';
 import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
 
 import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
-import { ModelInfoManager } from '@/models/model-info-manager';
+import { ModelManager } from '@/models/model-manager';
 import { Project } from '@/project/project';
 
 export const createLlm = (provider: LlmProvider, model: string, env: Record<string, string | undefined> = {}): LanguageModel => {
@@ -263,7 +263,7 @@ type GoogleMetadata = {
 };
 
 export const calculateCost = (
-  modelInfoManager: ModelInfoManager,
+  modelInfoManager: ModelManager,
   profile: AgentProfile,
   sentTokens: number,
   receivedTokens: number,

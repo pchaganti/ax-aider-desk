@@ -2,8 +2,6 @@ import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GroqProvider } from '@common/agent';
 
-import { ProviderModels } from './ProviderModels';
-
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
@@ -21,10 +19,6 @@ export const GroqParameters = ({ provider, onChange }: Props) => {
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
-  };
-
-  const handleModelsChange = (updatedModels: string[]) => {
-    onChange({ ...provider, models: updatedModels });
   };
 
   return (
@@ -45,7 +39,6 @@ export const GroqParameters = ({ provider, onChange }: Props) => {
             : t('settings.agent.envVarPlaceholder', { envVar: 'GROQ_API_KEY' })
         }
       />
-      <ProviderModels models={provider.models || []} onChange={handleModelsChange} placeholder={t('groq.modelPlaceholder')} />
     </div>
   );
 };

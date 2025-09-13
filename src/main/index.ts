@@ -20,7 +20,7 @@ import { VersionsManager } from '@/versions';
 import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
-import { ModelInfoManager } from '@/models';
+import { ModelManager } from '@/models';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
 import { EventsHandler } from '@/events-handler';
@@ -142,9 +142,11 @@ const initManagers = async (
 
   void mcpManager.initMcpConnectors(store.getSettings().mcpServers, activeProject?.baseDir);
 
+  // Initialize event manager
+  const eventManager = new EventManager(mainWindow);
+
   // Initialize model info manager
-  const modelInfoManager = new ModelInfoManager();
-  void modelInfoManager.init();
+  const modelInfoManager = new ModelManager(store, eventManager);
 
   // Initialize data manager
   const dataManager = new DataManager();
@@ -152,9 +154,6 @@ const initManagers = async (
 
   // Initialize agent
   const agent = new Agent(store, mcpManager, modelInfoManager, telemetryManager);
-
-  // Initialize event manager
-  const eventManager = new EventManager(mainWindow);
 
   // Initialize project manager
   const projectManager = new ProjectManager(store, agent, telemetryManager, dataManager, eventManager);

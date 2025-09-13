@@ -3,12 +3,15 @@ import {
   BedrockProvider,
   DeepseekProvider,
   GeminiProvider,
+  GroqProvider,
   LlmProviderName,
+  LmStudioProvider,
   OllamaProvider,
   OpenAiCompatibleProvider,
   OpenAiProvider,
   OpenRouterProvider,
   RequestyProvider,
+  VertexAiProvider,
 } from '@common/agent';
 import { z } from 'zod';
 
@@ -372,12 +375,15 @@ export interface SettingsData {
     openai?: OpenAiProvider;
     anthropic?: AnthropicProvider;
     gemini?: GeminiProvider;
+    groq?: GroqProvider;
     bedrock?: BedrockProvider;
     deepseek?: DeepseekProvider;
     ollama?: OllamaProvider;
+    lmstudio?: LmStudioProvider;
     'openai-compatible'?: OpenAiCompatibleProvider;
     openrouter?: OpenRouterProvider;
     requesty?: RequestyProvider;
+    'vertex-ai'?: VertexAiProvider;
   };
   telemetryEnabled: boolean;
   telemetryInformed?: boolean;
@@ -525,6 +531,31 @@ export interface UsageDataRow {
   cache_read_tokens: number;
   cache_write_tokens: number;
   cost: number;
+}
+
+export interface Model {
+  id: string;
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
+  inputCostPerToken?: number;
+  outputCostPerToken?: number;
+  supportsTools?: boolean;
+  cacheReadInputTokenCost?: number;
+}
+
+export interface ProviderModels {
+  ollamaModels: Model[];
+  lmStudioModels: Model[];
+  openaiModels: Model[];
+  anthropicModels: Model[];
+  geminiModels: Model[];
+  bedrockModels: Model[];
+  deepseekModels: Model[];
+  groqModels: Model[];
+  openaiCompatibleModels: Model[];
+  openrouterModels: Model[];
+  requestyModels: Model[];
+  vertexAIModels: Model[];
 }
 
 export interface CustomCommandArgument {

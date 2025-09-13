@@ -1,14 +1,6 @@
 import { forwardRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  AVAILABLE_PROVIDERS,
-  isOllamaProvider,
-  LlmProviderName,
-  OpenAiCompatibleProvider,
-  OpenRouterProvider,
-  DEFAULT_AGENT_PROVIDER_MODELS,
-  RequestyProvider,
-} from '@common/agent';
+import { AVAILABLE_PROVIDERS, LlmProviderName } from '@common/agent';
 import { AgentProfile, SettingsData } from '@common/types';
 import { BiCog } from 'react-icons/bi';
 
@@ -17,8 +9,7 @@ import { ModelSelector, ModelSelectorRef } from './ModelSelector';
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { IconButton } from '@/components/common/IconButton';
 import { useBooleanState } from '@/hooks/useBooleanState';
-import { useOllamaModels } from '@/hooks/useOllamaModels';
-import { useLmStudioModels } from '@/hooks/useLmStudioModels';
+import { useModels } from '@/contexts/ModelProvider';
 import { showErrorNotification } from '@/utils/notifications';
 
 type Props = {
@@ -33,61 +24,29 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ classNa
   const { t } = useTranslation();
   const [settingsDialogVisible, showSettingsDialog, hideSettingsDialog] = useBooleanState(false);
 
-  const ollamaBaseUrl = useMemo(() => {
-    const ollamaProvider = settings?.llmProviders['ollama'];
-    return ollamaProvider && isOllamaProvider(ollamaProvider) ? ollamaProvider.baseUrl : '';
-  }, [settings?.llmProviders]);
-
-  const lmStudioBaseUrl = useMemo(() => {
-    const lmStudioProvider = settings?.llmProviders['lmstudio'];
-    return lmStudioProvider?.baseUrl || '';
-  }, [settings?.llmProviders]);
-
-  const ollamaModels = useOllamaModels(ollamaBaseUrl);
-  const lmStudioModels = useLmStudioModels(lmStudioBaseUrl);
+  const { getModels } = useModels();
 
   const agentModels = useMemo(() => {
     if (!settings) {
       return [];
     }
 
-    const models: string[] = [];
+    const allModels: string[] = [];
     AVAILABLE_PROVIDERS.forEach((provider) => {
-      switch (provider) {
-        case 'ollama':
-          if (ollamaModels.length > 0) {
-            models.push(...ollamaModels.map((model) => `ollama/${model}`));
-          }
-          break;
-        case 'groq':
-        case 'openrouter':
-        case 'requesty':
-        case 'openai-compatible': {
-          const llmProvider = settings.llmProviders[provider] as OpenRouterProvider | RequestyProvider | OpenAiCompatibleProvider;
-          if (llmProvider) {
-            models.push(...llmProvider.models.sort().map((model) => `${provider}/${model}`));
-          }
-          break;
-        }
-        case 'lmstudio':
-          if (lmStudioModels.length > 0) {
-            models.push(...lmStudioModels.map((model) => `lmstudio/${model}`));
-          }
-          break;
-        default:
-          models.push(...(DEFAULT_AGENT_PROVIDER_MODELS[provider] || []).map((model) => `${provider}/${model}`));
-          break;
+      const models = getModels(provider);
+      if (models.length > 0) {
+        allModels.push(...models.map((model) => `${provider}/${model.id}`).sort());
       }
     });
     // Add the currently selected model if it's not in the known list (custom model)
-    if (agentProfile && !models.some((model) => model === `${agentProfile.provider}/${agentProfile.model}`)) {
+    if (agentProfile && !allModels.some((model) => model === `${agentProfile.provider}/${agentProfile.model}`)) {
       const currentSelection = `${agentProfile.provider}/${agentProfile.model}`;
-      if (!models.includes(currentSelection)) {
-        models.unshift(currentSelection); // Add to the beginning for visibility
+      if (!allModels.includes(currentSelection)) {
+        allModels.unshift(currentSelection); // Add to the beginning for visibility
       }
     }
-    return models;
-  }, [settings, agentProfile, ollamaModels, lmStudioModels]);
+    return allModels;
+  }, [settings, agentProfile, getModels]);
 
   const selectedModelDisplay = agentProfile ? `${agentProfile.provider}/${agentProfile.model}` : t('common.notSet');
 
@@ -129,18 +88,6 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ classNa
         return profile;
       });
 
-      // Update llmProvider models if needed
-      const updatedLlmProviders = { ...settings.llmProviders };
-      if (['openrouter', 'requesty', 'openai-compatible'].includes(providerName)) {
-        const provider = updatedLlmProviders[providerName];
-        if (provider && Array.isArray(provider.models) && !provider.models.includes(modelName)) {
-          updatedLlmProviders[providerName] = {
-            ...provider,
-            models: [...provider.models, modelName],
-          };
-        }
-      }
-
       const updatedSettings: SettingsData = {
         ...settings,
         agentProfiles: updatedProfiles,
@@ -148,7 +95,6 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ classNa
           ...settings.models,
           agentPreferred: [...new Set([selectedModelString, ...settings.models.agentPreferred])],
         },
-        llmProviders: updatedLlmProviders,
       };
       saveSettings(updatedSettings);
     },

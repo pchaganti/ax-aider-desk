@@ -17,6 +17,7 @@ import {
   ModelsData,
   OS,
   ProjectData,
+  ProviderModels,
   ProjectSettings,
   ProjectStartedData,
   QuestionData,
@@ -57,6 +58,7 @@ type EventDataMap = {
   'input-history-updated': InputHistoryData;
   'clear-project': ClearProjectData;
   'project-started': ProjectStartedData;
+  'provider-models-updated': ProviderModels;
 };
 
 type EventCallback<T> = (data: T) => void;
@@ -103,6 +105,7 @@ export class BrowserApi implements ApplicationAPI {
       'input-history-updated': new Map(),
       'clear-project': new Map(),
       'project-started': new Map(),
+      'provider-models-updated': new Map(),
     };
     this.apiClient = axios.create({
       baseURL: `${baseUrl}/api`,
@@ -379,7 +382,10 @@ export class BrowserApi implements ApplicationAPI {
     return this.get<{ os: OS }>('/os').then((res) => res.os);
   }
   loadModelsInfo(): Promise<Record<string, ModelInfo>> {
-    return this.get('/models');
+    return this.get('/models-info');
+  }
+  getProviderModels(): Promise<ProviderModels> {
+    return this.get('/models', {});
   }
   queryUsageData(from: string, to: string): Promise<UsageDataRow[]> {
     return this.get('/usage', { from, to });
@@ -435,6 +441,10 @@ export class BrowserApi implements ApplicationAPI {
   addVersionsInfoUpdatedListener(callback: (data: VersionsInfo) => void): () => void {
     void callback;
     return () => {};
+  }
+
+  addProviderModelsUpdatedListener(callback: (data: ProviderModels) => void): () => void {
+    return this.addListener('provider-models-updated', undefined, callback);
   }
   addTerminalDataListener(baseDir: string, callback: (data: TerminalData) => void): () => void {
     void baseDir;

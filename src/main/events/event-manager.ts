@@ -6,6 +6,7 @@ import {
   InputHistoryData,
   LogData,
   ModelsData,
+  ProviderModels,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -176,6 +177,12 @@ export class EventManager {
   sendVersionsInfoUpdated(versionsInfo: VersionsInfo): void {
     this.sendToMainWindow('versions-info-updated', versionsInfo);
     this.broadcastToEventConnectors('versions-info-updated', versionsInfo);
+  }
+
+  // Provider models events
+  sendProviderModelsUpdated(providerModels: ProviderModels): void {
+    this.sendToMainWindow('provider-models-updated', providerModels);
+    this.broadcastToEventConnectors('provider-models-updated', providerModels);
   }
 
   subscribe(socket: Socket, config: EventsConnectorConfig): void {

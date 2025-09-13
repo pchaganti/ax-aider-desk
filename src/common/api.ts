@@ -34,6 +34,7 @@ import {
   ClearProjectData,
   ProjectStartedData,
   CloudflareTunnelStatus,
+  ProviderModels,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -114,6 +115,7 @@ export interface ApplicationAPI {
   loadModelsInfo: () => Promise<Record<string, ModelInfo>>;
   queryUsageData: (from: string, to: string) => Promise<UsageDataRow[]>;
   getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => Promise<EnvironmentVariable | undefined>;
+  getProviderModels: () => Promise<ProviderModels>;
 
   addResponseChunkListener: (baseDir: string, callback: (data: ResponseChunkData) => void) => () => void;
   addResponseCompletedListener: (baseDir: string, callback: (data: ResponseCompletedData) => void) => () => void;
@@ -131,6 +133,7 @@ export interface ApplicationAPI {
   addClearProjectListener: (baseDir: string, callback: (data: ClearProjectData) => void) => () => void;
   addProjectStartedListener: (baseDir: string, callback: (data: ProjectStartedData) => void) => () => void;
   addVersionsInfoUpdatedListener: (callback: (data: VersionsInfo) => void) => () => void;
+  addProviderModelsUpdatedListener: (callback: (data: ProviderModels) => void) => () => void;
   addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;
   addTerminalExitListener: (baseDir: string, callback: (data: TerminalExitData) => void) => () => void;
   addContextMenuListener: (callback: (params: Electron.ContextMenuParams) => void) => () => void;
