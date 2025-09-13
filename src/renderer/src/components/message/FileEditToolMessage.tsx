@@ -1,12 +1,14 @@
-import { useTranslation } from 'react-i18next';
-import { RiToolsFill } from 'react-icons/ri';
+import { useEffect, useRef, useState } from 'react';
+import { RiCheckboxCircleFill, RiEditLine, RiErrorWarningFill } from 'react-icons/ri';
 import { getLanguageFromPath } from '@common/utils';
-import { clsx } from 'clsx';
+import { CgSpinner } from 'react-icons/cg';
+import { useTranslation } from 'react-i18next';
 
 import { ToolMessage } from '@/types/message';
-import { MessageBar } from '@/components/message/MessageBar';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
+import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
 
 type Props = {
   message: ToolMessage;
@@ -15,6 +17,8 @@ type Props = {
 
 export const FileEditToolMessage = ({ message, onRemove }: Props) => {
   const { t } = useTranslation();
+  const expandableRef = useRef<ExpandableMessageBlockRef>(null);
+  const [hasClosedOnError, setHasClosedOnError] = useState(false);
 
   const filePath = message.args.filePath as string;
   const searchTerm = message.args.searchTerm as string;
@@ -22,54 +26,73 @@ export const FileEditToolMessage = ({ message, onRemove }: Props) => {
   const isRegex = message.args.isRegex as boolean;
   const replaceAll = message.args.replaceAll as boolean;
   const content = message.content && JSON.parse(message.content);
-
-  const copyContent = JSON.stringify({ args: message.args, result: content }, null, 2);
-
-  const getToolName = (): string => {
-    return t('toolMessage.power.fileEdit.title');
-  };
-
   const language = getLanguageFromPath(filePath);
 
-  return (
-    <div className="border border-border-dark-light rounded-md mb-2 group p-3 bg-bg-secondary">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="text-text-muted">
-          <RiToolsFill className="w-4 h-4" />
-        </div>
-        <div className="text-xs text-text-primary flex flex-wrap gap-1">
-          <span>{getToolName()}</span>
-          <span>
-            <CodeInline className="bg-bg-primary-light">{filePath.split(/[/\\]/).pop()}</CodeInline>
-          </span>
-        </div>
-      </div>
+  useEffect(() => {
+    if (content && !content.startsWith('Successfully') && !hasClosedOnError) {
+      expandableRef.current?.close();
+      setHasClosedOnError(true);
+    }
+  }, [content, hasClosedOnError]);
 
-      <div className="text-xs text-text-tertiary bg-bg-secondary">
-        {isRegex ? (
-          <div className="p-2 bg-bg-primary-light rounded-md space-y-2">
-            <p>
-              <strong>
-                {t('toolMessage.power.fileEdit.searchTerm')} ({t('toolMessage.power.fileEdit.regex')}):
-              </strong>
-              <br />
-              <div className="mt-2 p-1 rounded-sm border border-border-dark-light whitespace-pre-wrap text-2xs text-text-secondary">{searchTerm}</div>
-            </p>
-            <p>
-              <strong>{t('toolMessage.power.fileEdit.replacementText')}:</strong>
-              <br />
-              <div className="mt-2 p-1 rounded-sm border border-border-dark-light whitespace-pre-wrap text-2xs text-text-secondary">{replacementText}</div>
-            </p>
-            <p>
-              <strong>{t('toolMessage.power.fileEdit.replaceAll')}:</strong> {replaceAll ? t('common.yes') : t('common.no')}
-            </p>
-          </div>
-        ) : (
-          <CodeBlock baseDir="" language={language} file={filePath} isComplete={true} oldValue={searchTerm} newValue={replacementText} />
-        )}
-        {content && <div className={clsx('px-2 mt-2 text-2xs text-text-primary', content.startsWith('Warning') && 'text-text-error')}>{content}</div>}
+  const title = (
+    <div className="flex items-center gap-2 w-full">
+      <div className="text-text-muted ml-">
+        <RiEditLine className="w-4 h-4" />
       </div>
-      <MessageBar content={copyContent} usageReport={message.usageReport} remove={onRemove} />
+      <div className="text-xs text-text-primary flex flex-wrap gap-1">
+        <span>{t('toolMessage.power.fileEdit.title')}</span>
+        <span>
+          <CodeInline className="bg-bg-primary-light">{filePath.split(/[/\\]/).pop()}</CodeInline>
+        </span>
+      </div>
+      {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light" />}
+      {content &&
+        (content.startsWith('Successfully') ? (
+          <RiCheckboxCircleFill className="w-3 h-3 text-success" />
+        ) : (
+          <span className="text-left">
+            <StyledTooltip id={`file-edit-error-tooltip-${message.id}`} maxWidth={600} />
+            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`file-edit-error-tooltip-${message.id}`} data-tooltip-content={content} />
+          </span>
+        ))}
     </div>
+  );
+
+  const renderContent = () => (
+    <div className="px-3 text-xs text-text-tertiary bg-bg-secondary">
+      {isRegex ? (
+        <div className="p-2 bg-bg-primary-light rounded-md space-y-2">
+          <p>
+            <strong>
+              {t('toolMessage.power.fileEdit.searchTerm')} ({t('toolMessage.power.fileEdit.regex')}):
+            </strong>
+            <br />
+            <div className="mt-2 p-1 rounded-sm border border-border-dark-light whitespace-pre-wrap text-2xs text-text-secondary">{searchTerm}</div>
+          </p>
+          <p>
+            <strong>{t('toolMessage.power.fileEdit.replacementText')}:</strong>
+            <br />
+            <div className="mt-2 p-1 rounded-sm border border-border-dark-light whitespace-pre-wrap text-2xs text-text-secondary">{replacementText}</div>
+          </p>
+          <p>
+            <strong>{t('toolMessage.power.fileEdit.replaceAll')}:</strong> {replaceAll ? t('common.yes') : t('common.no')}
+          </p>
+        </div>
+      ) : (
+        <CodeBlock baseDir="" language={language} file={filePath} isComplete={true} oldValue={searchTerm} newValue={replacementText} />
+      )}
+    </div>
+  );
+
+  return (
+    <ExpandableMessageBlock
+      ref={expandableRef}
+      title={title}
+      content={renderContent()}
+      usageReport={message.usageReport}
+      onRemove={onRemove}
+      initialExpanded={true}
+    />
   );
 };

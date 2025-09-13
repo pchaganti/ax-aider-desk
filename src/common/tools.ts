@@ -22,7 +22,6 @@ export const POWER_TOOL_FETCH = 'fetch';
 
 export const SUBAGENTS_TOOL_GROUP_NAME = 'subagents';
 export const SUBAGENTS_TOOL_RUN_TASK = 'run_task';
-export const TOOL_FETCH = POWER_TOOL_FETCH;
 
 export const AIDER_TOOL_DESCRIPTIONS = {
   [AIDER_TOOL_GET_CONTEXT_FILES]: 'Get all files currently in the context for Aider to read or edit',

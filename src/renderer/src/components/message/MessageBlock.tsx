@@ -4,7 +4,13 @@ import {
   HELPERS_TOOL_INVALID_TOOL_ARGUMENTS,
   HELPERS_TOOL_NO_SUCH_TOOL,
   POWER_TOOL_FILE_EDIT,
+  POWER_TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE,
+  POWER_TOOL_GLOB,
+  POWER_TOOL_GREP,
+  POWER_TOOL_BASH,
+  POWER_TOOL_FETCH,
+  POWER_TOOL_SEMANTIC_SEARCH,
   POWER_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_RUN_TASK,
@@ -19,6 +25,12 @@ import { ResponseMessageBlock } from './ResponseMessageBlock';
 import { ToolMessageBlock } from './ToolMessageBlock';
 import { FileWriteToolMessage } from './FileWriteToolMessage';
 import { FileEditToolMessage } from './FileEditToolMessage';
+import { FileReadToolMessage } from './FileReadToolMessage';
+import { GlobToolMessage } from './GlobToolMessage';
+import { GrepToolMessage } from './GrepToolMessage';
+import { BashToolMessage } from './BashToolMessage';
+import { FetchToolMessage } from './FetchToolMessage';
+import { SemanticSearchToolMessage } from './SemanticSearchToolMessage';
 import { SubagentToolMessage } from './SubagentToolMessage';
 
 import {
@@ -76,38 +88,58 @@ export const MessageBlock = ({ baseDir, message, allFiles, renderMarkdown, remov
   if (isToolMessage(message)) {
     const toolMessage = message as ToolMessage;
 
-    if (toolMessage.serverName === POWER_TOOL_GROUP_NAME) {
-      if (toolMessage.toolName === POWER_TOOL_FILE_WRITE) {
-        return <FileWriteToolMessage message={toolMessage} onRemove={remove} />;
-      }
-      if (toolMessage.toolName === POWER_TOOL_FILE_EDIT) {
-        return <FileEditToolMessage message={toolMessage} onRemove={remove} />;
-      }
-    }
-    if (toolMessage.serverName === SUBAGENTS_TOOL_GROUP_NAME) {
-      if (toolMessage.toolName === SUBAGENTS_TOOL_RUN_TASK) {
-        return <SubagentToolMessage message={toolMessage} onRemove={remove} />;
-      }
-    }
+    switch (toolMessage.serverName) {
+      case POWER_TOOL_GROUP_NAME:
+        switch (toolMessage.toolName) {
+          case POWER_TOOL_FILE_WRITE:
+            return <FileWriteToolMessage message={toolMessage} onRemove={remove} />;
+          case POWER_TOOL_FILE_EDIT:
+            return <FileEditToolMessage message={toolMessage} onRemove={remove} />;
+          case POWER_TOOL_FILE_READ:
+            return <FileReadToolMessage message={toolMessage} onRemove={remove} />;
+          case POWER_TOOL_GLOB:
+            return <GlobToolMessage message={toolMessage} onRemove={remove} />;
+          case POWER_TOOL_GREP:
+            return <GrepToolMessage message={toolMessage} onRemove={remove} />;
+          case POWER_TOOL_BASH:
+            return <BashToolMessage message={toolMessage} onRemove={remove} />;
+          case POWER_TOOL_FETCH:
+            return <FetchToolMessage message={toolMessage} onRemove={remove} />;
+          case POWER_TOOL_SEMANTIC_SEARCH:
+            return <SemanticSearchToolMessage message={toolMessage} onRemove={remove} />;
+          default:
+            break;
+        }
+        break;
+      case SUBAGENTS_TOOL_GROUP_NAME:
+        switch (toolMessage.toolName) {
+          case SUBAGENTS_TOOL_RUN_TASK:
+            return <SubagentToolMessage message={toolMessage} onRemove={remove} />;
+          default:
+            break;
+        }
+        break;
+      case HELPERS_TOOL_GROUP_NAME: {
+        let logMessageContent = toolMessage.content;
 
-    if (toolMessage.serverName === HELPERS_TOOL_GROUP_NAME) {
-      let logMessageContent = toolMessage.content;
+        if (toolMessage.toolName === HELPERS_TOOL_NO_SUCH_TOOL) {
+          logMessageContent = t('toolMessage.errors.noSuchTool', { toolName: toolMessage.args.toolName });
+        } else if (toolMessage.toolName === HELPERS_TOOL_INVALID_TOOL_ARGUMENTS) {
+          logMessageContent = t('toolMessage.errors.invalidToolArguments', {
+            toolName: toolMessage.args.toolName,
+          });
+        }
 
-      if (toolMessage.toolName === HELPERS_TOOL_NO_SUCH_TOOL) {
-        logMessageContent = t('toolMessage.errors.noSuchTool', { toolName: toolMessage.args.toolName });
-      } else if (toolMessage.toolName === HELPERS_TOOL_INVALID_TOOL_ARGUMENTS) {
-        logMessageContent = t('toolMessage.errors.invalidToolArguments', {
-          toolName: toolMessage.args.toolName,
-        });
+        const logMessage: LogMessage = {
+          type: 'log',
+          level: 'info',
+          id: toolMessage.id,
+          content: logMessageContent,
+        };
+        return <LogMessageBlock message={logMessage} onRemove={remove} />;
       }
-
-      const logMessage: LogMessage = {
-        type: 'log',
-        level: 'info',
-        id: toolMessage.id,
-        content: logMessageContent,
-      };
-      return <LogMessageBlock message={logMessage} onRemove={remove} />;
+      default:
+        break;
     }
 
     return <ToolMessageBlock message={toolMessage} onRemove={remove} />;

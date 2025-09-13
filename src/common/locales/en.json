@@ -670,11 +670,45 @@
         "replacementText": "Replacement Text",
         "replaceAll": "Replace All"
       },
-      "glob": "Find files matching pattern: {{pattern}}",
-      "grep": "Search files matching '{{filePattern}}' for '{{searchTerm}}'",
-      "bash": "Run command",
-      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'",
-      "fetch": "Fetch: {{url}}"
+      "glob": {
+        "title": "Find files matching pattern:",
+        "foundFiles": "Found {{count}} files",
+        "noMatches": "No matches found.",
+        "for": "for",
+        "contextLines": "({{count}} lines of context)",
+        "matchesCount": "({{count}} matches)",
+        "lineLabel": "Line {{lineNumber}}:",
+        "contextLabel": "Context:"
+      },
+      "grep": {
+        "title": "Search files matching",
+        "for": "for",
+        "foundMatches": "Found {{count}} matches",
+        "noMatches": "No matches found.",
+        "contextLines": "({{count}} lines of context)",
+        "matchesCount": "({{count}} matches)",
+        "lineLabel": "Line {{lineNumber}}:",
+        "contextLabel": "Context:"
+      },
+      "bash": {
+        "title": "Run command",
+        "exitCode": "Exit Code",
+        "stdout": "Stdout",
+        "stderr": "Stderr",
+        "commandFailed": "Command failed"
+      },
+      "semanticSearch": {
+        "title": "Semantic search:",
+        "in": "in",
+        "noMatches": "No matches found.",
+        "foundMatches": "Found {{count}} matches",
+        "score": " (score: {{score}})",
+        "resultLabel": "Result {{index}}"
+      },
+      "fetch": {
+        "title": "Fetch",
+        "contentTruncated": "Content truncated. Full content available in copy."
+      }
     },
     "subagents": {
       "groupRunning": "{{name}}: Subagent is working...",

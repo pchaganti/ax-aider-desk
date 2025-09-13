@@ -643,11 +643,41 @@
         "replacementText": "替换文本",
         "replaceAll": "替换所有"
       },
-      "glob": "查找匹配模式的文件: {{pattern}}",
-      "grep": "在“{{filePattern}}”中搜索“{{searchTerm}}”",
-      "bash": "运行命令",
-      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”",
-      "fetch": "获取: {{url}}"
+      "glob": {
+        "title": "查找匹配模式的文件:",
+        "foundFiles": "找到 {{count}} 文件",
+        "foundMatches": "找到 {{count}} 个匹配项",
+        "noMatches": "未找到匹配项。"
+      },
+      "grep": {
+        "title": "在",
+        "for": "搜索",
+        "foundMatches": "找到 {{count}} 个匹配项",
+        "noMatches": "未找到匹配项。",
+        "contextLines": "({{count}} 行上下文)",
+        "matchesCount": "({{count}} 个匹配)",
+        "lineLabel": "第 {{lineNumber}} 行:",
+        "contextLabel": "上下文:"
+      },
+      "bash": {
+        "title": "执行 shell 命令",
+        "exitCode": "退出码",
+        "stdout": "标准输出",
+        "stderr": "标准错误",
+        "commandFailed": "命令失败"
+      },
+      "semanticSearch": {
+        "title": "语义搜索:",
+        "in": "在",
+        "noMatches": "未找到匹配项。",
+        "foundMatches": "找到 {{count}} 个匹配项",
+        "score": " (得分: {{score}})",
+        "resultLabel": "结果 {{index}}"
+      },
+      "fetch": {
+        "title": "抓取网页内容",
+        "contentTruncated": "内容已截断。完整内容可在复制中查看。"
+      }
     },
     "subagents": {
       "groupRunning": "{{name}}: 子代理正在工作...",

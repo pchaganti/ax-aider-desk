@@ -180,8 +180,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         if (isBinary(absolutePath, fileContentBuffer)) {
           return 'Error: Binary files cannot be read.';
         }
-        const content = fileContentBuffer.toString('utf8');
-        return `Here is the most recent content of '${filePath}' (ignore previous versions):\n\n${content}`;
+        return fileContentBuffer.toString('utf8');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
@@ -200,9 +199,9 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       mode: z
         .nativeEnum(FileWriteMode)
         .optional()
-        .default(FileWriteMode.Overwrite)
+        .default(FileWriteMode.CreateOnly)
         .describe(
-          "Mode of writing: 'overwrite' (overwrites or creates), 'append' (appends or creates), 'create_only' (creates if not exists, fails if exists). Default: 'overwrite'.",
+          "Mode of writing: 'create_only' (creates if not exists, fails if exists), 'overwrite' (overwrites or creates), 'append' (appends or creates). Default: 'create_only'.",
         ),
     }),
     execute: async ({ filePath, content, mode }, { toolCallId }) => {
@@ -223,7 +222,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       const questionKey = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_FILE_WRITE}`;
       const questionText =
         mode === FileWriteMode.Overwrite
-          ? `Approve overwriting or creating file '${filePath}'?`
+          ? `Approve overwriting file '${filePath}'?`
           : mode === FileWriteMode.Append
             ? `Approve appending to file '${filePath}'?`
             : `Approve creating file '${filePath}'?`;
@@ -255,7 +254,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
             await fs.writeFile(absolutePath, content, { flag: 'wx' });
             await addToGit();
 
-            return `Successfully wrote to '${filePath}' (created).`;
+            return `Successfully created '${filePath}'.`;
           } catch (e) {
             if ((e as NodeJS.ErrnoException)?.code === 'EEXIST') {
               return `Error: File '${filePath}' already exists (mode: create_only).`;
@@ -268,11 +267,11 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         } else {
           await fs.writeFile(absolutePath, content, 'utf8');
           await addToGit();
-          return `Successfully wrote to '${filePath}' (overwritten/created).`;
+          return `Successfully written to '${filePath}' (overwritten).`;
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        return `Error writing to file '${filePath}': ${errorMessage}`;
+        return `Error: Cannot write to file '${filePath}': ${errorMessage}`;
       }
     },
   });
@@ -583,7 +582,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('Error executing search command:', error);
-        return `Error executing search command: ${errorMessage}`;
+        return `Error: ${errorMessage}`;
       }
     },
   });
