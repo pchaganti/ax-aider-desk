@@ -1,2 +1,2 @@
-export * from './model-info-manager';
+export * from './model-manager';
 export * from './models';

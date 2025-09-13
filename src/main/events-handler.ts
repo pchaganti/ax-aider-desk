@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 
 import { BrowserWindow, clipboard, dialog, shell } from 'electron';
 import {
+  CloudflareTunnelStatus,
   CustomCommand,
   EditFormat,
   EnvironmentVariable,
@@ -15,6 +16,7 @@ import {
   OS,
   ProjectData,
   ProjectSettings,
+  ProviderModels,
   ResponseCompletedData,
   SessionData,
   SettingsData,
@@ -23,12 +25,11 @@ import {
   TodoItem,
   UsageDataRow,
   VersionsInfo,
-  CloudflareTunnelStatus,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 
 import { Agent, McpManager } from '@/agent';
-import { ModelInfoManager } from '@/models';
+import { ModelManager } from '@/models';
 import { ProjectManager } from '@/project';
 import { CloudflareTunnelManager } from '@/server';
 import { getDefaultProjectSettings, Store } from '@/store';
@@ -48,7 +49,7 @@ export class EventsHandler {
     private mcpManager: McpManager,
     private agent: Agent,
     private versionsManager: VersionsManager,
-    private modelInfoManager: ModelInfoManager,
+    private modelInfoManager: ModelManager,
     private telemetryManager: TelemetryManager,
     private dataManager: DataManager,
     private terminalManager: TerminalManager,
@@ -67,6 +68,7 @@ export class EventsHandler {
     this.agent.settingsChanged(oldSettings, newSettings);
     this.projectManager.settingsChanged(oldSettings, newSettings);
     this.telemetryManager.settingsChanged(oldSettings, newSettings);
+    void this.modelInfoManager.settingsChanged(oldSettings, newSettings);
 
     return this.store.getSettings();
   }
@@ -550,6 +552,10 @@ export class EventsHandler {
 
   getEffectiveEnvironmentVariable(key: string, baseDir?: string): EnvironmentVariable | undefined {
     return getEffectiveEnvironmentVariable(key, baseDir, this.store.getSettings());
+  }
+
+  async getProviderModels(): Promise<ProviderModels> {
+    return await this.modelInfoManager.getProviderModels();
   }
 
   async showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue> {

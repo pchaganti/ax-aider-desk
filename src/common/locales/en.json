@@ -168,6 +168,7 @@
     "modelName": "Model Name",
     "baseUrlPlaceholder": "e.g. http://localhost:8080/v1",
     "reasoningEffort": "Reasoning Effort",
+    "reasoningEffortNone": "None",
     "reasoningEffortMinimal": "Minimal",
     "reasoningEffortLow": "Low",
     "reasoningEffortMedium": "Medium",

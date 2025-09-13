@@ -7,6 +7,8 @@
 - added support for optional autoApprove property in custom commands
 - improved support when using subfolder of git root as project directory
 - properly loading messages from the last session on startup
+- added None reasoning effort option for OpenAI provider
+- added dynamic model loading for LLM providers
 
 ## [0.30.0]
 

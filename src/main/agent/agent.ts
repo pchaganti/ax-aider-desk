@@ -60,7 +60,7 @@ import { Store } from '@/store';
 import logger from '@/logger';
 import { parseAiderEnv } from '@/utils';
 import { optimizeMessages } from '@/agent/optimizer';
-import { ModelInfoManager } from '@/models/model-info-manager';
+import { ModelManager } from '@/models/model-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
 import { createSubagentsToolset } from '@/agent/tools/subagents';
@@ -73,7 +73,7 @@ export class Agent {
   constructor(
     private readonly store: Store,
     private readonly mcpManager: McpManager,
-    private readonly modelInfoManager: ModelInfoManager,
+    private readonly modelInfoManager: ModelManager,
     private readonly telemetryManager: TelemetryManager,
   ) {}
 

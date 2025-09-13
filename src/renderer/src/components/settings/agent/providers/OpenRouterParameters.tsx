@@ -2,12 +2,10 @@ import { ChangeEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OpenRouterProvider } from '@common/agent';
 
-import { ProviderModels } from './ProviderModels';
 import { OpenRouterAdvancedSettings } from './OpenRouterAdvancedSettings';
 
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-import { useOpenRouterModels } from '@/hooks/useOpenRouterModels';
 import { Accordion } from '@/components/common/Accordion';
 
 type Props = {
@@ -19,20 +17,11 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
 
   const apiKey = provider.apiKey || '';
-  const models = provider.models || [];
 
   const { environmentVariable: openRouterApiKeyEnv } = useEffectiveEnvironmentVariable('OPENROUTER_API_KEY');
 
-  // Use the effective API key (from provider or environment)
-  const effectiveApiKey = apiKey || openRouterApiKeyEnv?.value || '';
-  const availableModels = useOpenRouterModels(effectiveApiKey);
-
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
-  };
-
-  const handleModelsChange = (updatedModels: string[]) => {
-    onChange({ ...provider, models: updatedModels });
   };
 
   const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: boolean, setOpen?: (open: boolean) => void) => (
@@ -71,7 +60,6 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
           <OpenRouterAdvancedSettings provider={provider} onChange={onChange} />
         </div>,
       )}
-      <ProviderModels models={models} onChange={handleModelsChange} availableModels={availableModels} />
     </div>
   );
 };

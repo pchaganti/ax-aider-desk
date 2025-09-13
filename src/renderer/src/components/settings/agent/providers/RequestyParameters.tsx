@@ -3,14 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { RequestyProvider } from '@common/agent';
 import { ReasoningEffort } from '@common/types';
 
-import { ProviderModels } from './ProviderModels';
-
 import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
 import { InfoIcon } from '@/components/common/InfoIcon';
 import Select from '@/components/common/Select';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-import { useRequestyModels } from '@/hooks/useRequestyModels';
 
 type Props = {
   provider: RequestyProvider;
@@ -20,7 +17,7 @@ type Props = {
 export const RequestyParameters = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
 
-  const { apiKey, models, useAutoCache, reasoningEffort } = provider;
+  const { apiKey, useAutoCache, reasoningEffort } = provider;
 
   const { environmentVariable: requestyApiKeyEnv } = useEffectiveEnvironmentVariable('REQUESTY_API_KEY');
 
@@ -32,16 +29,8 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
     { value: 'max', label: t('reasoningEffort.max') },
   ];
 
-  // Use the effective API key (from provider or environment)
-  const effectiveApiKey = apiKey || requestyApiKeyEnv?.value || '';
-  const availableModels = useRequestyModels(effectiveApiKey);
-
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
-  };
-
-  const handleModelsChange = (updatedModels: string[]) => {
-    onChange({ ...provider, models: updatedModels });
   };
 
   const handleUseAutoCacheChange = (checked: boolean) => {
@@ -66,8 +55,12 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
         onChange={handleApiKeyChange}
         placeholder={
           requestyApiKeyEnv
-            ? t('settings.agent.envVarFoundPlaceholder', { source: requestyApiKeyEnv.source })
-            : t('settings.agent.envVarPlaceholder', { envVar: 'REQUESTY_API_KEY' })
+            ? t('settings.agent.envVarFoundPlaceholder', {
+                source: requestyApiKeyEnv.source,
+              })
+            : t('settings.agent.envVarPlaceholder', {
+                envVar: 'REQUESTY_API_KEY',
+              })
         }
       />
       <div className="grid grid-cols-2 gap-x-10">
@@ -87,7 +80,6 @@ export const RequestyParameters = ({ provider, onChange }: Props) => {
           <InfoIcon tooltip={t('requesty.autoCacheTooltip')} />
         </div>
       </div>
-      <ProviderModels models={models} onChange={handleModelsChange} availableModels={availableModels} />
     </div>
   );
 };

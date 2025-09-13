@@ -1257,7 +1257,7 @@ export class Project {
   }
 
   public async clearContext(addToHistory = false, updateContextInfo = true) {
-    logger.debug('Clearing context:', {
+    logger.info('Clearing context:', {
       baseDir: this.baseDir,
       addToHistory,
       updateContextInfo,

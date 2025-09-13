@@ -47,7 +47,6 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'bedrock',
   'deepseek',
   'gemini',
-  'vertex-ai',
   'groq',
   'lmstudio',
   'ollama',
@@ -55,6 +54,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'openai-compatible',
   'openrouter',
   'requesty',
+  'vertex-ai',
 ];
 
 export interface OpenAiProvider extends LlmProviderBase {
@@ -107,7 +107,6 @@ export const isDeepseekProvider = (provider: LlmProviderBase): provider is Deeps
 export interface GroqProvider extends LlmProviderBase {
   name: 'groq';
   apiKey: string;
-  models: string[];
 }
 export const isGroqProvider = (provider: LlmProviderBase): provider is GroqProvider => provider.name === 'groq';
 
@@ -124,7 +123,6 @@ export interface OpenAiCompatibleProvider extends LlmProviderBase {
   name: 'openai-compatible';
   apiKey: string;
   baseUrl?: string;
-  models: string[];
 }
 export const isOpenAiCompatibleProvider = (provider: LlmProviderBase): provider is OpenAiCompatibleProvider => provider.name === 'openai-compatible';
 
@@ -133,7 +131,6 @@ export const isOllamaProvider = (provider: LlmProviderBase): provider is OllamaP
 export interface OpenRouterProvider extends LlmProviderBase {
   name: 'openrouter';
   apiKey: string;
-  models: string[];
   // Advanced routing options
   requireParameters: boolean;
   order: string[];
@@ -149,7 +146,6 @@ export const isOpenRouterProvider = (provider: LlmProviderBase): provider is Ope
 export interface RequestyProvider extends LlmProviderBase {
   name: 'requesty';
   apiKey: string;
-  models: string[];
   useAutoCache: boolean;
   reasoningEffort: ReasoningEffort;
 }
@@ -284,7 +280,6 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
         provider = {
           name: 'openai',
           apiKey: '',
-          reasoningEffort: ReasoningEffort.Medium,
         } satisfies OpenAiProvider;
         break;
       case 'anthropic':
@@ -317,7 +312,6 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
         provider = {
           name: 'groq',
           apiKey: '',
-          models: [],
         } satisfies GroqProvider;
         break;
       case 'deepseek':
@@ -339,7 +333,6 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
           name: 'openai-compatible',
           apiKey: '',
           baseUrl: '',
-          models: [],
         } satisfies OpenAiCompatibleProvider;
         break;
       case 'ollama':
@@ -352,7 +345,6 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
         provider = {
           name: 'openrouter',
           apiKey: '',
-          models: [],
           order: [],
           allowFallbacks: true,
           dataCollection: 'allow',
@@ -373,7 +365,6 @@ export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: S
         provider = {
           name: 'requesty',
           apiKey: '',
-          models: [],
           useAutoCache: true,
           reasoningEffort: ReasoningEffort.None,
         } satisfies RequestyProvider;

@@ -126,7 +126,7 @@ export const CodeBlock = ({ baseDir, language, children, file, isComplete = true
         </pre>
       );
     }
-  }, [codeForSyntaxHighlight, diffNewValue, diffOldValue, displayAsDiff, displayAsUdiff, children, language]);
+  }, [displayAsUdiff, children, displayAsDiff, codeForSyntaxHighlight, language, diffOldValue, diffNewValue, isComplete]);
 
   const handleRevertChanges = () => {
     if (file && displayAsDiff) {

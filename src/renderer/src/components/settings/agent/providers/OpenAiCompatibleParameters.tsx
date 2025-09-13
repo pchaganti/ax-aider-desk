@@ -2,8 +2,6 @@ import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OpenAiCompatibleProvider } from '@common/agent';
 
-import { ProviderModels } from './ProviderModels';
-
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
@@ -17,7 +15,6 @@ export const OpenAiCompatibleParameters = ({ provider, onChange }: Props) => {
 
   const baseUrl = provider.baseUrl || '';
   const apiKey = provider.apiKey || '';
-  const models = provider.models || [];
 
   const { environmentVariable: openAiApiKeyEnv } = useEffectiveEnvironmentVariable('OPENAI_API_KEY');
   const { environmentVariable: openAiApiBaseEnv } = useEffectiveEnvironmentVariable('OPENAI_API_BASE');
@@ -28,10 +25,6 @@ export const OpenAiCompatibleParameters = ({ provider, onChange }: Props) => {
 
   const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) => {
     onChange({ ...provider, apiKey: e.target.value });
-  };
-
-  const handleModelsChange = (updatedModels: string[]) => {
-    onChange({ ...provider, models: updatedModels });
   };
 
   return (
@@ -54,7 +47,6 @@ export const OpenAiCompatibleParameters = ({ provider, onChange }: Props) => {
             : t('settings.agent.envVarPlaceholder', { envVar: 'OPENAI_API_KEY' })
         }
       />
-      <ProviderModels models={models} onChange={handleModelsChange} />
     </div>
   );
 };

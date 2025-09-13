@@ -11,6 +11,7 @@ import {
   ModelsData,
   OS,
   ProjectStartedData,
+  ProviderModels,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -103,6 +104,7 @@ const api: ApplicationAPI = {
   clearReleaseNotes: () => ipcRenderer.invoke('clear-release-notes'),
   getOS: (): Promise<OS> => ipcRenderer.invoke('get-os'),
   loadModelsInfo: () => ipcRenderer.invoke('load-models-info'),
+  getProviderModels: () => ipcRenderer.invoke('get-provider-models'),
   queryUsageData: (from, to) => ipcRenderer.invoke('query-usage-data', from, to),
   getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => ipcRenderer.invoke('get-effective-environment-variable', key, baseDir),
 
@@ -308,6 +310,16 @@ const api: ApplicationAPI = {
     ipcRenderer.on('versions-info-updated', listener);
     return () => {
       ipcRenderer.removeListener('versions-info-updated', listener);
+    };
+  },
+
+  addProviderModelsUpdatedListener: (callback) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ProviderModels) => {
+      callback(data);
+    };
+    ipcRenderer.on('provider-models-updated', listener);
+    return () => {
+      ipcRenderer.removeListener('provider-models-updated', listener);
     };
   },
 
