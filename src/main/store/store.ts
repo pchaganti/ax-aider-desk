@@ -1,25 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
-import {
-  AgentProfile,
-  ContextMemoryMode,
-  ProjectData,
-  ProjectSettings,
-  SettingsData,
-  StartupMode,
-  SuggestionMode,
-  ToolApprovalState,
-  WindowState,
-} from '@common/types';
+import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, WindowState } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProviderName } from '@common/agent';
-import {
-  POWER_TOOL_BASH,
-  POWER_TOOL_FILE_EDIT,
-  POWER_TOOL_FILE_READ,
-  POWER_TOOL_FILE_WRITE,
-  POWER_TOOL_GROUP_NAME,
-  TOOL_GROUP_NAME_SEPARATOR,
-} from '@common/tools';
+import { AVAILABLE_PROVIDERS, DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROFILES, DEFAULT_PROVIDER_MODEL } from '@common/agent';
 
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
 import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
@@ -35,9 +17,9 @@ import { migrateV10ToV11 } from './migrations/v10-to-v11';
 import { migrateV11ToV12 } from './migrations/v11-to-v12';
 import { migrateV12ToV13 } from './migrations/v12-to-v13';
 
-import { DEEPSEEK_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
-import { determineMainModel, determineWeakModel, determineAgentProvider } from '@/utils';
+import { determineMainModel, determineWeakModel } from '@/utils';
 import logger from '@/logger';
+import { ModelManager } from '@/models';
 
 export const DEFAULT_SETTINGS: SettingsData = {
   language: 'en',
@@ -57,10 +39,10 @@ export const DEFAULT_SETTINGS: SettingsData = {
     confirmBeforeEdit: false,
   },
   models: {
-    aiderPreferred: [SONNET_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, DEEPSEEK_MODEL],
+    aiderPreferred: [],
     agentPreferred: [],
   },
-  agentProfiles: [DEFAULT_AGENT_PROFILE],
+  agentProfiles: DEFAULT_AGENT_PROFILES,
   mcpServers: {},
   llmProviders: {},
   telemetryEnabled: true,
@@ -144,77 +126,7 @@ export class Store {
   createDefaultSettings(): SettingsData {
     return {
       ...DEFAULT_SETTINGS,
-      agentProfiles: this.createDefaultAgentProfiles(),
     };
-  }
-
-  createDefaultAgentProfiles(): AgentProfile[] {
-    const provider: LlmProviderName = determineAgentProvider() || 'anthropic';
-
-    return [
-      // Power tools
-      {
-        ...DEFAULT_AGENT_PROFILE,
-        provider,
-        model: DEFAULT_AGENT_PROVIDER_MODELS[provider]![0],
-        subagent: {
-          ...DEFAULT_AGENT_PROFILE.subagent,
-          contextMemory: ContextMemoryMode.FullContext,
-          description:
-            'Direct file manipulation and system operations. Best for codebase analysis, file management, advanced search, data analysis, and tasks requiring precise control over individual files. This agent should be used as the main agent for analysis and coding tasks.',
-          systemPrompt:
-            'You are a specialized subagent for code analysis and file manipulation. Focus on providing detailed technical insights and precise file operations.',
-        },
-      },
-      // Aider
-      {
-        ...DEFAULT_AGENT_PROFILE,
-        provider,
-        model: DEFAULT_AGENT_PROVIDER_MODELS[provider]![0],
-        id: 'aider',
-        name: 'Aider',
-        usePowerTools: false,
-        useAiderTools: true,
-        includeRepoMap: true,
-        subagent: {
-          ...DEFAULT_AGENT_PROFILE.subagent,
-          description:
-            "AI-powered code generation and refactoring. Best for implementing features, fixing bugs, and structured development workflows using Aider's intelligent code understanding and modification capabilities.",
-          systemPrompt:
-            'You are a specialized subagent for AI-powered code generation and refactoring. Focus on providing high-quality code modifications based on the given requirements.',
-        },
-        toolApprovals: {
-          ...DEFAULT_AGENT_PROFILE.toolApprovals,
-          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
-          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
-        },
-      },
-      // Aider with Power Search
-      {
-        ...DEFAULT_AGENT_PROFILE,
-        provider,
-        model: DEFAULT_AGENT_PROVIDER_MODELS[provider]![0],
-        id: 'aider-power-tools',
-        name: 'Aider with Power Search',
-        usePowerTools: true,
-        useAiderTools: true,
-        includeRepoMap: true,
-        subagent: {
-          ...DEFAULT_AGENT_PROFILE.subagent,
-          description:
-            "Hybrid approach combining Aider's code generation with advanced search capabilities. Best for complex development tasks requiring both intelligent code modification and comprehensive codebase exploration.",
-          systemPrompt:
-            'You are a specialized subagent for AI-powered code generation and advanced search. Focus on providing high-quality code modifications based on the given requirements and comprehensive codebase exploration.',
-        },
-        toolApprovals: {
-          ...DEFAULT_AGENT_PROFILE.toolApprovals,
-          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}`]: ToolApprovalState.Never,
-          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
-          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
-          [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Never,
-        },
-      },
-    ];
   }
 
   getSettings(): SettingsData {
@@ -397,6 +309,35 @@ export class Store {
 
     this.setOpenProjects(orderedProjects);
     return orderedProjects;
+  }
+
+  async updateProviderModelInAgentProfiles(modelManager: ModelManager) {
+    const settings = this.getSettings();
+    const providerModels = await modelManager.getProviderModels();
+
+    const updatedAgentProfiles = settings.agentProfiles.map((agentProfile) => {
+      if (providerModels[agentProfile.provider] === undefined) {
+        // Provider not configured, find the first available configured provider
+        for (const provider of AVAILABLE_PROVIDERS) {
+          const models = providerModels[provider];
+          const defaultModel = DEFAULT_PROVIDER_MODEL[provider];
+          if (models !== undefined && (defaultModel || models.length > 0)) {
+            return {
+              ...agentProfile,
+              provider,
+              model: defaultModel || models[0].id,
+            };
+          }
+        }
+      }
+      return agentProfile;
+    });
+
+    // Update settings with modified agent profiles
+    this.saveSettings({
+      ...settings,
+      agentProfiles: updatedAgentProfiles,
+    });
   }
 
   getRecentProjects(): string[] {

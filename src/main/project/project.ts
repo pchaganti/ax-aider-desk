@@ -37,32 +37,9 @@ import {
   UserMessageData,
 } from '@common/types';
 import { extractTextContent, fileExists, getActiveAgentProfile, parseUsageReport } from '@common/utils';
-import {
-  AnthropicProvider,
-  BedrockProvider,
-  COMPACT_CONVERSATION_AGENT_PROFILE,
-  DeepseekProvider,
-  GeminiProvider,
-  getLlmProviderConfig,
-  INIT_PROJECT_AGENTS_PROFILE,
-  isAnthropicProvider,
-  isBedrockProvider,
-  isDeepseekProvider,
-  isGeminiProvider,
-  isLmStudioProvider,
-  isOllamaProvider,
-  isOpenAiCompatibleProvider,
-  isOpenAiProvider,
-  isOpenRouterProvider,
-  LmStudioProvider,
-  OllamaProvider,
-  OpenAiCompatibleProvider,
-  OpenAiProvider,
-  OpenRouterProvider,
-} from '@common/agent';
+import { COMPACT_CONVERSATION_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
-import { parse } from '@dotenvx/dotenvx';
 
 import type { SimpleGit } from 'simple-git';
 
@@ -79,8 +56,9 @@ import { MessageAction, ResponseMessage } from '@/messages';
 import { Store } from '@/store';
 import { DEFAULT_MAIN_MODEL } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
-import { getLangfuseEnvironmentVariables, TelemetryManager } from '@/telemetry';
+import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
+import { getEnvironmentVariablesForAider } from '@/utils';
 
 export class Project {
   private process: ChildProcessWithoutNullStreams | null = null;
@@ -290,7 +268,7 @@ export class Project {
     const weakModel = projectSettings.weakModel;
     const modelEditFormats = projectSettings.modelEditFormats;
     const reasoningEffort = projectSettings.reasoningEffort;
-    const environmentVariables = this.getEnvironmentVariablesForAider(settings);
+    const environmentVariables = getEnvironmentVariablesForAider(settings, this.baseDir);
     const thinkingTokens = projectSettings.thinkingTokens;
 
     logger.info('Running Aider for project', {
@@ -407,50 +385,6 @@ export class Project {
     });
 
     void this.writeAiderProcessPidFile();
-  }
-
-  private getEnvironmentVariablesForAider(settings: SettingsData): Record<string, unknown> {
-    const openAiProvider = getLlmProviderConfig('openai', settings) as OpenAiProvider;
-    const openAiApiKey = (isOpenAiProvider(openAiProvider) && openAiProvider.apiKey) || undefined;
-
-    const ollamaProvider = getLlmProviderConfig('ollama', settings) as OllamaProvider;
-    const ollamaBaseUrl = (isOllamaProvider(ollamaProvider) && ollamaProvider.baseUrl) || undefined;
-
-    const openAiCompatibleProvider = getLlmProviderConfig('openai-compatible', settings) as OpenAiCompatibleProvider;
-    const anthropicProvider = getLlmProviderConfig('anthropic', settings) as AnthropicProvider;
-    const geminiProvider = getLlmProviderConfig('gemini', settings) as GeminiProvider;
-    const lmStudioProvider = getLlmProviderConfig('lmstudio', settings) as LmStudioProvider;
-    const deepseekProvider = getLlmProviderConfig('deepseek', settings) as DeepseekProvider;
-    const openRouterProvider = getLlmProviderConfig('openrouter', settings) as OpenRouterProvider;
-    const bedrockProvider = getLlmProviderConfig('bedrock', settings) as BedrockProvider;
-
-    return {
-      OPENAI_API_KEY: openAiApiKey,
-      ...(!openAiApiKey
-        ? // only set OPENAI_API_KEY and OPENAI_API_BASE if openai is not used
-          {
-            OPENAI_API_KEY: (isOpenAiCompatibleProvider(openAiCompatibleProvider) && openAiCompatibleProvider.apiKey) || undefined,
-            OPENAI_API_BASE: (isOpenAiCompatibleProvider(openAiCompatibleProvider) && openAiCompatibleProvider.baseUrl) || undefined,
-          }
-        : {}),
-      ANTHROPIC_API_KEY: (isAnthropicProvider(anthropicProvider) && anthropicProvider.apiKey) || undefined,
-      GEMINI_API_KEY: (isGeminiProvider(geminiProvider) && geminiProvider.apiKey) || undefined,
-      LM_STUDIO_API_KEY: (isLmStudioProvider(lmStudioProvider) && lmStudioProvider.baseUrl) || undefined,
-      DEEPSEEK_API_KEY: (isDeepseekProvider(deepseekProvider) && deepseekProvider.apiKey) || undefined,
-      OPENROUTER_API_KEY: (isOpenRouterProvider(openRouterProvider) && openRouterProvider.apiKey) || undefined,
-      AWS_REGION: (isBedrockProvider(bedrockProvider) && bedrockProvider.region) || undefined,
-      AWS_ACCESS_KEY_ID: (isBedrockProvider(bedrockProvider) && bedrockProvider.accessKeyId) || undefined,
-      AWS_SECRET_ACCESS_KEY: (isBedrockProvider(bedrockProvider) && bedrockProvider.secretAccessKey) || undefined,
-      OLLAMA_API_BASE: (ollamaBaseUrl && (ollamaBaseUrl.endsWith('/api') ? ollamaBaseUrl.slice(0, -4) : ollamaBaseUrl)) || undefined,
-      ...parse(settings.aider.environmentVariables),
-      ...this.getTelemetryEnvironmentVariablesForAider(settings),
-    };
-  }
-
-  private getTelemetryEnvironmentVariablesForAider(settings: SettingsData): Record<string, unknown> {
-    return {
-      ...getLangfuseEnvironmentVariables(this.baseDir, settings),
-    };
   }
 
   public isStarted() {
@@ -1555,7 +1489,7 @@ export class Project {
 
   private sendUpdateEnvVars(settings: SettingsData) {
     logger.info('Environment variables or LLM providers changed, updating connectors.');
-    const updatedEnvironmentVariables = this.getEnvironmentVariablesForAider(settings);
+    const updatedEnvironmentVariables = getEnvironmentVariablesForAider(settings, this.baseDir);
     this.findMessageConnectors('update-env-vars').forEach((connector) => connector.sendUpdateEnvVarsMessage(updatedEnvironmentVariables));
   }
 

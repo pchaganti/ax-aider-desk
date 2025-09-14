@@ -3,7 +3,7 @@ import { ModelInfo, Model, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 
-export const loadGeminiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> => {
+export const loadGeminiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> => {
   const apiKey = settings.llmProviders?.gemini?.apiKey || '';
   const baseUrl = settings.llmProviders?.gemini?.customBaseUrl || 'https://generativelanguage.googleapis.com';
 
@@ -14,7 +14,7 @@ export const loadGeminiModels = async (settings: SettingsData, modelsInfo: Recor
   const effectiveBaseUrl = baseUrl || baseUrlEnv?.value || 'https://generativelanguage.googleapis.com';
 
   if (!effectiveApiKey) {
-    return [];
+    return undefined;
   }
 
   try {

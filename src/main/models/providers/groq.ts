@@ -11,14 +11,14 @@ interface GroqApiResponse {
   data: GroqModel[];
 }
 
-export const loadGroqModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> => {
+export const loadGroqModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> => {
   const apiKey = settings.llmProviders?.groq?.apiKey || '';
   const apiKeyEnv = getEffectiveEnvironmentVariable('GROQ_API_KEY', undefined, settings);
   const effectiveApiKey = apiKey || apiKeyEnv?.value || '';
 
   if (!effectiveApiKey) {
     logger.debug('Groq API key is required. Please set it in Providers settings or via GROQ_API_KEY environment variable.');
-    return [];
+    return undefined;
   }
 
   try {

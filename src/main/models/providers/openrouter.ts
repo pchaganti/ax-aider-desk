@@ -3,13 +3,13 @@ import { Model, ModelInfo, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 
-export const loadOpenrouterModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> => {
+export const loadOpenrouterModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> => {
   const apiKey = settings.llmProviders?.openrouter?.apiKey || '';
   const apiKeyEnv = getEffectiveEnvironmentVariable('OPENROUTER_API_KEY', undefined, settings);
   const effectiveApiKey = apiKey || apiKeyEnv?.value || '';
 
   if (!effectiveApiKey) {
-    return [];
+    return undefined;
   }
 
   try {

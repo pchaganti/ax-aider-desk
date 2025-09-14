@@ -165,25 +165,22 @@ export type LlmProvider =
   | OpenRouterProvider
   | RequestyProvider;
 
-export const DEFAULT_AGENT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string[]>> = {
-  openai: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o-mini', 'o4-mini'],
-  anthropic: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022'],
-  gemini: ['gemini-2.5-pro', 'gemini-2.5-flash'],
-  groq: ['moonshotai/kimi-k2-instruct'],
-  lmstudio: ['qwen/qwen3-8b'],
-  deepseek: ['deepseek-chat'],
-  bedrock: ['us.anthropic.claude-3-7-sonnet-20250219-v1:0', 'anthropic.claude-3-7-sonnet-20250219-v1:0'],
-  openrouter: ['anthropic/claude-sonnet-4'],
-  requesty: ['anthropic/claude-sonnet-4-20250514'],
+export const DEFAULT_PROVIDER_MODEL: Partial<Record<LlmProviderName, string>> = {
+  anthropic: 'claude-sonnet-4-20250514',
+  deepseek: 'deepseek-chat',
+  gemini: 'gemini-2.5-pro',
+  openai: 'gpt-5',
+  openrouter: 'anthropic/claude-sonnet-4',
+  requesty: 'anthropic/claude-sonnet-4-20250514',
 };
 
 const DEFAULT_AGENT_PROFILE_ID = 'default';
 
 export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   id: DEFAULT_AGENT_PROFILE_ID,
-  name: 'Power Tools',
+  name: 'Default Agent',
   provider: 'anthropic',
-  model: DEFAULT_AGENT_PROVIDER_MODELS.anthropic![0],
+  model: DEFAULT_PROVIDER_MODEL.anthropic!,
   maxIterations: 100,
   maxTokens: 8192,
   minTimeBetweenToolCalls: 0,
@@ -224,6 +221,65 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
     contextMemory: ContextMemoryMode.Off,
   },
 };
+
+export const DEFAULT_AGENT_PROFILES: AgentProfile[] = [
+  // Power tools
+  {
+    ...DEFAULT_AGENT_PROFILE,
+    name: 'Power Tools',
+    subagent: {
+      ...DEFAULT_AGENT_PROFILE.subagent,
+      description:
+        'Direct file manipulation and system operations. Best for codebase analysis, file management, advanced search, data analysis, and tasks requiring precise control over individual files. This agent should be used as the main agent for analysis and coding tasks.',
+      systemPrompt:
+        'You are a specialized subagent for code analysis and file manipulation. Focus on providing detailed technical insights and precise file operations.',
+    },
+  },
+  // Aider
+  {
+    ...DEFAULT_AGENT_PROFILE,
+    id: 'aider',
+    name: 'Aider',
+    usePowerTools: false,
+    useAiderTools: true,
+    includeRepoMap: true,
+    subagent: {
+      ...DEFAULT_AGENT_PROFILE.subagent,
+      description:
+        "AI-powered code generation and refactoring. Best for implementing features, fixing bugs, and structured development workflows using Aider's intelligent code understanding and modification capabilities.",
+      systemPrompt:
+        'You are a specialized subagent for AI-powered code generation and refactoring. Focus on providing high-quality code modifications based on the given requirements.',
+    },
+    toolApprovals: {
+      ...DEFAULT_AGENT_PROFILE.toolApprovals,
+      [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
+      [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
+    },
+  },
+  // Aider with Power Search
+  {
+    ...DEFAULT_AGENT_PROFILE,
+    id: 'aider-power-tools',
+    name: 'Aider with Power Search',
+    usePowerTools: true,
+    useAiderTools: true,
+    includeRepoMap: true,
+    subagent: {
+      ...DEFAULT_AGENT_PROFILE.subagent,
+      description:
+        "Hybrid approach combining Aider's code generation with advanced search capabilities. Best for complex development tasks requiring both intelligent code modification and comprehensive codebase exploration.",
+      systemPrompt:
+        'You are a specialized subagent for AI-powered code generation and advanced search. Focus on providing high-quality code modifications based on the given requirements and comprehensive codebase exploration.',
+    },
+    toolApprovals: {
+      ...DEFAULT_AGENT_PROFILE.toolApprovals,
+      [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}`]: ToolApprovalState.Never,
+      [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_EDIT}`]: ToolApprovalState.Never,
+      [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_WRITE}`]: ToolApprovalState.Never,
+      [`${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`]: ToolApprovalState.Never,
+    },
+  },
+];
 
 export const INIT_PROJECT_AGENTS_PROFILE: AgentProfile = {
   ...DEFAULT_AGENT_PROFILE,

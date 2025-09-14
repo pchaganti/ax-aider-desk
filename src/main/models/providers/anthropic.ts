@@ -3,12 +3,12 @@ import { Model, ModelInfo, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 
-export const loadAnthropicModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> => {
+export const loadAnthropicModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> => {
   const apiKey = settings.llmProviders?.anthropic?.apiKey || '';
   const apiKeyEnv = getEffectiveEnvironmentVariable('ANTHROPIC_API_KEY', undefined, settings);
 
   if (!apiKey && !apiKeyEnv?.value) {
-    return [];
+    return undefined;
   }
 
   try {

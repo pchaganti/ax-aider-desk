@@ -111,13 +111,16 @@ export const ModelProvidersSettings = ({ settings, setSettings, onSwitchToAiderT
           const isExpanded = expandedProvider === providerName;
 
           const getAgentOnly = () => {
-            if (providerName === 'requesty') {
-              return true;
+            switch (providerName) {
+              case 'requesty':
+                return isProviderConfigured('openai') || isProviderConfigured('openai-compatible');
+              case 'openai-compatible':
+                return isProviderConfigured('openai') || isProviderConfigured('requesty');
+              case 'vertex-ai':
+                return true;
+              default:
+                return false;
             }
-            if (providerName === 'openai-compatible') {
-              return isProviderConfigured('openai');
-            }
-            return false;
           };
 
           return (

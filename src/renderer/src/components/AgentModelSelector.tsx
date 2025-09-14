@@ -34,7 +34,7 @@ export const AgentModelSelector = forwardRef<ModelSelectorRef, Props>(({ classNa
     const allModels: string[] = [];
     AVAILABLE_PROVIDERS.forEach((provider) => {
       const models = getModels(provider);
-      if (models.length > 0) {
+      if (models && models.length > 0) {
         allModels.push(...models.map((model) => `${provider}/${model.id}`).sort());
       }
     });

@@ -5,7 +5,7 @@ import { GoogleAuth } from 'google-auth-library';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 
-export const loadVertexAIModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> => {
+export const loadVertexAIModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> => {
   const vertexAiConfig = settings.llmProviders?.['vertex-ai'];
 
   const projectEnv = getEffectiveEnvironmentVariable('VERTEXAI_PROJECT', undefined, settings);
@@ -18,12 +18,12 @@ export const loadVertexAIModels = async (settings: SettingsData, modelsInfo: Rec
 
   if (!project) {
     logger.debug('Vertex AI project ID is required. Please set it in Providers settings or via VERTEXAI_PROJECT environment variable.');
-    return [];
+    return undefined;
   }
 
   if (!location) {
     logger.debug('Vertex AI location is required. Please set it in Providers settings or via VERTEXAI_LOCATION environment variable.');
-    return [];
+    return undefined;
   }
 
   try {
