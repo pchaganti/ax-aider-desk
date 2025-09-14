@@ -9,6 +9,7 @@
 - properly loading messages from the last session on startup
 - added None reasoning effort option for OpenAI provider
 - added dynamic model loading for LLM providers
+- enhanced Power tool messages UX
 
 ## [0.30.0]
 

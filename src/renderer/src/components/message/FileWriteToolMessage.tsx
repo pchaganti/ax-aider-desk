@@ -1,12 +1,15 @@
+import { useEffect, useRef, useState } from 'react';
+import { RiCheckboxCircleFill, RiEditLine, RiErrorWarningFill } from 'react-icons/ri';
+import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
-import { RiToolsFill } from 'react-icons/ri';
 import { FileWriteMode } from '@common/types';
-import { getLanguageFromPath } from '@common/utils'; // Assuming CodeBlock can be used here
+import { getLanguageFromPath } from '@common/utils';
 
 import { ToolMessage } from '@/types/message';
-import { MessageBar } from '@/components/message/MessageBar';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
+import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
 
 type Props = {
   message: ToolMessage;
@@ -23,11 +26,21 @@ const formatName = (name: string): string => {
 
 export const FileWriteToolMessage = ({ message, onRemove }: Props) => {
   const { t } = useTranslation();
+  const expandableRef = useRef<ExpandableMessageBlockRef>(null);
+  const [hasClosedOnError, setHasClosedOnError] = useState(false);
 
   const contentToWrite = message.args.content as string;
   const filePath = message.args.filePath as string;
-  const copyContent = JSON.stringify({ args: message.args, result: message.content && JSON.parse(message.content) }, null, 2);
   const language = getLanguageFromPath(filePath);
+  const content = message.content && JSON.parse(message.content);
+  const isError = content && !content.startsWith('Successfully');
+
+  useEffect(() => {
+    if (content && !content.startsWith('Successfully') && !hasClosedOnError) {
+      expandableRef.current?.close();
+      setHasClosedOnError(true);
+    }
+  }, [content, hasClosedOnError]);
 
   const getToolName = (): string => {
     const mode = message.args.mode as FileWriteMode;
@@ -44,26 +57,46 @@ export const FileWriteToolMessage = ({ message, onRemove }: Props) => {
     }
   };
 
-  return (
-    <div className="border border-border-dark-light rounded-md mb-2 group p-3 bg-bg-secondary">
-      <div className="flex items-center gap-2 mb-2">
-        <div className="text-text-muted">
-          <RiToolsFill className="w-4 h-4" />
-        </div>
-        <div className="text-xs text-text-primary flex flex-wrap gap-1">
-          <span>{getToolName()}</span>
-          <span>
-            <CodeInline className="bg-bg-primary-light">{filePath.split(/[/\\]/).pop()}</CodeInline>
+  const title = (
+    <div className="flex items-center gap-2 w-full">
+      <div className="text-text-muted">
+        <RiEditLine className="w-4 h-4" />
+      </div>
+      <div className="text-xs text-text-primary flex flex-wrap gap-1">
+        <span>{getToolName()}</span>
+        <span>
+          <CodeInline className="bg-bg-primary-light">{filePath.split(/[/\\]/).pop()}</CodeInline>
+        </span>
+      </div>
+      {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light" />}
+      {content &&
+        (isError ? (
+          <span className="text-left">
+            <StyledTooltip id={`file-write-error-tooltip-${message.id}`} maxWidth={600} />
+            <RiErrorWarningFill className="w-3 h-3 text-error" data-tooltip-id={`file-write-error-tooltip-${message.id}`} data-tooltip-content={content} />
           </span>
-        </div>
-      </div>
-
-      <div className="text-xs text-text-tertiary bg-bg-secondary">
-        <CodeBlock baseDir="" language={language} file={filePath} isComplete={true}>
-          {contentToWrite}
-        </CodeBlock>
-      </div>
-      <MessageBar content={copyContent} usageReport={message.usageReport} remove={onRemove} />
+        ) : (
+          <RiCheckboxCircleFill className="w-3 h-3 text-success" />
+        ))}
     </div>
+  );
+
+  const renderContent = () => (
+    <div className="px-3 text-xs text-text-tertiary bg-bg-secondary">
+      <CodeBlock baseDir="" language={language} file={filePath} isComplete={true}>
+        {contentToWrite}
+      </CodeBlock>
+    </div>
+  );
+
+  return (
+    <ExpandableMessageBlock
+      ref={expandableRef}
+      title={title}
+      content={renderContent()}
+      usageReport={message.usageReport}
+      onRemove={onRemove}
+      initialExpanded={true}
+    />
   );
 };

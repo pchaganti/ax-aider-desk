@@ -1,10 +1,8 @@
-import { ReactNode, useEffect, useRef, useState } from 'react';
-import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md';
+import { ReactNode } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { RiToolsFill } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { VscError } from 'react-icons/vsc';
-import { clsx } from 'clsx';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
@@ -21,9 +19,9 @@ import {
 
 import { CopyMessageButton } from './CopyMessageButton';
 import { parseToolContent } from './utils';
+import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 
 import { ToolMessage } from '@/types/message';
-import { MessageBar } from '@/components/message/MessageBar';
 import { CodeInline } from '@/components/common/CodeInline';
 
 type Props = {
@@ -41,33 +39,10 @@ const formatName = (name: string): string => {
 
 export const ToolMessageBlock = ({ message, onRemove }: Props) => {
   const { t } = useTranslation();
-  const [isExpanded, setIsExpanded] = useState(true); // Controls visibility
-  const [isInitialAutoExpand, setIsInitialAutoExpand] = useState(true); // Tracks the initial phase
   const isExecuting = message.content === '';
   const parsedResult = !isExecuting ? parseToolContent(message.content) : null;
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const copyContent = JSON.stringify({ args: message.args, result: message.content && JSON.parse(message.content) }, null, 2);
-
-  useEffect(() => {
-    // Auto-collapse only during the initial phase
-    if (isInitialAutoExpand) {
-      timerRef.current = setTimeout(() => {
-        // Check again inside timeout in case user clicked during the delay
-        if (isInitialAutoExpand) {
-          setIsExpanded(false);
-          setIsInitialAutoExpand(false); // End the initial phase
-        }
-      }, 2000);
-    }
-
-    // Cleanup function to clear the timeout
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [isInitialAutoExpand]); // Depend only on isInitialAutoExpand
 
   const getToolLabel = (message: ToolMessage): ReactNode => {
     const defaultLabel = () => t('toolMessage.toolLabel', { server: formatName(message.serverName), tool: formatName(message.toolName) });
@@ -79,7 +54,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
             // Handles message.args.paths (array) or fallback to message.args.path (string)
             const addPaths =
               message.args.paths && Array.isArray(message.args.paths)
-                ? (message.args.paths as string[]).map((path) => `• ${path}`).join('\n')
+                ? (message.args.paths as string[]).map((path) => `• ${path}`).join('\\n')
                 : (message.args.path as string) || '...';
             return t('toolMessage.aider.addContextFiles', { paths: addPaths });
           }
@@ -87,7 +62,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
             // Handles message.args.paths (array) or fallback to message.args.path (string)
             const dropPaths =
               message.args.paths && Array.isArray(message.args.paths)
-                ? (message.args.paths as string[]).map((path) => `• ${path}`).join('\n')
+                ? (message.args.paths as string[]).map((path) => `• ${path}`).join('\\n')
                 : (message.args.path as string) || '...';
             return t('toolMessage.aider.dropContextFiles', { paths: dropPaths });
           }
@@ -103,7 +78,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
               <div className="flex flex-wrap gap-1">
                 <span>{t('toolMessage.power.fileRead')}</span>
                 <span>
-                  <CodeInline className="bg-bg-primary-light">{(message.args.filePath as string).split(/[/\\]/).pop()}</CodeInline>
+                  <CodeInline className="bg-bg-primary-light">{(message.args.filePath as string).split(/[/\\\\]/).pop()}</CodeInline>
                 </span>
               </div>
             );
@@ -137,7 +112,7 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
       const promptText = message.args.prompt as string;
 
       return (
-        <div className="text-xs text-text-tertiary pt-2 px-3">
+        <div className="text-xs text-text-tertiary pt-2 px-1">
           <pre className="whitespace-pre-wrap bg-bg-primary-light p-2 rounded text-text-tertiary text-2xs my-1 max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">
             {promptText}
           </pre>
@@ -150,20 +125,6 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
       );
     }
     return null;
-  };
-
-  const handleHeaderClick = () => {
-    // Clear any existing timer
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    // Always end the initial phase on click
-    if (isInitialAutoExpand) {
-      setIsInitialAutoExpand(false);
-    }
-    // Toggle expansion state
-    setIsExpanded((prev) => !prev);
   };
 
   const getResultContent = () => {
@@ -212,10 +173,23 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
     );
   };
 
-  return (
-    <div className="border border-border-dark-light rounded-md mb-2 group p-3 bg-bg-secondary">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-2 cursor-pointer select-none rounded-t-md" onClick={handleHeaderClick}>
+  const content = (
+    <div className="text-2xs whitespace-pre-wrap text-text-tertiary bg-bg-secondary relative p-3">
+      {Object.keys(message.args).length > 0 && (
+        <div className="mb-3">
+          <div className="font-semibold mb-1 text-text-secondary">{t('toolMessage.arguments')}</div>
+          <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth bg-bg-primary-light p-2 rounded text-text-secondary text-2xs">
+            {JSON.stringify(message.args, null, 2)}
+          </pre>
+        </div>
+      )}
+      {isExecuting ? <div className="text-xs italic text-text-muted-light">{t('toolMessage.executing')}</div> : getResultContent()}
+    </div>
+  );
+
+  const title = (
+    <div className="w-full text-left">
+      <div className="flex items-center justify-between gap-2 select-none w-full px-1 py-0.5">
         <div className="flex items-center gap-2">
           <div className={`text-text-muted ${isExecuting ? 'animate-pulse' : ''}`}>
             <RiToolsFill className="w-4 h-4" />
@@ -226,44 +200,11 @@ export const ToolMessageBlock = ({ message, onRemove }: Props) => {
           {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light" />}
           {!isExecuting && parsedResult?.isError === true && <VscError className="text-error" />}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="text-text-tertiary">{isExpanded ? <MdKeyboardArrowDown size={16} /> : <MdKeyboardArrowRight size={16} />}</div>
-        </div>
       </div>
-
       {/* Tool Specific Content */}
       {renderToolSpecificContent()}
-
-      {/* Content */}
-      <div
-        className={clsx('overflow-hidden transition-all duration-300 ease-in-out relative', {
-          'max-h-0 opacity-0': !isExpanded,
-          'max-h-[150px] opacity-100': isExpanded && isInitialAutoExpand, // Initial limited height
-          'max-h-[1000px] opacity-100': isExpanded && !isInitialAutoExpand, // Full height after click or initial phase ends
-        })}
-      >
-        {/* Add relative positioning for the gradient overlay */}
-        <div className={clsx('p-3 text-xs whitespace-pre-wrap text-text-tertiary bg-bg-secondary')}>
-          {Object.keys(message.args).length > 0 && (
-            <div className="mb-3">
-              <div className="font-semibold mb-1 text-text-secondary">{t('toolMessage.arguments')}</div>
-              <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth bg-bg-primary-light p-2 rounded text-text-secondary text-2xs">
-                {JSON.stringify(message.args, null, 2)}
-              </pre>
-            </div>
-          )}
-          {isExecuting ? (
-            <div className="text-xs italic text-text-muted-light">{t('toolMessage.executing')}</div>
-          ) : isExpanded && !isInitialAutoExpand ? (
-            getResultContent()
-          ) : null}
-          {/* Gradient overlay for initial auto-expand */}
-          {isExpanded && isInitialAutoExpand && (
-            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-bg-secondary via-bg-secondary to-transparent pointer-events-none"></div>
-          )}
-        </div>
-      </div>
-      <MessageBar content={copyContent} usageReport={message.usageReport} remove={onRemove} />
     </div>
   );
+
+  return <ExpandableMessageBlock title={title} content={content} copyContent={copyContent} usageReport={message.usageReport} onRemove={onRemove} />;
 };

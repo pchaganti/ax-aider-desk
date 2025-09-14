@@ -2,6 +2,7 @@ import { ReactNode, useRef, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
 
 type Props = {
   title: ReactNode;
@@ -61,7 +62,7 @@ export const Accordion = ({
     <div className={className}>
       <button
         onClick={handleOpenChange}
-        className={clsx('w-full flex items-center gap-2 p-2 rounded hover:bg-bg-tertiary-strong transition-colors', buttonClassName)}
+        className={twMerge('w-full flex items-center gap-2 p-2 rounded hover:bg-bg-tertiary-strong transition-colors', buttonClassName)}
       >
         {chevronPosition === 'left' && chevron}
         {title}

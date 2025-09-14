@@ -89,7 +89,7 @@ export const GroupMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, 
         }}
       />
       {/* Content */}
-      <Accordion title={header} chevronPosition="right" noMaxHeight={true} showCollapseButton={true}>
+      <Accordion buttonClassName="rounded-b-none" title={header} chevronPosition="right" noMaxHeight={true} showCollapseButton={true}>
         <div className="p-2 pl-3 pb-0.5 bg-bg-primary-light">
           {message.children.map((child, index) => (
             <MessageBlock
