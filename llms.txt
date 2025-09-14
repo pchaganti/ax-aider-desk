@@ -96,8 +96,21 @@ src/
       event-manager.ts
       index.ts
     models/
+      providers/
+        anthropic.ts
+        bedrock.ts
+        deepseek.ts
+        gemini.ts
+        groq.ts
+        lm-studio.ts
+        ollama.ts
+        openai-compatible.ts
+        openai.ts
+        openrouter.ts
+        requesty.ts
+        vertex-ai.ts
       index.ts
-      model-info-manager.ts
+      model-manager.ts
       models.ts
     project/
       index.ts
@@ -318,6 +331,8 @@ src/
         ContextMenuContext.tsx
         ProjectSettingsContext.tsx
         SettingsContext.tsx
+      contexts/
+        ModelProvider.tsx
       hooks/
         useBooleanState.ts
         useClickOutside.ts
@@ -1240,6 +1255,7 @@ File: src/common/locales/en.json
     "modelName": "Model Name",
     "baseUrlPlaceholder": "e.g. http://localhost:8080/v1",
     "reasoningEffort": "Reasoning Effort",
+    "reasoningEffortNone": "None",
     "reasoningEffortMinimal": "Minimal",
     "reasoningEffortLow": "Low",
     "reasoningEffortMedium": "Medium",
@@ -2103,6 +2119,7 @@ File: src/common/locales/zh.json
     "modelName": "模型",
     "baseUrlPlaceholder": "例如 http://localhost:8080/v1",
     "reasoningEffort": "推理努力",
+    "reasoningEffortNone": "无",
     "reasoningEffortMinimal": "最小",
     "reasoningEffortLow": "低",
     "reasoningEffortMedium": "中",
@@ -2902,7 +2919,6 @@ export const isDeepseekProvider = (provider: LlmProviderBase): provider is Deeps
 export interface GroqProvider extends LlmProviderBase {
   name: 'groq';
   apiKey: string;
-  models: string[];
 }
 export const isGroqProvider = (provider: LlmProviderBase): provider is GroqProvider
 ⋮----
@@ -2919,7 +2935,6 @@ export interface OpenAiCompatibleProvider extends LlmProviderBase {
   name: 'openai-compatible';
   apiKey: string;
   baseUrl?: string;
-  models: string[];
 }
 export const isOpenAiCompatibleProvider = (provider: LlmProviderBase): provider is OpenAiCompatibleProvider
 ⋮----
@@ -2928,7 +2943,6 @@ export const isOllamaProvider = (provider: LlmProviderBase): provider is OllamaP
 export interface OpenRouterProvider extends LlmProviderBase {
   name: 'openrouter';
   apiKey: string;
-  models: string[];
   // Advanced routing options
   requireParameters: boolean;
   order: string[];
@@ -2947,7 +2961,6 @@ export const isOpenRouterProvider = (provider: LlmProviderBase): provider is Ope
 export interface RequestyProvider extends LlmProviderBase {
   name: 'requesty';
   apiKey: string;
-  models: string[];
   useAutoCache: boolean;
   reasoningEffort: ReasoningEffort;
 }
@@ -3020,6 +3033,7 @@ import {
   ClearProjectData,
   ProjectStartedData,
   CloudflareTunnelStatus,
+  ProviderModels,
 } from '@common/types';
 ⋮----
 export interface ApplicationAPI {
@@ -3100,6 +3114,7 @@ export interface ApplicationAPI {
   loadModelsInfo: () => Promise<Record<string, ModelInfo>>;
   queryUsageData: (from: string, to: string) => Promise<UsageDataRow[]>;
   getEffectiveEnvironmentVariable: (key: string, baseDir?: string) => Promise<EnvironmentVariable | undefined>;
+  getProviderModels: () => Promise<ProviderModels>;
 
   addResponseChunkListener: (baseDir: string, callback: (data: ResponseChunkData) => void) => () => void;
   addResponseCompletedListener: (baseDir: string, callback: (data: ResponseCompletedData) => void) => () => void;
@@ -3117,6 +3132,7 @@ export interface ApplicationAPI {
   addClearProjectListener: (baseDir: string, callback: (data: ClearProjectData) => void) => () => void;
   addProjectStartedListener: (baseDir: string, callback: (data: ProjectStartedData) => void) => () => void;
   addVersionsInfoUpdatedListener: (callback: (data: VersionsInfo) => void) => () => void;
+  addProviderModelsUpdatedListener: (callback: (data: ProviderModels) => void) => () => void;
   addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;
   addTerminalExitListener: (baseDir: string, callback: (data: TerminalExitData) => void) => () => void;
   addContextMenuListener: (callback: (params: Electron.ContextMenuParams) => void) => () => void;
@@ -3152,12 +3168,15 @@ import {
   BedrockProvider,
   DeepseekProvider,
   GeminiProvider,
+  GroqProvider,
   LlmProviderName,
+  LmStudioProvider,
   OllamaProvider,
   OpenAiCompatibleProvider,
   OpenAiProvider,
   OpenRouterProvider,
   RequestyProvider,
+  VertexAiProvider,
 } from '@common/agent';
 import { z } from 'zod';
 ⋮----
@@ -3478,12 +3497,15 @@ export interface SettingsData {
     openai?: OpenAiProvider;
     anthropic?: AnthropicProvider;
     gemini?: GeminiProvider;
+    groq?: GroqProvider;
     bedrock?: BedrockProvider;
     deepseek?: DeepseekProvider;
     ollama?: OllamaProvider;
+    lmstudio?: LmStudioProvider;
     'openai-compatible'?: OpenAiCompatibleProvider;
     openrouter?: OpenRouterProvider;
     requesty?: RequestyProvider;
+    'vertex-ai'?: VertexAiProvider;
   };
   telemetryEnabled: boolean;
   telemetryInformed?: boolean;
@@ -3631,6 +3653,31 @@ export interface UsageDataRow {
   cache_read_tokens: number;
   cache_write_tokens: number;
   cost: number;
+}
+⋮----
+export interface Model {
+  id: string;
+  maxInputTokens?: number;
+  maxOutputTokens?: number;
+  inputCostPerToken?: number;
+  outputCostPerToken?: number;
+  supportsTools?: boolean;
+  cacheReadInputTokenCost?: number;
+}
+⋮----
+export interface ProviderModels {
+  ollamaModels: Model[];
+  lmStudioModels: Model[];
+  openaiModels: Model[];
+  anthropicModels: Model[];
+  geminiModels: Model[];
+  bedrockModels: Model[];
+  deepseekModels: Model[];
+  groqModels: Model[];
+  openaiCompatibleModels: Model[];
+  openrouterModels: Model[];
+  requestyModels: Model[];
+  vertexAIModels: Model[];
 }
 ⋮----
 export interface CustomCommandArgument {
@@ -4040,7 +4087,7 @@ import { Store } from '@/store';
 import logger from '@/logger';
 import { parseAiderEnv } from '@/utils';
 import { optimizeMessages } from '@/agent/optimizer';
-import { ModelInfoManager } from '@/models/model-info-manager';
+import { ModelManager } from '@/models/model-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
 import { createSubagentsToolset } from '@/agent/tools/subagents';
@@ -4277,7 +4324,7 @@ import { AgentProfile, ReasoningEffort, UsageReportData } from '@common/types';
 import type { JSONValue, LanguageModel, LanguageModelUsage } from 'ai';
 ⋮----
 import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
-import { ModelInfoManager } from '@/models/model-info-manager';
+import { ModelManager } from '@/models/model-manager';
 import { Project } from '@/project/project';
 ⋮----
 export const createLlm = (provider: LlmProvider, model: string, env: Record<string, string | undefined> =
@@ -4331,7 +4378,7 @@ type GoogleMetadata = {
 };
 ⋮----
 export const calculateCost = (
-  modelInfoManager: ModelInfoManager,
+  modelInfoManager: ModelManager,
   profile: AgentProfile,
   sentTokens: number,
   receivedTokens: number,
@@ -4870,6 +4917,7 @@ import {
   InputHistoryData,
   LogData,
   ModelsData,
+  ProviderModels,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -4952,6 +5000,9 @@ sendTerminalExit(data: TerminalExitData): void
 // Versions events
 sendVersionsInfoUpdated(versionsInfo: VersionsInfo): void
 ⋮----
+// Provider models events
+sendProviderModelsUpdated(providerModels: ProviderModels): void
+⋮----
 subscribe(socket: Socket, config: EventsConnectorConfig): void
 ⋮----
 unsubscribe(socket: Socket): void
@@ -4972,16 +5023,189 @@ File: src/main/events/index.ts
 
 
 ================
+File: src/main/models/providers/anthropic.ts
+================
+import { Model, ModelInfo, SettingsData } from '@common/types';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadAnthropicModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+
+================
+File: src/main/models/providers/bedrock.ts
+================
+import { ModelInfo, Model, SettingsData } from '@common/types';
+import { BedrockClient, ListInferenceProfilesCommand, GetFoundationModelAvailabilityCommand, type InferenceProfileSummary } from '@aws-sdk/client-bedrock';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadBedrockModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+⋮----
+// Check if we have explicit keys or if AWS_PROFILE is set in the main process env
+⋮----
+nextToken = response.nextToken; // Will be undefined if no more pages
+⋮----
+// Collect active profiles
+⋮----
+// Now, prepare availability checks in parallel
+⋮----
+// Extract modelId from the first model's modelArn
+⋮----
+// Check if the model is authorized and available
+
+================
+File: src/main/models/providers/deepseek.ts
+================
+import { ModelInfo, Model, SettingsData } from '@common/types';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadDeepseekModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+
+================
+File: src/main/models/providers/gemini.ts
+================
+import { ModelInfo, Model, SettingsData } from '@common/types';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadGeminiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+
+================
+File: src/main/models/providers/groq.ts
+================
+import { ModelInfo, Model, SettingsData } from '@common/types';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+interface GroqModel {
+  id: string;
+}
+⋮----
+interface GroqApiResponse {
+  data: GroqModel[];
+}
+⋮----
+export const loadGroqModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+⋮----
+// Filter out models that don't have pricing information
+
+================
+File: src/main/models/providers/lm-studio.ts
+================
+import { ModelInfo, Model, SettingsData } from '@common/types';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadLmStudioModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+⋮----
+const normalized = effectiveBaseUrl.replace(/\/+$/g, ''); // Remove all trailing slashes
+⋮----
+...info, // Merge with existing model info if available
+
+================
+File: src/main/models/providers/ollama.ts
+================
+import { ModelInfo, Model, SettingsData } from '@common/types';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadOllamaModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+⋮----
+let normalized = effectiveBaseUrl.replace(/\/+$/, ''); // Remove all trailing slashes
+⋮----
+...info, // Merge with existing model info if available
+
+================
+File: src/main/models/providers/openai-compatible.ts
+================
+import { Model, ModelInfo, SettingsData } from '@common/types';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadOpenaiCompatibleModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+
+================
+File: src/main/models/providers/openai.ts
+================
+import { ModelInfo, Model, SettingsData } from '@common/types';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadOpenAiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+
+================
+File: src/main/models/providers/openrouter.ts
+================
+import { Model, ModelInfo, SettingsData } from '@common/types';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadOpenrouterModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+
+================
+File: src/main/models/providers/requesty.ts
+================
+import { ModelInfo, Model, SettingsData } from '@common/types';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadRequestyModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+
+================
+File: src/main/models/providers/vertex-ai.ts
+================
+import { ModelInfo, Model, SettingsData } from '@common/types';
+import { v1beta1 } from '@google-cloud/aiplatform';
+import { GoogleAuth } from 'google-auth-library';
+⋮----
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+export const loadVertexAIModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+⋮----
+// Use provided credentials JSON
+⋮----
+// Use default credentials (e.g., gcloud, environment variables, or service account)
+
+================
 File: src/main/models/index.ts
 ================
 
 
 ================
-File: src/main/models/model-info-manager.ts
+File: src/main/models/model-manager.ts
 ================
-import { ModelInfo } from '@common/types';
+import { ModelInfo, ProviderModels, SettingsData } from '@common/types';
+import { AVAILABLE_PROVIDERS, LlmProviderName } from '@common/agent';
+⋮----
+import { loadOllamaModels } from './providers/ollama';
+import { loadLmStudioModels } from './providers/lm-studio';
+import { loadOpenAiModels } from './providers/openai';
+import { loadAnthropicModels } from './providers/anthropic';
+import { loadGeminiModels } from './providers/gemini';
+import { loadBedrockModels } from './providers/bedrock';
+import { loadDeepseekModels } from './providers/deepseek';
+import { loadGroqModels } from './providers/groq';
+import { loadOpenaiCompatibleModels } from './providers/openai-compatible';
+import { loadOpenrouterModels } from './providers/openrouter';
+import { loadRequestyModels } from './providers/requesty';
+import { loadVertexAIModels } from './providers/vertex-ai';
 ⋮----
 import logger from '@/logger';
+import { Store } from '@/store';
+import { EventManager } from '@/events';
 ⋮----
 interface RawModelData {
   max_input_tokens?: number;
@@ -4995,11 +5219,16 @@ interface RawModelData {
 ⋮----
 // Add other fields from the JSON if needed, marking them as optional
 ⋮----
-export class ModelInfoManager
+export class ModelManager
 ⋮----
-constructor()
+constructor(
+    private store: Store,
+    private eventManager: EventManager,
+)
 ⋮----
-async init(): Promise<void>
+private async init(): Promise<void>
+⋮----
+private async fetchAndProcessModelInfo(): Promise<void>
 ⋮----
 // Skip the sample_spec entry
 ⋮----
@@ -5007,11 +5236,23 @@ async init(): Promise<void>
 ⋮----
 // console.warn(`Skipping model ${key} due to missing or invalid data`);
 ⋮----
-// Decide how to handle the error, e.g., retry, use cached data, or throw
-⋮----
 getModelInfo(modelName: string): ModelInfo | undefined
 ⋮----
+private getChangedProviders(oldProviders: Record<string, unknown>, newProviders: Record<string, unknown>): LlmProviderName[]
+⋮----
+async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData)
+⋮----
 async getAllModelsInfo(): Promise<Record<string, ModelInfo>>
+⋮----
+private async loadProviderModels(providersToLoad: LlmProviderName[] = AVAILABLE_PROVIDERS): Promise<void>
+⋮----
+providersToLoad = AVAILABLE_PROVIDERS; // do full reload
+⋮----
+// Emit the updated provider models event
+⋮----
+async getProviderModels(): Promise<ProviderModels>
+⋮----
+// Fallback in case loading failed during init
 
 ================
 File: src/main/models/models.ts
@@ -5732,6 +5973,8 @@ constructor(private readonly eventsHandler: EventsHandler)
 registerRoutes(router: Router): void
 ⋮----
 // Get settings
+⋮----
+// Get provider models
 ⋮----
 // Update settings
 ⋮----
@@ -6767,6 +7010,7 @@ import fs from 'fs/promises';
 ⋮----
 import { BrowserWindow, clipboard, dialog, shell } from 'electron';
 import {
+  CloudflareTunnelStatus,
   CustomCommand,
   EditFormat,
   EnvironmentVariable,
@@ -6779,6 +7023,7 @@ import {
   OS,
   ProjectData,
   ProjectSettings,
+  ProviderModels,
   ResponseCompletedData,
   SessionData,
   SettingsData,
@@ -6787,12 +7032,11 @@ import {
   TodoItem,
   UsageDataRow,
   VersionsInfo,
-  CloudflareTunnelStatus,
 } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
 ⋮----
 import { Agent, McpManager } from '@/agent';
-import { ModelInfoManager } from '@/models';
+import { ModelManager } from '@/models';
 import { ProjectManager } from '@/project';
 import { CloudflareTunnelManager } from '@/server';
 import { getDefaultProjectSettings, Store } from '@/store';
@@ -6946,6 +7190,8 @@ async queryUsageData(from: Date, to: Date): Promise<UsageDataRow[]>
 ⋮----
 getEffectiveEnvironmentVariable(key: string, baseDir?: string): EnvironmentVariable | undefined
 ⋮----
+async getProviderModels(): Promise<ProviderModels>
+⋮----
 async showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue>
 ⋮----
 async openLogsDirectory(): Promise<boolean>
@@ -7003,7 +7249,7 @@ import { VersionsManager } from '@/versions';
 import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
-import { ModelInfoManager } from '@/models';
+import { ModelManager } from '@/models';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
 import { EventsHandler } from '@/events-handler';
@@ -7028,13 +7274,13 @@ const initManagers = async (
 ⋮----
 // Initialize MCP manager
 ⋮----
+// Initialize event manager
+⋮----
 // Initialize model info manager
 ⋮----
 // Initialize data manager
 ⋮----
 // Initialize agent
-⋮----
-// Initialize event manager
 ⋮----
 // Initialize project manager
 ⋮----
@@ -7500,6 +7746,7 @@ import {
   ModelsData,
   OS,
   ProjectStartedData,
+  ProviderModels,
   QuestionData,
   ResponseChunkData,
   ResponseCompletedData,
@@ -7544,6 +7791,7 @@ import {
   ModelsData,
   OS,
   ProjectData,
+  ProviderModels,
   ProjectSettings,
   ProjectStartedData,
   QuestionData,
@@ -7584,6 +7832,7 @@ type EventDataMap = {
   'input-history-updated': InputHistoryData;
   'clear-project': ClearProjectData;
   'project-started': ProjectStartedData;
+  'provider-models-updated': ProviderModels;
 };
 ⋮----
 type EventCallback<T> = (data: T) => void;
@@ -7681,6 +7930,7 @@ async getReleaseNotes(): Promise<string | null>
 clearReleaseNotes(): Promise<void>
 async getOS(): Promise<OS>
 loadModelsInfo(): Promise<Record<string, ModelInfo>>
+getProviderModels(): Promise<ProviderModels>
 queryUsageData(from: string, to: string): Promise<UsageDataRow[]>
 getEffectiveEnvironmentVariable(key: string, baseDir?: string): Promise<EnvironmentVariable | undefined>
 addResponseChunkListener(baseDir: string, callback: (data: ResponseChunkData) => void): () => void
@@ -7699,6 +7949,8 @@ addInputHistoryUpdatedListener(baseDir: string, callback: (data: InputHistoryDat
 addClearProjectListener(baseDir: string, callback: (data: ClearProjectData) => void): () => void
 addProjectStartedListener(baseDir: string, callback: (data: ProjectStartedData) => void): () => void
 addVersionsInfoUpdatedListener(callback: (data: VersionsInfo) => void): () => void
+⋮----
+addProviderModelsUpdatedListener(callback: (data: ProviderModels) => void): () => void
 addTerminalDataListener(baseDir: string, callback: (data: TerminalData) => void): () => void
 addTerminalExitListener(baseDir: string, callback: (data: TerminalExitData) => void): () => void
 addContextMenuListener(callback: (params: Electron.ContextMenuParams) => void): () => void
@@ -10226,8 +10478,6 @@ import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GroqProvider } from '@common/agent';
 ⋮----
-import { ProviderModels } from './ProviderModels';
-⋮----
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 ⋮----
@@ -10236,9 +10486,9 @@ type Props = {
   onChange: (updated: GroqProvider) => void;
 };
 ⋮----
-const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+export const GroqParameters = (
 ⋮----
-const handleModelsChange = (updatedModels: string[]) =>
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 label=
 ⋮----
@@ -10302,8 +10552,6 @@ import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OpenAiCompatibleProvider } from '@common/agent';
 ⋮----
-import { ProviderModels } from './ProviderModels';
-⋮----
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 ⋮----
@@ -10315,8 +10563,6 @@ type Props = {
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleModelsChange = (updatedModels: string[]) =>
 ⋮----
 label=
 ⋮----
@@ -10409,12 +10655,10 @@ import { ChangeEvent, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OpenRouterProvider } from '@common/agent';
 ⋮----
-import { ProviderModels } from './ProviderModels';
 import { OpenRouterAdvancedSettings } from './OpenRouterAdvancedSettings';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-import { useOpenRouterModels } from '@/hooks/useOpenRouterModels';
 import { Accordion } from '@/components/common/Accordion';
 ⋮----
 type Props = {
@@ -10422,11 +10666,7 @@ type Props = {
   onChange: (updated: OpenRouterProvider) => void;
 };
 ⋮----
-// Use the effective API key (from provider or environment)
-⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleModelsChange = (updatedModels: string[]) =>
 ⋮----
 const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: boolean, setOpen?: (open: boolean) => void) => (
     <Accordion
@@ -10484,25 +10724,18 @@ import { useTranslation } from 'react-i18next';
 import { RequestyProvider } from '@common/agent';
 import { ReasoningEffort } from '@common/types';
 ⋮----
-import { ProviderModels } from './ProviderModels';
-⋮----
 import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
 import { InfoIcon } from '@/components/common/InfoIcon';
 import Select from '@/components/common/Select';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
-import { useRequestyModels } from '@/hooks/useRequestyModels';
 ⋮----
 type Props = {
   provider: RequestyProvider;
   onChange: (updated: RequestyProvider) => void;
 };
 ⋮----
-// Use the effective API key (from provider or environment)
-⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
-⋮----
-const handleModelsChange = (updatedModels: string[]) =>
 ⋮----
 const handleUseAutoCacheChange = (checked: boolean) =>
 ⋮----
@@ -11603,15 +11836,7 @@ File: src/renderer/src/components/AgentModelSelector.tsx
 ================
 import { forwardRef, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  AVAILABLE_PROVIDERS,
-  isOllamaProvider,
-  LlmProviderName,
-  OpenAiCompatibleProvider,
-  OpenRouterProvider,
-  DEFAULT_AGENT_PROVIDER_MODELS,
-  RequestyProvider,
-} from '@common/agent';
+import { AVAILABLE_PROVIDERS, LlmProviderName } from '@common/agent';
 import { AgentProfile, SettingsData } from '@common/types';
 import { BiCog } from 'react-icons/bi';
 ⋮----
@@ -11620,8 +11845,7 @@ import { ModelSelector, ModelSelectorRef } from './ModelSelector';
 import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { IconButton } from '@/components/common/IconButton';
 import { useBooleanState } from '@/hooks/useBooleanState';
-import { useOllamaModels } from '@/hooks/useOllamaModels';
-import { useLmStudioModels } from '@/hooks/useLmStudioModels';
+import { useModels } from '@/contexts/ModelProvider';
 import { showErrorNotification } from '@/utils/notifications';
 ⋮----
 type Props = {
@@ -11634,9 +11858,7 @@ type Props = {
 ⋮----
 // Add the currently selected model if it's not in the known list (custom model)
 ⋮----
-models.unshift(currentSelection); // Add to the beginning for visibility
-⋮----
-// Update llmProvider models if needed
+allModels.unshift(currentSelection); // Add to the beginning for visibility
 
 ================
 File: src/renderer/src/components/AutocompletionInput.tsx
@@ -11946,6 +12168,26 @@ const saveSettings = async (updated: SettingsData) =>
 // eslint-disable-next-line no-console
 ⋮----
 export const useSettings = () =>
+
+================
+File: src/renderer/src/contexts/ModelProvider.tsx
+================
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import { Model, ProviderModels } from '@common/types';
+import { LlmProviderName } from '@common/agent';
+⋮----
+import { useApi } from '@/context/ApiContext';
+⋮----
+type ModelProviderContextType = {
+  refresh: () => void;
+  getModels: (provider: LlmProviderName) => Model[];
+  loading: boolean;
+  error: string | null;
+};
+⋮----
+export const ModelProvider: React.FC<
+⋮----
+export const useModels = (): ModelProviderContextType =>
 
 ================
 File: src/renderer/src/hooks/useBooleanState.ts
@@ -13859,6 +14101,7 @@ import { ROUTES } from '@/utils/routes';
 ⋮----
 import { StyledTooltip } from '@/components/common/StyledTooltip';
 import { ApiProvider } from '@/context/ApiContext';
+import { ModelProvider } from '@/contexts/ModelProvider';
 ⋮----
 const ThemeAndFontManager = () =>
 ⋮----
@@ -14211,6 +14454,7 @@ File: package.json
     "@ai-sdk/groq": "^1.2.9",
     "@ai-sdk/openai": "^1.3.24",
     "@aws-crypto/sha256-js": "^5.0.0",
+    "@aws-sdk/client-bedrock": "^3.887.0",
     "@aws-sdk/credential-provider-node": "^3.772.0",
     "@aws-sdk/credential-providers": "^3.782.0",
     "@aws-sdk/types": "^3.540.0",
@@ -14221,6 +14465,7 @@ File: package.json
     "@dotenvx/dotenvx": "^1.24.5",
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@google-cloud/aiplatform": "^5.7.0",
     "@headlessui/react": "^2.2.0",
     "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
     "@n8n/json-schema-to-zod": "^1.1.0",
@@ -14260,6 +14505,7 @@ File: package.json
     "focus-trap-react": "^11.0.3",
     "framer-motion": "^11.18.2",
     "glob": "^11.0.2",
+    "google-auth-library": "^10.3.0",
     "gpt-tokenizer": "^2.9.0",
     "html-to-image": "^1.11.13",
     "i18next": "^24.2.3",
