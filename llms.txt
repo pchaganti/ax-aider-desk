@@ -3057,6 +3057,12 @@ export type LlmProvider =
 ⋮----
 // subagent tools
 ⋮----
+// Power tools
+⋮----
+// Aider
+⋮----
+// Aider with Power Search
+⋮----
 export const getLlmProviderConfig = (providerName: LlmProviderName, settings?: SettingsData | null): LlmProvider =>
 ⋮----
 region: 'us-east-1', // Default region
@@ -3736,20 +3742,7 @@ export interface Model {
   cacheReadInputTokenCost?: number;
 }
 ⋮----
-export interface ProviderModels {
-  ollamaModels: Model[];
-  lmStudioModels: Model[];
-  openaiModels: Model[];
-  anthropicModels: Model[];
-  geminiModels: Model[];
-  bedrockModels: Model[];
-  deepseekModels: Model[];
-  groqModels: Model[];
-  openaiCompatibleModels: Model[];
-  openrouterModels: Model[];
-  requestyModels: Model[];
-  vertexAIModels: Model[];
-}
+export type ProviderModels = Partial<Record<LlmProviderName, Model[]>>;
 ⋮----
 export interface CustomCommandArgument {
   description: string;
@@ -5101,7 +5094,7 @@ import { Model, ModelInfo, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadAnthropicModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadAnthropicModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 
 ================
 File: src/main/models/providers/bedrock.ts
@@ -5112,7 +5105,7 @@ import { BedrockClient, ListInferenceProfilesCommand, GetFoundationModelAvailabi
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadBedrockModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadBedrockModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 ⋮----
 // Check if we have explicit keys or if AWS_PROFILE is set in the main process env
 ⋮----
@@ -5134,7 +5127,7 @@ import { ModelInfo, Model, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadDeepseekModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadDeepseekModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 
 ================
 File: src/main/models/providers/gemini.ts
@@ -5144,7 +5137,7 @@ import { ModelInfo, Model, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadGeminiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadGeminiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 
 ================
 File: src/main/models/providers/groq.ts
@@ -5162,7 +5155,7 @@ interface GroqApiResponse {
   data: GroqModel[];
 }
 ⋮----
-export const loadGroqModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadGroqModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 ⋮----
 // Filter out models that don't have pricing information
 
@@ -5174,7 +5167,7 @@ import { ModelInfo, Model, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadLmStudioModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadLmStudioModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 ⋮----
 const normalized = effectiveBaseUrl.replace(/\/+$/g, ''); // Remove all trailing slashes
 ⋮----
@@ -5188,7 +5181,7 @@ import { ModelInfo, Model, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadOllamaModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadOllamaModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 ⋮----
 let normalized = effectiveBaseUrl.replace(/\/+$/, ''); // Remove all trailing slashes
 ⋮----
@@ -5202,7 +5195,7 @@ import { Model, ModelInfo, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadOpenaiCompatibleModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadOpenaiCompatibleModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 
 ================
 File: src/main/models/providers/openai.ts
@@ -5212,7 +5205,7 @@ import { ModelInfo, Model, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadOpenAiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadOpenAiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 
 ================
 File: src/main/models/providers/openrouter.ts
@@ -5222,7 +5215,7 @@ import { Model, ModelInfo, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadOpenrouterModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadOpenrouterModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 
 ================
 File: src/main/models/providers/requesty.ts
@@ -5232,7 +5225,7 @@ import { ModelInfo, Model, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadRequestyModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadRequestyModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 
 ================
 File: src/main/models/providers/vertex-ai.ts
@@ -5244,7 +5237,7 @@ import { GoogleAuth } from 'google-auth-library';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 ⋮----
-export const loadVertexAIModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> =>
+export const loadVertexAIModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> =>
 ⋮----
 // Use provided credentials JSON
 ⋮----
@@ -5413,32 +5406,9 @@ import {
   UserMessageData,
 } from '@common/types';
 import { extractTextContent, fileExists, getActiveAgentProfile, parseUsageReport } from '@common/utils';
-import {
-  AnthropicProvider,
-  BedrockProvider,
-  COMPACT_CONVERSATION_AGENT_PROFILE,
-  DeepseekProvider,
-  GeminiProvider,
-  getLlmProviderConfig,
-  INIT_PROJECT_AGENTS_PROFILE,
-  isAnthropicProvider,
-  isBedrockProvider,
-  isDeepseekProvider,
-  isGeminiProvider,
-  isLmStudioProvider,
-  isOllamaProvider,
-  isOpenAiCompatibleProvider,
-  isOpenAiProvider,
-  isOpenRouterProvider,
-  LmStudioProvider,
-  OllamaProvider,
-  OpenAiCompatibleProvider,
-  OpenAiProvider,
-  OpenRouterProvider,
-} from '@common/agent';
+import { COMPACT_CONVERSATION_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
 import treeKill from 'tree-kill';
 import { v4 as uuidv4 } from 'uuid';
-import { parse } from '@dotenvx/dotenvx';
 ⋮----
 import type { SimpleGit } from 'simple-git';
 ⋮----
@@ -5455,8 +5425,9 @@ import { MessageAction, ResponseMessage } from '@/messages';
 import { Store } from '@/store';
 import { DEFAULT_MAIN_MODEL } from '@/models';
 import { CustomCommandManager, ShellCommandError } from '@/custom-commands';
-import { getLangfuseEnvironmentVariables, TelemetryManager } from '@/telemetry';
+import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
+import { getEnvironmentVariablesForAider } from '@/utils';
 ⋮----
 export class Project
 ⋮----
@@ -5504,12 +5475,6 @@ i++; // Skip the model value
 // Spawn without shell to have direct process control
 ⋮----
 // Send stderr errors as log messages while aider is starting
-⋮----
-private getEnvironmentVariablesForAider(settings: SettingsData): Record<string, unknown>
-⋮----
-? // only set OPENAI_API_KEY and OPENAI_API_BASE if openai is not used
-⋮----
-private getTelemetryEnvironmentVariablesForAider(settings: SettingsData): Record<string, unknown>
 ⋮----
 public isStarted()
 ⋮----
@@ -6542,27 +6507,9 @@ File: src/main/store/index.ts
 File: src/main/store/store.ts
 ================
 import { v4 as uuidv4 } from 'uuid';
-import {
-  AgentProfile,
-  ContextMemoryMode,
-  ProjectData,
-  ProjectSettings,
-  SettingsData,
-  StartupMode,
-  SuggestionMode,
-  ToolApprovalState,
-  WindowState,
-} from '@common/types';
+import { AgentProfile, ProjectData, ProjectSettings, SettingsData, StartupMode, SuggestionMode, WindowState } from '@common/types';
 import { normalizeBaseDir } from '@common/utils';
-import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROVIDER_MODELS, LlmProviderName } from '@common/agent';
-import {
-  POWER_TOOL_BASH,
-  POWER_TOOL_FILE_EDIT,
-  POWER_TOOL_FILE_READ,
-  POWER_TOOL_FILE_WRITE,
-  POWER_TOOL_GROUP_NAME,
-  TOOL_GROUP_NAME_SEPARATOR,
-} from '@common/tools';
+import { AVAILABLE_PROVIDERS, DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROFILES, DEFAULT_PROVIDER_MODEL } from '@common/agent';
 ⋮----
 import { migrateSettingsV0toV1 } from './migrations/v0-to-v1';
 import { migrateSettingsV1toV2 } from './migrations/v1-to-v2';
@@ -6578,9 +6525,9 @@ import { migrateV10ToV11 } from './migrations/v10-to-v11';
 import { migrateV11ToV12 } from './migrations/v11-to-v12';
 import { migrateV12ToV13 } from './migrations/v12-to-v13';
 ⋮----
-import { DEEPSEEK_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
-import { determineMainModel, determineWeakModel, determineAgentProvider } from '@/utils';
+import { determineMainModel, determineWeakModel } from '@/utils';
 import logger from '@/logger';
+import { ModelManager } from '@/models';
 ⋮----
 export const getDefaultProjectSettings = (store: Store, baseDir: string): ProjectSettings =>
 ⋮----
@@ -6616,14 +6563,6 @@ getUserId(): string
 ⋮----
 createDefaultSettings(): SettingsData
 ⋮----
-createDefaultAgentProfiles(): AgentProfile[]
-⋮----
-// Power tools
-⋮----
-// Aider
-⋮----
-// Aider with Power Search
-⋮----
 getSettings(): SettingsData
 ⋮----
 const getAgentProfiles = () =>
@@ -6648,6 +6587,12 @@ updateOpenProjectsOrder(baseDirs: string[]): ProjectData[]
 ⋮----
 // This case should ideally not happen if baseDirs comes from the existing open projects.
 // If it can happen, we might need to decide how to handle it (e.g., log a warning).
+⋮----
+async updateProviderModelInAgentProfiles(modelManager: ModelManager)
+⋮----
+// Provider not configured, find the first available configured provider
+⋮----
+// Update settings with modified agent profiles
 ⋮----
 getRecentProjects(): string[]
 ⋮----
@@ -6825,11 +6770,36 @@ import path from 'path';
 ⋮----
 import { parse } from '@dotenvx/dotenvx';
 import YAML from 'yaml';
-import { LlmProviderName } from '@common/agent';
+import {
+  AnthropicProvider,
+  BedrockProvider,
+  DeepseekProvider,
+  GeminiProvider,
+  getLlmProviderConfig,
+  GroqProvider,
+  LlmProviderName,
+  LmStudioProvider,
+  OllamaProvider,
+  OpenAiCompatibleProvider,
+  OpenAiProvider,
+  OpenRouterProvider,
+  RequestyProvider,
+} from '@common/agent';
 import { EnvironmentVariable, SettingsData } from '@common/types';
 ⋮----
 import logger from '@/logger';
-import { DEEPSEEK_MODEL, DEFAULT_MAIN_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
+import {
+  DEEPSEEK_MODEL,
+  DEFAULT_MAIN_MODEL,
+  GEMINI_MODEL,
+  GROQ_MODEL,
+  LM_STUDIO_MODEL,
+  OLLAMA_MODEL,
+  OPEN_AI_DEFAULT_MODEL,
+  OPENROUTER_MODEL,
+  SONNET_MODEL,
+} from '@/models';
+import { getLangfuseEnvironmentVariables } from '@/telemetry';
 ⋮----
 const readEnvFile = (filePath: string): Record<string, string> | null =>
 ⋮----
@@ -6880,7 +6850,17 @@ export const determineMainModel = (settings: SettingsData, baseDir: string): str
 ⋮----
 // Default model if no other condition is met
 ⋮----
-export const determineAgentProvider = (projectDir?: string, settings?: SettingsData): LlmProviderName | undefined =>
+export const getEnvironmentVariablesForAider = (settings: SettingsData, baseDir: string): Record<string, unknown> =>
+⋮----
+? // only set OPENAI_API_KEY and OPENAI_API_BASE for openai-compatible if openai and requesty are not configured
+⋮----
+? // only set OPENAI_API_KEY and OPENAI_API_BASE for requesty if openai and openai-compatible are not configured
+⋮----
+// Bedrock
+⋮----
+const getTelemetryEnvironmentVariablesForAider = (settings: SettingsData, baseDir: string): Record<string, unknown> =>
+⋮----
+export const determineProvider = (projectDir?: string, settings?: SettingsData): LlmProviderName =>
 
 ================
 File: src/main/utils/file-system.ts
@@ -7125,7 +7105,7 @@ constructor(
 ⋮----
 loadSettings(): SettingsData
 ⋮----
-saveSettings(newSettings: SettingsData): SettingsData
+async saveSettings(newSettings: SettingsData): Promise<SettingsData>
 ⋮----
 saveTheme(theme: Theme): Theme | undefined
 ⋮----
@@ -7402,7 +7382,8 @@ import { EditFormat, FileEdit, McpServerConfig, Mode, ProjectSettings, SettingsD
 import { ipcMain } from 'electron';
 ⋮----
 import { EventsHandler } from './events-handler';
-import { ServerController } from './server/server-controller';
+⋮----
+import { ServerController } from '@/server';
 ⋮----
 export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController) =>
 ⋮----
@@ -12381,7 +12362,7 @@ import { useApi } from '@/context/ApiContext';
 ⋮----
 type ModelProviderContextType = {
   refresh: () => void;
-  getModels: (provider: LlmProviderName) => Model[];
+  getModels: (provider: LlmProviderName) => Model[] | undefined;
   loading: boolean;
   error: string | null;
 };

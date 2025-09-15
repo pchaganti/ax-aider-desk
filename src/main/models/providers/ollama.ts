@@ -3,13 +3,13 @@ import { ModelInfo, Model, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 
-export const loadOllamaModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> => {
+export const loadOllamaModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> => {
   const baseUrl = settings.llmProviders?.ollama?.baseUrl || '';
   const environmentVariable = getEffectiveEnvironmentVariable('OLLAMA_API_BASE', undefined, settings);
   const effectiveBaseUrl = baseUrl || environmentVariable?.value || '';
 
   if (!effectiveBaseUrl) {
-    return [];
+    return undefined;
   }
 
   try {

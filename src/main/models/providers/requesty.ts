@@ -3,13 +3,13 @@ import { ModelInfo, Model, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 
-export const loadRequestyModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> => {
+export const loadRequestyModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> => {
   const apiKey = settings.llmProviders?.requesty?.apiKey || '';
   const apiKeyEnv = getEffectiveEnvironmentVariable('REQUESTY_API_KEY', undefined, settings);
   const effectiveApiKey = apiKey || apiKeyEnv?.value || '';
 
   if (!effectiveApiKey) {
-    return [];
+    return undefined;
   }
 
   try {

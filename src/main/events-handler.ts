@@ -49,7 +49,7 @@ export class EventsHandler {
     private mcpManager: McpManager,
     private agent: Agent,
     private versionsManager: VersionsManager,
-    private modelInfoManager: ModelManager,
+    private modelManager: ModelManager,
     private telemetryManager: TelemetryManager,
     private dataManager: DataManager,
     private terminalManager: TerminalManager,
@@ -60,7 +60,7 @@ export class EventsHandler {
     return this.store.getSettings();
   }
 
-  saveSettings(newSettings: SettingsData): SettingsData {
+  async saveSettings(newSettings: SettingsData): Promise<SettingsData> {
     const oldSettings = this.store.getSettings();
     this.store.saveSettings(newSettings);
 
@@ -68,7 +68,10 @@ export class EventsHandler {
     this.agent.settingsChanged(oldSettings, newSettings);
     this.projectManager.settingsChanged(oldSettings, newSettings);
     this.telemetryManager.settingsChanged(oldSettings, newSettings);
-    void this.modelInfoManager.settingsChanged(oldSettings, newSettings);
+
+    if (await this.modelManager.settingsChanged(oldSettings, newSettings)) {
+      await this.store.updateProviderModelInAgentProfiles(this.modelManager);
+    }
 
     return this.store.getSettings();
   }
@@ -93,7 +96,7 @@ export class EventsHandler {
 
   async loadModelsInfo(): Promise<Record<string, ModelInfo>> {
     try {
-      return await this.modelInfoManager.getAllModelsInfo();
+      return await this.modelManager.getAllModelsInfo();
     } catch (error) {
       logger.error('Error loading models info:', error);
       return {}; // Return empty object or handle error as appropriate
@@ -555,7 +558,7 @@ export class EventsHandler {
   }
 
   async getProviderModels(): Promise<ProviderModels> {
-    return await this.modelInfoManager.getProviderModels();
+    return await this.modelManager.getProviderModels();
   }
 
   async showOpenDialog(options: Electron.OpenDialogSyncOptions): Promise<Electron.OpenDialogReturnValue> {

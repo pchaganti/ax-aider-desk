@@ -4,7 +4,7 @@ import { BedrockClient, ListInferenceProfilesCommand, GetFoundationModelAvailabi
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 
-export const loadBedrockModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> => {
+export const loadBedrockModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> => {
   const bedrockConfig = settings.llmProviders?.bedrock;
   const regionEnv = getEffectiveEnvironmentVariable('AWS_REGION', undefined, settings);
   const region = bedrockConfig?.region || regionEnv?.value || '';
@@ -18,7 +18,7 @@ export const loadBedrockModels = async (settings: SettingsData, modelsInfo: Reco
 
   if (!region) {
     logger.debug('AWS region is required for Bedrock. Please set it in Providers settings or via AWS_REGION environment variable.');
-    return [];
+    return undefined;
   }
 
   // Check if we have explicit keys or if AWS_PROFILE is set in the main process env
@@ -26,7 +26,7 @@ export const loadBedrockModels = async (settings: SettingsData, modelsInfo: Reco
     logger.debug(
       'AWS credentials (accessKeyId/secretAccessKey) or AWS_PROFILE must be provided for Bedrock in Providers settings or Aider environment variables.',
     );
-    return [];
+    return undefined;
   }
 
   try {

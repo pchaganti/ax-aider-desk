@@ -109,10 +109,14 @@ export class ModelManager {
 
   async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData) {
     const changedProviders = this.getChangedProviders(oldSettings.llmProviders, newSettings.llmProviders);
-    if (changedProviders.length > 0) {
-      await this.initPromise;
-      await this.loadProviderModels(changedProviders);
+    if (changedProviders.length === 0) {
+      return false;
     }
+
+    await this.initPromise;
+    await this.loadProviderModels(changedProviders);
+
+    return true;
   }
 
   async getAllModelsInfo(): Promise<Record<string, ModelInfo>> {
@@ -132,40 +136,40 @@ export class ModelManager {
 
     const providerLoaders: Record<LlmProviderName, () => Promise<void>> = {
       anthropic: async () => {
-        updatedProviderModels.anthropicModels = await loadAnthropicModels(settings, this.modelsInfo);
+        updatedProviderModels.anthropic = await loadAnthropicModels(settings, this.modelsInfo);
       },
       bedrock: async () => {
-        updatedProviderModels.bedrockModels = await loadBedrockModels(settings, this.modelsInfo);
+        updatedProviderModels.bedrock = await loadBedrockModels(settings, this.modelsInfo);
       },
       deepseek: async () => {
-        updatedProviderModels.deepseekModels = await loadDeepseekModels(settings, this.modelsInfo);
+        updatedProviderModels.deepseek = await loadDeepseekModels(settings, this.modelsInfo);
       },
       gemini: async () => {
-        updatedProviderModels.geminiModels = await loadGeminiModels(settings, this.modelsInfo);
+        updatedProviderModels.gemini = await loadGeminiModels(settings, this.modelsInfo);
       },
       groq: async () => {
-        updatedProviderModels.groqModels = await loadGroqModels(settings, this.modelsInfo);
+        updatedProviderModels.groq = await loadGroqModels(settings, this.modelsInfo);
       },
       lmstudio: async () => {
-        updatedProviderModels.lmStudioModels = await loadLmStudioModels(settings, this.modelsInfo);
+        updatedProviderModels.lmstudio = await loadLmStudioModels(settings, this.modelsInfo);
       },
       ollama: async () => {
-        updatedProviderModels.ollamaModels = await loadOllamaModels(settings, this.modelsInfo);
+        updatedProviderModels.ollama = await loadOllamaModels(settings, this.modelsInfo);
       },
       'openai-compatible': async () => {
-        updatedProviderModels.openaiCompatibleModels = await loadOpenaiCompatibleModels(settings, this.modelsInfo);
+        updatedProviderModels['openai-compatible'] = await loadOpenaiCompatibleModels(settings, this.modelsInfo);
       },
       openai: async () => {
-        updatedProviderModels.openaiModels = await loadOpenAiModels(settings, this.modelsInfo);
+        updatedProviderModels.openai = await loadOpenAiModels(settings, this.modelsInfo);
       },
       openrouter: async () => {
-        updatedProviderModels.openrouterModels = await loadOpenrouterModels(settings, this.modelsInfo);
+        updatedProviderModels.openrouter = await loadOpenrouterModels(settings, this.modelsInfo);
       },
       requesty: async () => {
-        updatedProviderModels.requestyModels = await loadRequestyModels(settings, this.modelsInfo);
+        updatedProviderModels.requesty = await loadRequestyModels(settings, this.modelsInfo);
       },
       'vertex-ai': async () => {
-        updatedProviderModels.vertexAIModels = await loadVertexAIModels(settings, this.modelsInfo);
+        updatedProviderModels['vertex-ai'] = await loadVertexAIModels(settings, this.modelsInfo);
       },
     };
 

@@ -6,7 +6,7 @@ import { useApi } from '@/context/ApiContext';
 
 type ModelProviderContextType = {
   refresh: () => void;
-  getModels: (provider: LlmProviderName) => Model[];
+  getModels: (provider: LlmProviderName) => Model[] | undefined;
   loading: boolean;
   error: string | null;
 };
@@ -17,20 +17,7 @@ export const ModelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const api = useApi();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [providerModels, setProviderModels] = useState<ProviderModels>({
-    anthropicModels: [],
-    bedrockModels: [],
-    deepseekModels: [],
-    geminiModels: [],
-    groqModels: [],
-    lmStudioModels: [],
-    ollamaModels: [],
-    openaiModels: [],
-    openaiCompatibleModels: [],
-    openrouterModels: [],
-    requestyModels: [],
-    vertexAIModels: [],
-  });
+  const [providerModels, setProviderModels] = useState<ProviderModels>({});
 
   const loadModels = useCallback(async () => {
     setProviderModels((prev) => ({ ...prev, loading: true, error: null }));
@@ -52,35 +39,8 @@ export const ModelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [loadModels]);
 
   const getModels = useCallback(
-    (provider: LlmProviderName): Model[] => {
-      switch (provider) {
-        case 'anthropic':
-          return providerModels.anthropicModels;
-        case 'bedrock':
-          return providerModels.bedrockModels;
-        case 'deepseek':
-          return providerModels.deepseekModels;
-        case 'gemini':
-          return providerModels.geminiModels;
-        case 'groq':
-          return providerModels.groqModels;
-        case 'lmstudio':
-          return providerModels.lmStudioModels;
-        case 'ollama':
-          return providerModels.ollamaModels;
-        case 'openai':
-          return providerModels.openaiModels;
-        case 'openai-compatible':
-          return providerModels.openaiCompatibleModels;
-        case 'openrouter':
-          return providerModels.openrouterModels;
-        case 'requesty':
-          return providerModels.requestyModels;
-        case 'vertex-ai':
-          return providerModels.vertexAIModels;
-        default:
-          return [];
-      }
+    (provider: LlmProviderName): Model[] | undefined => {
+      return providerModels[provider];
     },
     [providerModels],
   );

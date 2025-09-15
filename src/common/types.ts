@@ -543,20 +543,7 @@ export interface Model {
   cacheReadInputTokenCost?: number;
 }
 
-export interface ProviderModels {
-  ollamaModels: Model[];
-  lmStudioModels: Model[];
-  openaiModels: Model[];
-  anthropicModels: Model[];
-  geminiModels: Model[];
-  bedrockModels: Model[];
-  deepseekModels: Model[];
-  groqModels: Model[];
-  openaiCompatibleModels: Model[];
-  openrouterModels: Model[];
-  requestyModels: Model[];
-  vertexAIModels: Model[];
-}
+export type ProviderModels = Partial<Record<LlmProviderName, Model[]>>;
 
 export interface CustomCommandArgument {
   description: string;

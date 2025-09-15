@@ -2,7 +2,8 @@ import { EditFormat, FileEdit, McpServerConfig, Mode, ProjectSettings, SettingsD
 import { ipcMain } from 'electron';
 
 import { EventsHandler } from './events-handler';
-import { ServerController } from './server/server-controller';
+
+import { ServerController } from '@/server';
 
 export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController: ServerController) => {
   ipcMain.handle('load-settings', () => {

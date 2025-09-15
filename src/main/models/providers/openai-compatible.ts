@@ -3,7 +3,7 @@ import { Model, ModelInfo, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 
-export const loadOpenaiCompatibleModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> => {
+export const loadOpenaiCompatibleModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> => {
   const config = settings.llmProviders?.['openai-compatible'];
   const apiKey = config?.apiKey || '';
   const baseUrl = config?.baseUrl;
@@ -15,7 +15,7 @@ export const loadOpenaiCompatibleModels = async (settings: SettingsData, modelsI
   const effectiveBaseUrl = baseUrl || baseUrlEnv?.value;
 
   if (!(effectiveApiKey && effectiveBaseUrl)) {
-    return [];
+    return undefined;
   }
 
   try {

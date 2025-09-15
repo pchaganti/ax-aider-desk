@@ -3,13 +3,13 @@ import { ModelInfo, Model, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 
-export const loadOpenAiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> => {
+export const loadOpenAiModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> => {
   const apiKey = settings.llmProviders?.openai?.apiKey || '';
   const environmentVariable = getEffectiveEnvironmentVariable('OPENAI_API_KEY', undefined, settings);
   const effectiveApiKey = apiKey || environmentVariable?.value || '';
 
   if (!effectiveApiKey) {
-    return [];
+    return undefined;
   }
 
   try {

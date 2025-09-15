@@ -10,6 +10,7 @@
 - added None reasoning effort option for OpenAI provider
 - added dynamic model loading for LLM providers
 - enhanced Power tool messages UX
+- automatically setting configured provider models when API keys are provided
 
 ## [0.30.0]
 

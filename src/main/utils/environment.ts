@@ -3,11 +3,36 @@ import path from 'path';
 
 import { parse } from '@dotenvx/dotenvx';
 import YAML from 'yaml';
-import { LlmProviderName } from '@common/agent';
+import {
+  AnthropicProvider,
+  BedrockProvider,
+  DeepseekProvider,
+  GeminiProvider,
+  getLlmProviderConfig,
+  GroqProvider,
+  LlmProviderName,
+  LmStudioProvider,
+  OllamaProvider,
+  OpenAiCompatibleProvider,
+  OpenAiProvider,
+  OpenRouterProvider,
+  RequestyProvider,
+} from '@common/agent';
 import { EnvironmentVariable, SettingsData } from '@common/types';
 
 import logger from '@/logger';
-import { DEEPSEEK_MODEL, DEFAULT_MAIN_MODEL, GEMINI_MODEL, OPEN_AI_DEFAULT_MODEL, SONNET_MODEL } from '@/models';
+import {
+  DEEPSEEK_MODEL,
+  DEFAULT_MAIN_MODEL,
+  GEMINI_MODEL,
+  GROQ_MODEL,
+  LM_STUDIO_MODEL,
+  OLLAMA_MODEL,
+  OPEN_AI_DEFAULT_MODEL,
+  OPENROUTER_MODEL,
+  SONNET_MODEL,
+} from '@/models';
+import { getLangfuseEnvironmentVariables } from '@/telemetry';
 
 const readEnvFile = (filePath: string): Record<string, string> | null => {
   try {
@@ -193,6 +218,7 @@ export const determineMainModel = (settings: SettingsData, baseDir: string): str
 
   const env = {
     ...process.env,
+    ...getEnvironmentVariablesForAider(settings, baseDir),
     ...parseAiderEnv(settings),
   };
   // Check environment variables in order
@@ -200,19 +226,81 @@ export const determineMainModel = (settings: SettingsData, baseDir: string): str
     return SONNET_MODEL;
   } else if (env.GEMINI_API_KEY) {
     return GEMINI_MODEL;
-  } else if (env.OPENAI_API_KEY && !env.OPENAI_API_BASE) {
+  } else if (env.OPENAI_API_KEY) {
     return OPEN_AI_DEFAULT_MODEL;
   } else if (env.DEEPSEEK_API_KEY) {
     return DEEPSEEK_MODEL;
   } else if (env.OPENROUTER_API_KEY) {
-    return 'openrouter/google/gemini-2.5-pro';
+    return OPENROUTER_MODEL;
+  } else if (env.OLLAMA_API_BASE) {
+    return OLLAMA_MODEL;
+  } else if (env.LM_STUDIO_API_BASE) {
+    return LM_STUDIO_MODEL;
+  } else if (env.GROQ_API_KEY) {
+    return GROQ_MODEL;
   }
 
   // Default model if no other condition is met
   return DEFAULT_MAIN_MODEL;
 };
 
-export const determineAgentProvider = (projectDir?: string, settings?: SettingsData): LlmProviderName | undefined => {
+export const getEnvironmentVariablesForAider = (settings: SettingsData, baseDir: string): Record<string, unknown> => {
+  const openAiProvider = getLlmProviderConfig('openai', settings) as OpenAiProvider;
+  const openAiApiKey = openAiProvider.apiKey || undefined;
+
+  const ollamaProvider = getLlmProviderConfig('ollama', settings) as OllamaProvider;
+  const ollamaBaseUrl = ollamaProvider.baseUrl || undefined;
+
+  const openAiCompatibleProvider = getLlmProviderConfig('openai-compatible', settings) as OpenAiCompatibleProvider;
+  const requestyProvider = getLlmProviderConfig('requesty', settings) as RequestyProvider;
+
+  const anthropicProvider = getLlmProviderConfig('anthropic', settings) as AnthropicProvider;
+  const geminiProvider = getLlmProviderConfig('gemini', settings) as GeminiProvider;
+  const groqProvider = getLlmProviderConfig('groq', settings) as GroqProvider;
+  const lmStudioProvider = getLlmProviderConfig('lmstudio', settings) as LmStudioProvider;
+  const deepseekProvider = getLlmProviderConfig('deepseek', settings) as DeepseekProvider;
+  const openRouterProvider = getLlmProviderConfig('openrouter', settings) as OpenRouterProvider;
+  const bedrockProvider = getLlmProviderConfig('bedrock', settings) as BedrockProvider;
+
+  return {
+    OPENAI_API_KEY: openAiApiKey,
+    ...(!openAiApiKey && !requestyProvider.apiKey
+      ? // only set OPENAI_API_KEY and OPENAI_API_BASE for openai-compatible if openai and requesty are not configured
+        {
+          OPENAI_API_KEY: openAiCompatibleProvider.apiKey || undefined,
+          OPENAI_API_BASE: openAiCompatibleProvider.baseUrl || undefined,
+        }
+      : {}),
+    ...(!openAiApiKey && !openAiCompatibleProvider.baseUrl
+      ? // only set OPENAI_API_KEY and OPENAI_API_BASE for requesty if openai and openai-compatible are not configured
+        {
+          OPENAI_API_KEY: requestyProvider.apiKey || undefined,
+          OPENAI_API_BASE: 'https://router.requesty.ai/v1',
+        }
+      : {}),
+    ANTHROPIC_API_KEY: anthropicProvider.apiKey || undefined,
+    GROQ_API_KEY: groqProvider.apiKey || undefined,
+    GEMINI_API_KEY: geminiProvider.apiKey || undefined,
+    LM_STUDIO_API_BASE: lmStudioProvider.baseUrl || undefined,
+    DEEPSEEK_API_KEY: deepseekProvider.apiKey || undefined,
+    OPENROUTER_API_KEY: openRouterProvider.apiKey || undefined,
+    // Bedrock
+    AWS_REGION: bedrockProvider.region || undefined,
+    AWS_ACCESS_KEY_ID: bedrockProvider.accessKeyId || undefined,
+    AWS_SECRET_ACCESS_KEY: bedrockProvider.secretAccessKey || undefined,
+    OLLAMA_API_BASE: (ollamaBaseUrl && (ollamaBaseUrl.endsWith('/api') ? ollamaBaseUrl.slice(0, -4) : ollamaBaseUrl)) || undefined,
+    ...parse(settings.aider.environmentVariables),
+    ...getTelemetryEnvironmentVariablesForAider(settings, baseDir),
+  };
+};
+
+const getTelemetryEnvironmentVariablesForAider = (settings: SettingsData, baseDir: string): Record<string, unknown> => {
+  return {
+    ...getLangfuseEnvironmentVariables(baseDir, settings),
+  };
+};
+
+export const determineProvider = (projectDir?: string, settings?: SettingsData): LlmProviderName => {
   if (getEffectiveEnvironmentVariable('ANTHROPIC_API_KEY', projectDir, settings)) {
     return 'anthropic';
   }
@@ -231,5 +319,5 @@ export const determineAgentProvider = (projectDir?: string, settings?: SettingsD
   if (getEffectiveEnvironmentVariable('REQUESTY_API_KEY', projectDir, settings)) {
     return 'requesty';
   }
-  return undefined;
+  return 'anthropic';
 };

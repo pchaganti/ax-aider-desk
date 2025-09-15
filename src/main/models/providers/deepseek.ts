@@ -3,12 +3,12 @@ import { ModelInfo, Model, SettingsData } from '@common/types';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 
-export const loadDeepseekModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[]> => {
+export const loadDeepseekModels = async (settings: SettingsData, modelsInfo: Record<string, ModelInfo>): Promise<Model[] | undefined> => {
   const apiKey = settings.llmProviders?.deepseek?.apiKey || '';
   const apiKeyEnv = getEffectiveEnvironmentVariable('DEEPSEEK_API_KEY', undefined, settings);
 
   if (!apiKey && !apiKeyEnv?.value) {
-    return [];
+    return undefined;
   }
 
   try {
