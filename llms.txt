@@ -232,11 +232,17 @@ src/
           ContextFiles.tsx
           index.ts
         message/
+          BashToolMessage.tsx
           CommandOutputMessageBlock.tsx
           CopyMessageButton.tsx
           CustomCommandBashBlock.tsx
+          ExpandableMessageBlock.tsx
+          FetchToolMessage.tsx
           FileEditToolMessage.tsx
+          FileReadToolMessage.tsx
           FileWriteToolMessage.tsx
+          GlobToolMessage.tsx
+          GrepToolMessage.tsx
           GroupMessageBlock.tsx
           index.ts
           LoadingMessageBlock.tsx
@@ -246,6 +252,7 @@ src/
           Messages.tsx
           ReflectedMessageBlock.tsx
           ResponseMessageBlock.tsx
+          SemanticSearchToolMessage.tsx
           SubagentToolMessage.tsx
           ThinkingAnswerBlock.tsx
           ToolMessageBlock.tsx
@@ -1757,11 +1764,45 @@ File: src/common/locales/en.json
         "replacementText": "Replacement Text",
         "replaceAll": "Replace All"
       },
-      "glob": "Find files matching pattern: {{pattern}}",
-      "grep": "Search files matching '{{filePattern}}' for '{{searchTerm}}'",
-      "bash": "Run command",
-      "semanticSearch": "Semantic search: '{{query}}' in path: '{{path}}'",
-      "fetch": "Fetch: {{url}}"
+      "glob": {
+        "title": "Find files matching pattern:",
+        "foundFiles": "Found {{count}} files",
+        "noMatches": "No matches found.",
+        "for": "for",
+        "contextLines": "({{count}} lines of context)",
+        "matchesCount": "({{count}} matches)",
+        "lineLabel": "Line {{lineNumber}}:",
+        "contextLabel": "Context:"
+      },
+      "grep": {
+        "title": "Search files matching",
+        "for": "for",
+        "foundMatches": "Found {{count}} matches",
+        "noMatches": "No matches found.",
+        "contextLines": "({{count}} lines of context)",
+        "matchesCount": "({{count}} matches)",
+        "lineLabel": "Line {{lineNumber}}:",
+        "contextLabel": "Context:"
+      },
+      "bash": {
+        "title": "Run command",
+        "exitCode": "Exit Code",
+        "stdout": "Stdout",
+        "stderr": "Stderr",
+        "commandFailed": "Command failed"
+      },
+      "semanticSearch": {
+        "title": "Semantic search:",
+        "in": "in",
+        "noMatches": "No matches found.",
+        "foundMatches": "Found {{count}} matches",
+        "score": " (score: {{score}})",
+        "resultLabel": "Result {{index}}"
+      },
+      "fetch": {
+        "title": "Fetch",
+        "contentTruncated": "Content truncated. Full content available in copy."
+      }
     },
     "subagents": {
       "groupRunning": "{{name}}: Subagent is working...",
@@ -2595,11 +2636,41 @@ File: src/common/locales/zh.json
         "replacementText": "替换文本",
         "replaceAll": "替换所有"
       },
-      "glob": "查找匹配模式的文件: {{pattern}}",
-      "grep": "在“{{filePattern}}”中搜索“{{searchTerm}}”",
-      "bash": "运行命令",
-      "semanticSearch": "语义搜索：“{{query}}”在路径：“{{path}}”",
-      "fetch": "获取: {{url}}"
+      "glob": {
+        "title": "查找匹配模式的文件:",
+        "foundFiles": "找到 {{count}} 文件",
+        "foundMatches": "找到 {{count}} 个匹配项",
+        "noMatches": "未找到匹配项。"
+      },
+      "grep": {
+        "title": "在",
+        "for": "搜索",
+        "foundMatches": "找到 {{count}} 个匹配项",
+        "noMatches": "未找到匹配项。",
+        "contextLines": "({{count}} 行上下文)",
+        "matchesCount": "({{count}} 个匹配)",
+        "lineLabel": "第 {{lineNumber}} 行:",
+        "contextLabel": "上下文:"
+      },
+      "bash": {
+        "title": "执行 shell 命令",
+        "exitCode": "退出码",
+        "stdout": "标准输出",
+        "stderr": "标准错误",
+        "commandFailed": "命令失败"
+      },
+      "semanticSearch": {
+        "title": "语义搜索:",
+        "in": "在",
+        "noMatches": "未找到匹配项。",
+        "foundMatches": "找到 {{count}} 个匹配项",
+        "score": " (得分: {{score}})",
+        "resultLabel": "结果 {{index}}"
+      },
+      "fetch": {
+        "title": "抓取网页内容",
+        "contentTruncated": "内容已截断。完整内容可在复制中查看。"
+      }
     },
     "subagents": {
       "groupRunning": "{{name}}: 子代理正在工作...",
@@ -8227,6 +8298,7 @@ import { ReactNode, useRef, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
 ⋮----
 type Props = {
   title: ReactNode;
@@ -8819,6 +8891,23 @@ File: src/renderer/src/components/ContextFiles/index.ts
 
 
 ================
+File: src/renderer/src/components/message/BashToolMessage.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { RiTerminalLine, RiErrorWarningFill, RiCheckboxCircleFill } from 'react-icons/ri';
+import { CgSpinner } from 'react-icons/cg';
+⋮----
+import { ToolMessage } from '@/types/message';
+import { CodeInline } from '@/components/common/CodeInline';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
+⋮----
+type Props = {
+  message: ToolMessage;
+  onRemove?: () => void;
+};
+
+================
 File: src/renderer/src/components/message/CommandOutputMessageBlock.tsx
 ================
 import { BiTerminal } from 'react-icons/bi';
@@ -8870,39 +8959,110 @@ type Props = {
 const toggleAccordion = () =>
 
 ================
-File: src/renderer/src/components/message/FileEditToolMessage.tsx
+File: src/renderer/src/components/message/ExpandableMessageBlock.tsx
+================
+import { ReactNode, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
+import { UsageReportData } from '@common/types';
+⋮----
+import { MessageBar } from './MessageBar';
+⋮----
+import { Accordion } from '@/components/common/Accordion';
+⋮----
+type Props = {
+  title: ReactNode;
+  content: ReactNode;
+  copyContent?: string;
+  usageReport?: UsageReportData;
+  onRemove?: () => void;
+  initialExpanded?: boolean;
+};
+⋮----
+export interface ExpandableMessageBlockRef {
+  open: () => void;
+  close: () => void;
+}
+⋮----
+const handleExpandedChange = (open: boolean) =>
+⋮----
+{/* Gradient overlay for initial auto-expand */}
+
+================
+File: src/renderer/src/components/message/FetchToolMessage.tsx
 ================
 import { useTranslation } from 'react-i18next';
-import { RiToolsFill } from 'react-icons/ri';
-import { getLanguageFromPath } from '@common/utils';
-import { clsx } from 'clsx';
+import { RiLinkM, RiErrorWarningFill, RiCheckboxCircleFill } from 'react-icons/ri';
+import { CgSpinner } from 'react-icons/cg';
 ⋮----
 import { ToolMessage } from '@/types/message';
-import { MessageBar } from '@/components/message/MessageBar';
-import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
 ⋮----
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
 };
 ⋮----
-const getToolName = (): string =>
+if (isError)
+
+================
+File: src/renderer/src/components/message/FileEditToolMessage.tsx
+================
+import { useEffect, useRef, useState } from 'react';
+import { RiCheckboxCircleFill, RiEditLine, RiErrorWarningFill } from 'react-icons/ri';
+import { getLanguageFromPath } from '@common/utils';
+import { CgSpinner } from 'react-icons/cg';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { ToolMessage } from '@/types/message';
+import { CodeBlock } from '@/components/common/CodeBlock';
+import { CodeInline } from '@/components/common/CodeInline';
+import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
+⋮----
+type Props = {
+  message: ToolMessage;
+  onRemove?: () => void;
+};
 ⋮----
 <strong>
+⋮----
+content=
+
+================
+File: src/renderer/src/components/message/FileReadToolMessage.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { RiFileTextLine, RiCheckboxCircleFill, RiErrorWarningFill } from 'react-icons/ri';
+import { getLanguageFromPath } from '@common/utils';
+import { CgSpinner } from 'react-icons/cg';
+⋮----
+import { ToolMessage } from '@/types/message';
+import { CodeBlock } from '@/components/common/CodeBlock';
+import { CodeInline } from '@/components/common/CodeInline';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
+⋮----
+type Props = {
+  message: ToolMessage;
+  onRemove?: () => void;
+};
 
 ================
 File: src/renderer/src/components/message/FileWriteToolMessage.tsx
 ================
+import { useEffect, useRef, useState } from 'react';
+import { RiCheckboxCircleFill, RiEditLine, RiErrorWarningFill } from 'react-icons/ri';
+import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
-import { RiToolsFill } from 'react-icons/ri';
 import { FileWriteMode } from '@common/types';
-import { getLanguageFromPath } from '@common/utils'; // Assuming CodeBlock can be used here
+import { getLanguageFromPath } from '@common/utils';
 ⋮----
 import { ToolMessage } from '@/types/message';
-import { MessageBar } from '@/components/message/MessageBar';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
+import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -8911,9 +9071,51 @@ type Props = {
 ⋮----
 const formatName = (name: string): string =>
 ⋮----
-export const FileWriteToolMessage = (
-⋮----
 const getToolName = (): string =>
+⋮----
+content=
+
+================
+File: src/renderer/src/components/message/GlobToolMessage.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { RiFolderLine, RiFileTextLine, RiErrorWarningFill, RiCheckboxCircleFill } from 'react-icons/ri';
+import { LuFolderSearch } from 'react-icons/lu';
+import { CgSpinner } from 'react-icons/cg';
+⋮----
+import { ToolMessage } from '@/types/message';
+import { CodeInline } from '@/components/common/CodeInline';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
+⋮----
+type Props = {
+  message: ToolMessage;
+  onRemove?: () => void;
+};
+⋮----
+if (isError)
+
+================
+File: src/renderer/src/components/message/GrepToolMessage.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { RiErrorWarningFill, RiCheckboxCircleFill } from 'react-icons/ri';
+import { LuFileSearch } from 'react-icons/lu';
+import { CgSpinner } from 'react-icons/cg';
+⋮----
+import { ToolMessage } from '@/types/message';
+import { CodeInline } from '@/components/common/CodeInline';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
+⋮----
+type Props = {
+  message: ToolMessage;
+  onRemove?: () => void;
+};
+⋮----
+if (isError)
+⋮----
+<span className="text-text-muted">
 
 ================
 File: src/renderer/src/components/message/GroupMessageBlock.tsx
@@ -9042,7 +9244,13 @@ import {
   HELPERS_TOOL_INVALID_TOOL_ARGUMENTS,
   HELPERS_TOOL_NO_SUCH_TOOL,
   POWER_TOOL_FILE_EDIT,
+  POWER_TOOL_FILE_READ,
   POWER_TOOL_FILE_WRITE,
+  POWER_TOOL_GLOB,
+  POWER_TOOL_GREP,
+  POWER_TOOL_BASH,
+  POWER_TOOL_FETCH,
+  POWER_TOOL_SEMANTIC_SEARCH,
   POWER_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_RUN_TASK,
@@ -9057,6 +9265,12 @@ import { ResponseMessageBlock } from './ResponseMessageBlock';
 import { ToolMessageBlock } from './ToolMessageBlock';
 import { FileWriteToolMessage } from './FileWriteToolMessage';
 import { FileEditToolMessage } from './FileEditToolMessage';
+import { FileReadToolMessage } from './FileReadToolMessage';
+import { GlobToolMessage } from './GlobToolMessage';
+import { GrepToolMessage } from './GrepToolMessage';
+import { BashToolMessage } from './BashToolMessage';
+import { FetchToolMessage } from './FetchToolMessage';
+import { SemanticSearchToolMessage } from './SemanticSearchToolMessage';
 import { SubagentToolMessage } from './SubagentToolMessage';
 ⋮----
 import {
@@ -9170,6 +9384,26 @@ type Props = {
 };
 
 ================
+File: src/renderer/src/components/message/SemanticSearchToolMessage.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { RiErrorWarningFill, RiCheckboxCircleFill } from 'react-icons/ri';
+import { FaSearchengin } from 'react-icons/fa6';
+import { CgSpinner } from 'react-icons/cg';
+⋮----
+import { ToolMessage } from '@/types/message';
+import { CodeInline } from '@/components/common/CodeInline';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StyledTooltip } from '@/components/common/StyledTooltip';
+⋮----
+type Props = {
+  message: ToolMessage;
+  onRemove?: () => void;
+};
+⋮----
+if (isError)
+
+================
 File: src/renderer/src/components/message/SubagentToolMessage.tsx
 ================
 import { useTranslation } from 'react-i18next';
@@ -9193,7 +9427,6 @@ File: src/renderer/src/components/message/ThinkingAnswerBlock.tsx
 ================
 import { MouseEvent, useState } from 'react';
 import { FaBrain, FaChevronDown, FaChevronRight } from 'react-icons/fa';
-import { MdOutlineLightbulb } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 ⋮----
@@ -9218,13 +9451,11 @@ const handleToggleThinking = (e: MouseEvent<HTMLDivElement>) =>
 ================
 File: src/renderer/src/components/message/ToolMessageBlock.tsx
 ================
-import { ReactNode, useEffect, useRef, useState } from 'react';
-import { MdKeyboardArrowDown, MdKeyboardArrowRight } from 'react-icons/md';
+import { ReactNode } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { RiToolsFill } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { VscError } from 'react-icons/vsc';
-import { clsx } from 'clsx';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DROP_CONTEXT_FILES,
@@ -9241,9 +9472,9 @@ import {
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
 import { parseToolContent } from './utils';
+import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 ⋮----
 import { ToolMessage } from '@/types/message';
-import { MessageBar } from '@/components/message/MessageBar';
 import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
 type Props = {
@@ -9253,30 +9484,11 @@ type Props = {
 ⋮----
 const formatName = (name: string): string =>
 ⋮----
-const [isExpanded, setIsExpanded] = useState(true); // Controls visibility
-const [isInitialAutoExpand, setIsInitialAutoExpand] = useState(true); // Tracks the initial phase
-⋮----
-// Auto-collapse only during the initial phase
-⋮----
-// Check again inside timeout in case user clicked during the delay
-⋮----
-setIsInitialAutoExpand(false); // End the initial phase
-⋮----
-// Cleanup function to clear the timeout
-⋮----
-}, [isInitialAutoExpand]); // Depend only on isInitialAutoExpand
-⋮----
 const defaultLabel = () => t('toolMessage.toolLabel',
 ⋮----
 // Handles message.args.paths (array) or fallback to message.args.path (string)
 ⋮----
 // Handles message.args.paths (array) or fallback to message.args.path (string)
-⋮----
-// Clear any existing timer
-⋮----
-// Always end the initial phase on click
-⋮----
-// Toggle expansion state
 ⋮----
 // Display pretty-printed JSON
 ⋮----
@@ -9288,18 +9500,7 @@ rawContentToCopy = JSON.stringify(parsedResult.json); // Copy raw JSON
 ⋮----
 
 ⋮----
-{/* Header */}
-⋮----
 {/* Tool Specific Content */}
-⋮----
-{/* Content */}
-⋮----
-'max-h-[150px] opacity-100': isExpanded && isInitialAutoExpand, // Initial limited height
-'max-h-[1000px] opacity-100': isExpanded && !isInitialAutoExpand, // Full height after click or initial phase ends
-⋮----
-{/* Add relative positioning for the gradient overlay */}
-⋮----
-{/* Gradient overlay for initial auto-expand */}
 
 ================
 File: src/renderer/src/components/message/UsageInfo.tsx
