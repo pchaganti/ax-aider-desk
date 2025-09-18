@@ -1,5 +1,10 @@
 # Changelog
 
+## [UNRELEASED]
+
+- changed system prompt to XML structure for better instruction following across the various models
+- fixed issue with text jumping in Prompt field when typing fast
+
 ## [0.31.0]
 
 - updated to React 19 for possible performance improvements
