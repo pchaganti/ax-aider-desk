@@ -10437,7 +10437,7 @@ import { EditorView, keymap } from '@codemirror/view';
 import { vim } from '@replit/codemirror-vim';
 import { Mode, PromptBehavior, QuestionData, SuggestionMode } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
-import CodeMirror, { Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import CodeMirror, { Prec, type ReactCodeMirrorRef, Annotation } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useDebounce } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
@@ -10510,6 +10510,8 @@ filePath = undefined; // If only spaces after URL, treat as no filePath
 const requiresConfirmation = (command: string): boolean =>
 ⋮----
 const handleConfirmCommand = () =>
+⋮----
+const onChange = (newText: string) =>
 ⋮----
 const prepareForNextPrompt = () =>
 ⋮----
@@ -14240,8 +14242,6 @@ File: src/renderer/src/utils/notifications.ts
 import { toast } from 'react-toastify';
 ⋮----
 import type { ToastOptions } from 'react-toastify';
-⋮----
-backgroundColor: '#333652', // neutral-700 from tailwind.config.js
 ⋮----
 const getOptions = (): ToastOptions => (
 ⋮----
