@@ -7,6 +7,7 @@
 - notifications correctly using selected theme
 - added check for new project paths
 - yes-always options correctly respected
+- correctly using the selected edit format in Architect mode
 
 ## [0.31.0]
 

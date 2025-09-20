@@ -360,7 +360,7 @@ async def run_editor_coder_stream(architect_coder, connector, prompt_context):
     architect_coder,
     editor_prompt_context,
     main_model=editor_model,
-    edit_format=architect_coder.main_model.editor_edit_format,
+    edit_format=connector.coder.edit_format,
     suggest_shell_commands=False,
     map_tokens=0,
     total_cost=architect_coder.total_cost,
